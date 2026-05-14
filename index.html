@@ -14,7 +14,7 @@
           var qs = params.toString();
           window.history.replaceState(
             null, null,
-            window.location.pathname + p + (qs ? '?' + qs : '') + window.location.hash
+            window.location.pathname.replace(/\/$/, '') + p + (qs ? '?' + qs : '') + window.location.hash
           );
         }
       })();
