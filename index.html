@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Clinical Primitives Preview</title>
+    <script>
+      // Restore path encoded by 404.html redirect.
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var p = params.get('p');
+        if (p) {
+          params.delete('p');
+          var qs = params.toString();
+          window.history.replaceState(
+            null, null,
+            window.location.pathname + p + (qs ? '?' + qs : '') + window.location.hash
+          );
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

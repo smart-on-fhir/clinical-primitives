@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clinical Primitives</title>
+    <script>
+      // Redirect sub-paths back to index.html with the path encoded as a
+      // query param, so the SPA can restore it via history.replaceState.
+      // pathSegmentsToKeep = 1 to preserve /clinical-primitives/ base.
+      var l = window.location;
+      var base = l.pathname.split('/').slice(0, 2).join('/');
+      var rest = l.pathname.slice(base.length) || '/';
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        base + '/?p=' + encodeURIComponent(rest) +
+        (l.search ? '&' + l.search.slice(1) : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
