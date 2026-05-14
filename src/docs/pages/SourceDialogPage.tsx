@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { Patient }               from "fhir/r4";
 import { Button, useClinicalData }     from "../..";
 import { SourceDialog }                from "../../components/Dialog/SourceDialog";
 import { ClinicalPageHeader }          from "../components/ClinicalPageHeader";
@@ -7,7 +8,8 @@ import bundle                          from "../samplePatientBundle.json";
 
 
 export function SourceDialogPage() {
-    const { resources, patient, loadFromBundle } = useClinicalData();
+    const { resources, patient: patientResource, loadFromBundle } = useClinicalData();
+    const patient = patientResource as Patient | null;
     const [patientOpen,  setPatientOpen]  = useState(false);
     const [obsOpen,      setObsOpen]      = useState(false);
     const [customOpen,   setCustomOpen]   = useState(false);

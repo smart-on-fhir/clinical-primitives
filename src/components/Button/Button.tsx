@@ -1,6 +1,6 @@
 import './Button.scss';
 
-interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'danger' | 'warning' | 'success' | 'info' | 'neutral' | 'muted' | 'link';
     radius?: 'none' | 'sm' | 'md' | 'lg' | 'full' | 'pill';
     hard?: boolean;
