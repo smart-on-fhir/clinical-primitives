@@ -1,0 +1,81 @@
+.cp-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: #8884;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    // backdrop-filter: blur(12px);
+    // overflow: auto;
+}
+
+.cp-dialog {
+    background    : var(--cp-color-win-1);
+    // border        : 1px solid var(--cp-color-win-4);
+    border-radius : var(--cp-radius-lg);
+    box-shadow    : 0 0 0 1px rgba(from var(--cp-color-txt) r g b / 0.15), 0 0px 15px 1px #0001;
+//     // width         : 40em;
+    min-width     : 30vw;
+    max-width     : 90vw;
+    max-height    : 90vh;
+    display       : grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    overflow      : hidden;
+}
+
+.cp-dialog-header {
+    box-sizing     : border-box;
+    grid-row       : 1;
+    display        : flex;
+    align-items    : center;
+    justify-content: space-between;
+    padding        : 0.75rem;
+    width          : 100%;
+    // flex-shrink    : 1;
+    // border-bottom  : 1px solid var(--cp-color-win-2);
+}
+
+.cp-dialog-title {
+    font-size  : var(--cp-text-lg);
+    font-weight: 500;
+    color      : var(--cp-color-txt-5);
+}
+
+.cp-dialog-close {
+    background   : var(--cp-color-win-1);
+    border       : none;
+    cursor       : pointer;
+    color        : var(--cp-color-txt-7);
+    font-size    : var(--cp-text-base);
+    line-height  : 1;
+    padding      : 2px;
+    border-radius: var(--cp-radius-sm);
+    &:hover {
+        background: var(--cp-color-win-3);
+        color: var(--cp-color-red);
+    }
+}
+
+.cp-dialog-close-icon {
+    display: block;
+}
+
+.cp-dialog-body {
+//     // overflow-y    : auto;
+    flex          : 1 1 auto;
+    grid-row      : 2;
+//     display       : flex;
+//     flex-direction: column;
+    font-size     : var(--cp-text-base);
+//     // background    : var(--cp-color-win);
+//     isolation      : isolate;
+//     // overflow: visible;
+    code {
+        background: transparent !important;
+        filter: contrast(0.25);
+        line-height: 1.3em !important;
+    }   
+}

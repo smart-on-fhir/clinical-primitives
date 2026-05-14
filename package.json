@@ -1,0 +1,76 @@
+{
+  "name": "clinical-primitives",
+  "version": "0.1.0",
+  "description": "React components and CSS library for healthcare apps",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/styles.css",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "**/*.css",
+    "**/*.scss"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist docs-dist",
+    "build": "npm run build:lib && npm run build:docs",
+    "build:lib": "tsc -p tsconfig.lib.json && vite build --config vite.lib.config.ts",
+    "build:docs": "vite build",
+    "watch:types": "tsc -p tsconfig.lib.json --watch --preserveWatchOutput",
+    "watch:bundle": "vite build --config vite.lib.config.ts --watch",
+    "dev:lib": "concurrently -k -n types,bundle -c yellow,cyan \"npm:watch:types\" \"npm:watch:bundle\"",
+    "dev": "vite",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build:lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smart-on-fhir/clinical-primitives.git"
+  },
+  "keywords": [
+    "react",
+    "components",
+    "healthcare",
+    "scss",
+    "design-system"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/smart-on-fhir/clinical-primitives/issues"
+  },
+  "homepage": "https://github.com/smart-on-fhir/clinical-primitives#readme",
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.0.0",
+    "postcss": "^8.5.6",
+    "sass": "^1.93.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@types/fhir": "^0.0.41",
+    "lucide-react": "^1.14.0",
+    "react-syntax-highlighter": "^16.1.1"
+  }
+}

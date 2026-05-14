@@ -1,0 +1,173 @@
+.cp-observation-card {
+    --accent       : var(--cp-color-txt-3);
+    --muted        : var(--cp-color-txt-7);
+
+    background     : var(--cp-color-win);
+    border-radius  : var(--cp-radius-lg);
+    padding        : 0.75em;
+    position       : relative;
+    overflow       : hidden;
+    display        : inline-flex;
+    vertical-align : baseline;
+    flex-direction : column;
+    word-wrap      : break-word;
+    line-height    : normal;
+    box-shadow     : 0 0 0 0.5px rgba(from var(--accent) r g b / 0.3) inset;
+
+    .cp-observation-column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3em;
+        flex: 1 1 0;
+        justify-content: space-between;
+    }
+
+    &.abnormal {
+        --accent: var(--cp-color-red);
+        background: linear-gradient(transparent, rgb(from var(--cp-color-red) r g b / 0.1));
+        // box-shadow: 0 0 0 0.5px rgb(from var(--cp-color-red) r g b / 0.4) inset;
+        // .info-btn {
+        //     color: var(--cp-color-red);
+        // }
+    }
+
+    &.warn {
+        --accent: var(--cp-color-amber);
+        background: linear-gradient(transparent, rgb(from var(--cp-color-amber) r g b / 0.1));
+        // box-shadow: 0 0 0 0.5px rgb(from var(--cp-color-amber) r g b / 0.4) inset;
+        // .info-btn {
+        //     color: var(--cp-color-amber);
+        // }
+    }
+
+    &.ok {
+        --accent: var(--cp-color-green);
+        background: linear-gradient(transparent, rgb(from var(--cp-color-green) r g b / 0.1));
+        // box-shadow: 0 0 0 0.5px rgb(from var(--cp-color-teal) r g b / 0.4) inset;
+        // .info-btn {
+        //     color: var(--cp-color-teal);
+        // }
+    }
+
+    .vital-name  {
+        font-size     : 0.6em;
+        font-weight   : 600;
+        color         : var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .vital-value {
+        font-size     : 0.75em;
+        font-weight   : 600;
+        line-height   : 1;
+        color         : var(--accent);
+        vertical-align: baseline;
+        display       : inline-flex;
+        text-align    : left;
+        align-items   : baseline;
+        gap           : 0.2em;
+    }
+
+    .vital-unit  {
+        font-size     : 0.6em;
+        color         : var(--muted);
+        font-weight   : 300;
+        white-space   : nowrap;
+        line-height   : 1;
+        vertical-align: baseline;
+    }
+
+    .vital-spark-text {
+        display    : flex;
+        align-items: center;
+        gap        : 0.5em;
+        font-size  : var(--cp-text-sm);
+        color      : var(--muted);
+        overflow   : hidden;
+    }
+
+    .spark-text-stable {
+        color     : var(--muted);
+        font-style: italic;
+        font-size : var(--cp-text-xs);
+    }
+
+    .cp-sparkline {
+        margin: 0.5em 0;
+    }
+
+    .cp-sparkline-labels {
+        color: var(--muted);
+        font-size: var(--cp-text-xs);
+    }
+
+    .vital-delta   { font-size: var(--cp-text-xs); font-weight: 400; }
+    .vital-date   { font-size: var(--cp-text-xs); font-weight: 400; color: var(--muted); }
+    .delta-worsening  { color: var(--cp-color-red); }
+    .delta-improving  { color: var(--cp-color-blue); }
+    .delta-flat       { color: var(--muted); }
+    
+    .vital-cell-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0 0.2em;
+        flex-wrap: wrap;
+        flex: 0 0 0;
+    }
+
+    &.has-unit .vital-value, &:not(.is-text) .vital-value {
+        font-size  : 1.2em;
+        font-weight: 400;
+    }
+
+    &.non-numeric .vital-value {
+        font-weight: 400;
+    }
+
+    &.is-text .vital-value {
+        font-weight : 600;
+        border-left : 3px solid rgba(from var(--accent) r g b / 0.3);
+        padding-left: 0.4em;
+        line-height : 1.2;
+    }
+
+    .info-icon {
+        position       : absolute;
+        top            : 0;
+        right          : 0;
+        width          : 18px;
+        height         : 18px;
+        padding        : 2px;
+        fill           : var(--accent);
+        stroke         : var(--cp-color-win);
+        opacity        : 0;
+        cursor         : pointer;
+        transition     : all 0.2s linear 0.2s;
+
+        svg {
+            width  : 18px;
+            height : 18px;
+        }
+    }
+
+    &:hover {
+        box-shadow: 0 3px 7px -4px #0003 !important;
+
+        &::after {
+            content       : '';
+            position      : absolute;
+            top           : 0;
+            left          : 0;
+            right         : 0;
+            bottom        : 0;
+            pointer-events: none;
+            border        : 1px solid var(--accent);
+            border-radius : var(--cp-radius-lg);
+        }
+        .info-icon {
+            opacity: 1;
+        }
+    }
+}

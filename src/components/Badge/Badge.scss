@@ -1,0 +1,103 @@
+.cp-badge {
+
+    --border-color: var(--cp-color-win-3);
+    --bg-color    : var(--cp-color-win-1);
+    --fg-color    : var(--cp-color-txt-1);
+
+    display      : inline-block;
+    font-weight  : inherit;
+    padding      : 0.15em 0.45em;
+    white-space  : nowrap;
+    overflow     : hidden;
+    text-overflow: ellipsis;
+    border       : 1px solid var(--border-color);
+    background   : var(--bg-color);
+    color        : var(--fg-color);
+    line-height  : 1;
+    
+
+    &--danger {
+        --border-color: rgba(from var(--cp-color-red) r g b / 0.1);
+        --bg-color: rgba(from var(--cp-color-red) r g b / 0.3);
+        --fg-color: color-mix(in srgb, var(--cp-color-red) 50%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-red);
+            --bg-color: var(--cp-color-red);
+            --fg-color: var(--cp-color-white);
+        }
+    }
+
+    &--warning {
+        --border-color: rgba(from var(--cp-color-amber) r g b / 0.1);
+        --bg-color: rgba(from var(--cp-color-amber) r g b / 0.3);
+        --fg-color: color-mix(in srgb, var(--cp-color-amber) 50%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-amber);
+            --bg-color: var(--cp-color-amber);
+            --fg-color: var(--cp-color-white);
+        }
+
+    }
+
+    &--success {
+        --border-color: rgba(from var(--cp-color-green) r g b / 0.1);
+        --bg-color: rgba(from var(--cp-color-green) r g b / 0.3);
+        --fg-color: color-mix(in srgb, var(--cp-color-green) 50%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-green);
+            --bg-color: var(--cp-color-green);
+            --fg-color: var(--cp-color-white);
+        }
+    }
+
+    &--info {
+        --border-color: rgba(from var(--cp-color-teal) r g b / 0.1);
+        --bg-color: rgba(from var(--cp-color-teal) r g b / 0.3);
+        --fg-color: color-mix(in srgb, var(--cp-color-teal) 50%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-teal);
+            --bg-color: var(--cp-color-teal);
+            --fg-color: var(--cp-color-white);
+        }
+    }
+
+    &--link {
+        --border-color: rgba(from var(--cp-color-blue) r g b / 0.1);
+        --bg-color: rgba(from var(--cp-color-blue) r g b / 0.3);
+        --fg-color: color-mix(in srgb, var(--cp-color-blue) 50%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-blue);
+            --bg-color: var(--cp-color-blue);
+            --fg-color: var(--cp-color-white);
+        }
+    }
+
+    &--muted {
+        --border-color: var(--cp-color-win-3);
+        --bg-color: var(--cp-color-win-2);
+        --fg-color: var(--cp-color-txt-6);
+
+        &-hard {
+            --border-color: var(--cp-color-txt-3);
+            --bg-color: var(--cp-color-txt-3);
+            --fg-color: var(--cp-color-win-2);
+        }
+    }
+
+    &--neutral {
+        --border-color: var(--cp-color-win-4);
+        --bg-color: var(--cp-color-win-3);
+        --fg-color: var(--cp-color-txt-1);
+
+        &-hard {
+            --border-color: var(--cp-color-txt-2);
+            --bg-color: var(--cp-color-txt-2);
+            --fg-color: var(--cp-color-win);
+        }
+    }
+}

@@ -1,0 +1,81 @@
+.cp-tree {
+
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    // font-weight: 300;
+    line-height: 1.25;
+    white-space: nowrap;
+
+    .key {
+        color: var(--cp-color-txt-3);
+        padding-left: 1em;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    
+
+    > div {
+        // d-flex gap-1 cp-ps-3 w-100
+        display: flex;
+        gap: 0 0.5em;
+        width: 100%;
+        // flex-wrap: wrap;
+        // padding-left: var(--cp-space-4);
+        &.cp-collapse {
+            flex-direction: column;
+            gap: 0;
+        }
+        
+    }
+
+    .cp-collapse-header .key {
+        padding-left: 0;
+    }
+
+    > div:not(.cp-collapse) {
+        // padding-left: 1em;
+    }
+
+    .cp-tree {
+        padding-left: 1em;
+        .key {
+            // padding-left: 1em;
+        }
+    }
+
+    
+
+    .token {
+        flex-grow: 1;
+        word-break: break-all;
+        // padding-left: 1em;
+    }
+
+    .token-undefined {
+        color: var(--cp-color-txt-5);
+        font-style: italic;
+    }
+
+    .token-null {
+        color: var(--cp-color-txt-5);
+        font-style: italic;
+    }
+
+    .token-string {
+        color: var(--cp-color-green);
+    }
+
+    .token-number {
+        color: var(--cp-color-red);
+    }
+
+    .token-boolean {
+        color: var(--cp-color-purple);
+        font-weight: bold;
+    }
+
+    .token-date {
+        color: var(--cp-color-amber);
+    }
+}

@@ -1,0 +1,122 @@
+
+.lt-panel-table {
+    width          : 100%;
+    border-collapse: collapse;
+    border-spacing : 0;
+
+    .lt-row {
+        // border-bottom: 1px solid var(--cp-color-win-1);
+        // transition   : background 0.1s;
+
+        &:last-child { border-bottom: none; }
+        &:hover {
+            background: var(--cp-color-win-1);
+            box-shadow: 0 1px 0 var(--cp-color-win-3), 0 -1px 0 var(--cp-color-win-3);
+        }
+    }
+
+    td {
+        padding: 0.75em 0.75em;
+        // box-shadow: inset 0 0 0 1px #0003;
+    }
+
+    .lt-name {
+        font-size  : var(--cp-text-sm);
+        color      : var(--cp-color-txt-3);
+        font-weight: 600;
+    }
+
+    .lt-ref {
+        color     : var(--cp-color-txt-7);
+        font-size : var(--cp-text-xs);
+        white-space: nowrap;
+        margin-top: 0.1em;
+        font-weight: 300;
+    }
+
+    .lt-spark {
+        min-width: 60px;
+        width: 100%;
+        padding-left: 0;
+        padding-right: 0;
+        overflow: hidden;
+        .cp-sparkline {
+            min-width: 0;
+            margin: 0;
+        }
+    }
+
+    .lt-value {
+        font-size  : var(--cp-text-base);
+        color      : var(--cp-color-txt-5);
+        font-weight: 400;
+    }
+
+    .lt-unit {
+        font-size   : var(--cp-text-xs);
+        color       : var(--cp-color-txt-6);
+        text-align  : left;
+        white-space : nowrap;
+        padding-left: 0;
+        font-weight : 300;
+    }
+
+    .lt-flag {
+        font-size    : var(--cp-text-xs);
+        color        : var(--cp-color-txt-7);
+        font-weight  : 700;
+        text-align   : center;
+        display      : none;
+        min-width    : 1.5em;
+        padding      : 0.25em 0.5em;
+        border-radius: 5em;
+        background   : rgba(from currentColor r g b / 0.2);
+        box-shadow   : 0 0 0 1px rgba(from currentColor r g b / 0.1) inset;
+
+        // color: var(--cp-color-white);
+        // opacity: 0;
+
+        &.lt-abnormal,
+        &.lt-warn {
+            display: inline-block;
+        }
+
+        // &.lt-ok > b {
+        //     color: var(--cp-color-win-3);
+        //     opacity: 0;
+        //     display: none;
+        // }
+    }
+
+    // Status color variants
+    .lt-abnormal { color: var(--cp-color-red); }
+    .lt-warn     { color: var(--cp-color-amber); }
+    // .lt-ok       {
+        // color: var(--cp-color-green);
+        // color: var(--cp-color-txt-7);
+    // }
+
+    // .lt-row.abnormal {
+        // background: rgba(from var(--cp-color-red) r g b / 0.1);
+    // }
+    // .lt-row.warn {
+        // background: rgba(from var(--cp-color-amber) r g b / 0.1);
+    // }
+    // .lt-row.ok {
+    //     background: rgba(from var(--cp-color-green) r g b / 0.05);
+    // }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

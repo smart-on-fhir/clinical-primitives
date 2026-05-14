@@ -1,0 +1,30 @@
+.cp-obs-explanation {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1rem;
+
+    p {
+        font-size  : var(--cp-text-sm);
+        color      : var(--cp-color-txt-5);
+        margin     : 0;
+        line-height: normal;
+    }
+}
+.cp-obs-exp-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.cp-obs-exp-label {
+    font-size: var(--cp-text-xs);
+    font-weight: 600;
+    color: var(--cp-color-teal);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+.cp-obs-exp-ref {
+    font-size: var(--cp-text-xs) !important;
+    color: var(--cp-color-txt-5) !important;
+    margin-top: 0.5em !important;
+}

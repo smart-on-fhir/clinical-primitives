@@ -1,0 +1,298 @@
+.ef-feed {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    // Allow the type-filter dropdown to overflow the card boundary
+    // (.card sets overflow: hidden which would otherwise clip it)
+    overflow: visible;
+    height: 100%;
+    min-height: 10em;
+}
+
+.ef-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    // border-bottom: 0.5px solid var(--cp-color-txt-7);
+}
+
+.ef-title-text {
+    // font-size: var(--cp-text-base);
+    font-weight: 500;
+    // color: var(--text-primary);
+}
+
+.ef-hint {
+    font-size: var(--cp-text-xs);
+    color: var(--cp-color-txt-7);
+}
+
+// ── Range filter ──────────────────────────────────────────────────────────────
+
+.ef-range-row {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid var(--cp-color-win-5);
+}
+
+.ef-range-btn {
+    font-size    : var(--cp-text-xs);
+    padding      : 0.3em 1em;
+    border-radius: var(--cp-radius-pill);
+    border       : 1px solid var(--cp-color-win-2);
+    background   : transparent;
+    color        : var(--cp-color-txt-5);
+    cursor       : pointer;
+    transition   : background 0.1s, color 0.1s;
+
+    &:hover:not(.active) {
+        background  : var(--cp-color-win-1);
+        color       : var(--cp-color-txt-6);
+        border-color: var(--cp-color-win-2);
+    }
+
+    &.active {
+        background  : var(--cp-color-win-1);
+        color       : var(--cp-color-txt);
+        border-color: var(--cp-color-win-6);
+        // font-weight : 500;
+    }
+}
+
+// ── Type filter dropdown ──────────────────────────────────────────────────────
+
+.ef-filter-wrap {
+    position   : relative;
+    margin-left: auto;
+}
+
+.ef-filter-btn {
+    display      : inline-flex;
+    align-items  : center;
+    font-size    : var(--cp-text-xs);
+    padding      : 2px;
+    border-radius: var(--cp-radius-pill);
+    border       : 1px solid rgba(from var(--cp-color-teal) r g b / 0.2);
+    background   : color-mix(in srgb, var(--cp-color-teal) 10%, var(--cp-color-win) 90%);
+    color        : var(--cp-color-teal);
+    cursor       : pointer;
+    transition   : background 0.1s, color 0.1s, border-color 0.1s;
+
+    .lucide {
+        margin: 0 6px;
+        stroke-width: 1.5px;
+    }
+
+    &:hover, &.filtered {
+        background  : color-mix(in srgb, var(--cp-color-teal) 10%, var(--cp-color-win) 90%);
+        color       : var(--cp-color-teal);
+        border-color: var(--cp-color-teal);
+    }
+
+    i { font-size: 11px; }
+}
+
+.ef-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2em;
+    height: 2em;
+    border-radius: 50%;
+    background: var(--cp-color-teal);
+    color: var(--cp-color-win);
+    font-size: 8px;
+    font-weight: 500;
+}
+
+.ef-dropdown {
+    position     : absolute;
+    top          : calc(100% + 6px);
+    right        : 0;
+    min-width    : 160px;
+    background   : var(--cp-color-win);
+    border       : 0.5px solid var(--cp-color-txt-7);
+    border-radius: var(--cp-radius-md);
+    box-shadow   : 1px 1px 3px rgba(from var(--cp-color-txt-7) r g b / 0.2);
+    z-index      : 100;
+    overflow     : hidden;
+}
+
+.ef-dropdown-item {
+    display    : flex;
+    align-items: center;
+    gap        : 8px;
+    padding    : 8px 12px;
+    cursor     : pointer;
+    transition : background 0.1s;
+
+    &:hover { background: var(--cp-color-win-2); }
+
+    input[type='checkbox'] {
+        margin-left : auto;
+        cursor      : pointer;
+        accent-color: var(--cp-color-green);
+        width: 14px;
+        height: 14px;
+    }
+}
+
+.ef-dropdown-label {
+    font-size: var(--cp-text-sm);
+    color: var(--cp-color-txt);
+    flex: 1;
+}
+
+// ── Anchor notice ─────────────────────────────────────────────────────────────
+
+.ef-anchor-notice {
+    padding: 7px 16px;
+    font-size: var(--cp-text-xs);
+    color: var(--cp-color-amber);
+    background: rgba(from var(--cp-color-amber) r g b / 0.1);
+    border-bottom: 0.5px solid var(--cp-color-win-4);
+
+    strong { font-weight: 600; }
+}
+
+// ── Feed body ─────────────────────────────────────────────────────────────────
+
+.ef-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1 1 0
+}
+
+.ef-empty {
+    padding: 24px 16px;
+    font-size: var(--cp-text-sm);
+    color: var(--cp-color-txt-7);
+    text-align: center;
+}
+
+// ── Day divider ───────────────────────────────────────────────────────────────
+
+.ef-day-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 16px;
+    background: var(--cp-color-win-1);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    box-shadow: 0 0.5px 0 var(--cp-color-win-5), 0 -0.5px 0 var(--cp-color-win-5);
+}
+
+.ef-day-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--cp-color-txt-6);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ef-day-line {
+    flex: 1;
+    height: 0;
+    border-bottom: 1px dashed var(--cp-color-win-5);
+}
+
+// ── Event row ─────────────────────────────────────────────────────────────────
+
+.ef-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid var(--cp-color-win-4);
+    transition: background 0.1s;
+    cursor: pointer;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: var(--cp-color-win-1); }
+    &:focus-visible { outline: 2px solid var(--cp-color-teal); outline-offset: -2px; }
+}
+
+.ef-time {
+    font-size: var(--cp-text-xs);
+    color: var(--cp-color-txt-6);
+    width: 3.5em;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+// ── Icon circle ───────────────────────────────────────────────────────────────
+
+.ef-icon {
+    width        : 2.2em;
+    height       : 2.2em;
+    border-radius: 50%;
+
+    &.ef-icon--sm {
+        width: 1.5em;
+        height: 1.5em;
+        font-size: 7px;
+    }
+
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+
+    &.ef-icon--alert        { background: rgba(from var(--cp-color-red   ) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-red   ) 50%, var(--cp-color-txt)); }
+    &.ef-icon--lab          { background: rgba(from var(--cp-color-green ) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-green ) 90%, var(--cp-color-txt)); }
+    &.ef-icon--med          { background: rgba(from var(--cp-color-blue  ) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-blue  ) 70%, var(--cp-color-txt)); }
+    &.ef-icon--note         { background: rgba(from var(--cp-color-gray  ) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-gray  ) 70%, var(--cp-color-txt)); }
+    &.ef-icon--vitals       { background: rgba(from var(--cp-color-yellow) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-yellow) 70%, var(--cp-color-txt)); }
+    &.ef-icon--procedure    { background: rgba(from var(--cp-color-purple) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-purple) 70%, var(--cp-color-txt)); }
+    &.ef-icon--immunization { background: rgba(from var(--cp-color-teal  ) r g b / 0.30); color: color-mix(in srgb, var(--cp-color-teal  ) 70%, var(--cp-color-txt)); }
+}
+
+// ── Event text ────────────────────────────────────────────────────────────────
+
+.ef-body-text {
+    flex     : 1;
+    min-width: 0;
+}
+
+.ef-title {
+    font-size  : var(--cp-text-sm);
+    color      : var(--cp-color-txt);
+    line-height: normal;
+}
+
+.ef-sub {
+    font-size  : var(--cp-text-xs);
+    color      : var(--cp-color-txt-3);
+    margin-top : 0.15em;
+    line-height: normal;
+}
+
+// ── Tag pill ──────────────────────────────────────────────────────────────────
+
+.ef-tag {
+    font-size    : var(--cp-text-xs);
+    padding      : 0.1em 0.5em;
+    border-radius: var(--cp-radius-sm);
+    background   : var(--cp-color-win-1);
+    color        : var(--cp-color-txt-6);
+    // border       : 0.5px solid var(--cp-color-win);
+    flex-shrink  : 0;
+    white-space  : nowrap;
+}
+
+.ef-overflow-notice {
+    font-size    : var(--cp-text-xs);
+    color        : var(--cp-color-amber);
+    padding      : 4px 16px;
+    background   : rgba(from var(--cp-color-amber) r g b / 0.1);
+    border-top   : 0.5px solid var(--cp-color-win-4);
+    border-bottom: 0.5px solid var(--cp-color-win-4);
+}

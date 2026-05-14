@@ -1,0 +1,32 @@
+.cp-sparkline {
+    display      : flex;
+    width        : 100%;
+    height       : auto;  /* browser derives height from viewBox aspect ratio — no distortion */
+    overflow     : visible;
+    margin: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+
+    svg {
+        flex: 1;
+        display: block;
+        overflow: visible;
+        max-width: 100%;
+    }
+
+    .cp-sparkline-labels {
+        display        : flex;
+        align-items    : center;
+        justify-content: center;
+        gap            : 1em;
+        color          : var(--cp-color-txt);
+        overflow       : hidden;
+        white-space    : nowrap;
+        flex-wrap      : wrap;
+        line-height    : 1.2;
+        span {
+            margin-top: 0.5em;
+            vertical-align: middle;
+        }
+    }
+}

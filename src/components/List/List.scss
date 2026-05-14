@@ -1,0 +1,28 @@
+.cp-list {
+    display: flex;
+    flex-direction: column;
+
+    &.scrollable {
+        min-height: 2em;
+        flex: 1 1 0;
+        overflow: auto;
+    }
+
+    .cp-list-item {
+        display: flex;
+        align-items: baseline;
+        border-bottom: 0.5px solid rgba(from var(--cp-color-txt) r g b / 0.1);
+        border-top: 0.5px solid rgba(from var(--cp-color-txt) r g b / 0.1);
+    }
+
+    .cp-list-item:last-child {
+        border-bottom: none;
+    }
+    .cp-list-item:first-child {
+        border-top: none;
+    }
+
+    .cp-list-item:hover {
+        background: var(--cp-color-win-1);
+    }
+}

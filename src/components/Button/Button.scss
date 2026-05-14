@@ -1,0 +1,199 @@
+.cp-button {
+    --border-color       : var(--cp-color-win-3);
+    --bg-color           : var(--cp-color-win-2);
+    --fg-color           : var(--cp-color-txt-2);
+    --border-color-hover : var(--cp-color-win-4);
+    --bg-color-hover     : var(--cp-color-win-3);
+    --fg-color-hover     : var(--cp-color-txt-1);
+    --border-color-active: var(--cp-color-win-5);
+    --bg-color-active    : var(--cp-color-win-4);
+    --fg-color-active    : var(--cp-color-txt);
+
+    display      : inline-block;
+    font-weight  : inherit;
+    // padding      : var(--cp-space-3) var(--cp-space-4);
+    white-space  : nowrap;
+    overflow     : hidden;
+    text-overflow: ellipsis;
+    cursor       : pointer;
+    font-size    : inherit;
+    line-height  : 1;
+
+    border       : 1px solid var(--border-color);
+    background   : var(--bg-color);
+    color        : var(--fg-color);
+
+    &--virtual:not(:hover, :active, :focus) {
+        border-color: transparent;
+        background: transparent;
+        color: currentColor !important;
+    }
+
+    &:hover {
+        --bg-color: var(--bg-color-hover);
+        --border-color: var(--border-color-hover);
+        --fg-color: var(--fg-color-hover);
+    }
+
+    &:active {
+        --bg-color: var(--bg-color-active);
+        --border-color: var(--border-color-active);
+        --fg-color: var(--fg-color-active);
+    }
+
+    &--neutral-hard {
+        --border-color       : var(--cp-color-txt-2);
+        --bg-color           : var(--cp-color-txt-2);
+        --fg-color           : var(--cp-color-win-1);
+        --border-color-hover : var(--cp-color-txt-1);
+        --bg-color-hover     : var(--cp-color-txt-1);
+        --fg-color-hover     : var(--cp-color-win-1);
+        --border-color-active: var(--cp-color-txt);
+        --bg-color-active    : var(--cp-color-txt);
+        --fg-color-active    : var(--cp-color-win);
+    }
+
+    &--link {
+        --border-color       : rgba(from var(--cp-color-blue) r g b / 0.4);
+        --bg-color           : rgba(from var(--cp-color-blue) r g b / 0.4);
+        --fg-color           : color-mix(in srgb, var(--cp-color-blue) 30%, var(--cp-color-txt));
+        --border-color-hover : rgba(from var(--cp-color-blue) r g b / 0.5);
+        --bg-color-hover     : rgba(from var(--cp-color-blue) r g b / 0.5);
+        --fg-color-hover     : color-mix(in srgb, var(--cp-color-blue) 20%, var(--cp-color-txt));
+        --border-color-active: rgba(from var(--cp-color-blue) r g b / 0.6);
+        --bg-color-active    : rgba(from var(--cp-color-blue) r g b / 0.6);
+        --fg-color-active    : color-mix(in srgb, var(--cp-color-blue) 20%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color       : var(--cp-color-blue);
+            --bg-color           : var(--cp-color-blue);
+            --fg-color           : var(--cp-color-white);
+            --border-color-hover : color-mix(in srgb, var(--cp-color-blue) 80%, var(--cp-color-txt));
+            --bg-color-hover     : color-mix(in srgb, var(--cp-color-blue) 80%, var(--cp-color-txt));
+            --fg-color-hover     : var(--cp-color-white);
+            --border-color-active: color-mix(in srgb, var(--cp-color-blue) 60%, var(--cp-color-txt));
+            --bg-color-active    : color-mix(in srgb, var(--cp-color-blue) 60%, var(--cp-color-txt));
+            --fg-color-active    : var(--cp-color-white);
+        }
+    }
+
+    &--danger {
+        --border-color       : rgba(from var(--cp-color-red) r g b / 0.4);
+        --bg-color           : rgba(from var(--cp-color-red) r g b / 0.3);
+        --fg-color           : color-mix(in srgb, var(--cp-color-red) 40%, var(--cp-color-txt));
+        --border-color-hover : rgba(from var(--cp-color-red) r g b / 0.4);
+        --bg-color-hover     : rgba(from var(--cp-color-red) r g b / 0.4);
+        --fg-color-hover     : color-mix(in srgb, var(--cp-color-red) 30%, var(--cp-color-txt));
+        --border-color-active: rgba(from var(--cp-color-red) r g b / 0.5);
+        --bg-color-active    : rgba(from var(--cp-color-red) r g b / 0.5);
+        --fg-color-active    : color-mix(in srgb, var(--cp-color-red) 20%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color       : var(--cp-color-red);
+            --bg-color           : var(--cp-color-red);
+            --fg-color           : var(--cp-color-white);
+            --border-color-hover : color-mix(in srgb, var(--cp-color-red) 80%, var(--cp-color-txt));
+            --bg-color-hover     : color-mix(in srgb, var(--cp-color-red) 80%, var(--cp-color-txt));
+            --fg-color-hover     : var(--cp-color-white);
+            --border-color-active: color-mix(in srgb, var(--cp-color-red) 60%, var(--cp-color-txt));
+            --bg-color-active    : color-mix(in srgb, var(--cp-color-red) 60%, var(--cp-color-txt));
+            --fg-color-active    : var(--cp-color-white);
+        }
+    }
+
+    &--warning {
+        --border-color       : rgba(from var(--cp-color-amber) r g b / 0.4);
+        --bg-color           : rgba(from var(--cp-color-amber) r g b / 0.3);
+        --fg-color           : color-mix(in srgb, var(--cp-color-amber) 50%, var(--cp-color-txt));
+        --border-color-hover : rgba(from var(--cp-color-amber) r g b / 0.5);
+        --bg-color-hover     : rgba(from var(--cp-color-amber) r g b / 0.4);
+        --fg-color-hover     : color-mix(in srgb, var(--cp-color-amber) 40%, var(--cp-color-txt));
+        --border-color-active: rgba(from var(--cp-color-amber) r g b / 0.6);
+        --bg-color-active    : rgba(from var(--cp-color-amber) r g b / 0.5);
+        --fg-color-active    : color-mix(in srgb, var(--cp-color-amber) 30%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color       : var(--cp-color-amber);
+            --bg-color           : var(--cp-color-amber);
+            --fg-color           : var(--cp-color-white);
+            --border-color-hover : color-mix(in srgb, var(--cp-color-amber) 80%, var(--cp-color-txt));
+            --bg-color-hover     : color-mix(in srgb, var(--cp-color-amber) 80%, var(--cp-color-txt));
+            --fg-color-hover     : var(--cp-color-white);
+            --border-color-active: color-mix(in srgb, var(--cp-color-amber) 60%, var(--cp-color-txt));
+            --bg-color-active    : color-mix(in srgb, var(--cp-color-amber) 60%, var(--cp-color-txt));
+            --fg-color-active    : var(--cp-color-white);
+        }
+    }
+
+    &--success {
+        --border-color       : rgba(from var(--cp-color-green) r g b / 0.4);
+        --bg-color           : rgba(from var(--cp-color-green) r g b / 0.3);
+        --fg-color           : color-mix(in srgb, var(--cp-color-green) 50%, var(--cp-color-txt));
+        --border-color-hover : rgba(from var(--cp-color-green) r g b / 0.5);
+        --bg-color-hover     : rgba(from var(--cp-color-green) r g b / 0.4);
+        --fg-color-hover     : color-mix(in srgb, var(--cp-color-green) 40%, var(--cp-color-txt));
+        --border-color-active: rgba(from var(--cp-color-green) r g b / 0.6);
+        --bg-color-active    : rgba(from var(--cp-color-green) r g b / 0.5);
+        --fg-color-active    : color-mix(in srgb, var(--cp-color-green) 30%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color       : var(--cp-color-green);
+            --bg-color           : var(--cp-color-green);
+            --fg-color           : var(--cp-color-white);
+            --border-color-hover : color-mix(in srgb, var(--cp-color-green) 80%, var(--cp-color-txt));
+            --bg-color-hover     : color-mix(in srgb, var(--cp-color-green) 80%, var(--cp-color-txt));
+            --fg-color-hover     : var(--cp-color-white);
+            --border-color-active: color-mix(in srgb, var(--cp-color-green) 60%, var(--cp-color-txt));
+            --bg-color-active    : color-mix(in srgb, var(--cp-color-green) 60%, var(--cp-color-txt));
+            --fg-color-active    : var(--cp-color-white);
+        }
+    }
+
+    &--info {
+        --border-color       : rgba(from var(--cp-color-teal) r g b / 0.4);
+        --bg-color           : rgba(from var(--cp-color-teal) r g b / 0.3);
+        --fg-color           : color-mix(in srgb, var(--cp-color-teal) 50%, var(--cp-color-txt));
+        --border-color-hover : rgba(from var(--cp-color-teal) r g b / 0.5);
+        --bg-color-hover     : rgba(from var(--cp-color-teal) r g b / 0.4);
+        --fg-color-hover     : color-mix(in srgb, var(--cp-color-teal) 40%, var(--cp-color-txt));
+        --border-color-active: rgba(from var(--cp-color-teal) r g b / 0.6);
+        --bg-color-active    : rgba(from var(--cp-color-teal) r g b / 0.5);
+        --fg-color-active    : color-mix(in srgb, var(--cp-color-teal) 30%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color       : var(--cp-color-teal);
+            --bg-color           : var(--cp-color-teal);
+            --fg-color           : var(--cp-color-white);
+            --border-color-hover : color-mix(in srgb, var(--cp-color-teal) 80%, var(--cp-color-txt));
+            --bg-color-hover     : color-mix(in srgb, var(--cp-color-teal) 80%, var(--cp-color-txt));
+            --fg-color-hover     : var(--cp-color-white);
+            --border-color-active: color-mix(in srgb, var(--cp-color-teal) 60%, var(--cp-color-txt));
+            --bg-color-active    : color-mix(in srgb, var(--cp-color-teal) 60%, var(--cp-color-txt));
+            --fg-color-active    : var(--cp-color-white);
+        }
+    }
+
+    &--muted {
+        --border-color       : var(--cp-color-win-3);
+        --bg-color           : var(--cp-color-win-2);
+        --fg-color           : var(--cp-color-txt-3);
+        --border-color-hover : var(--cp-color-win-4);
+        --bg-color-hover     : var(--cp-color-win-3);
+        --fg-color-hover     : var(--cp-color-txt-2);
+        --border-color-active: var(--cp-color-win-5);
+        --bg-color-active    : var(--cp-color-win-4);
+        --fg-color-active    : var(--cp-color-txt-1);
+
+        &-hard {
+            --border-color       : var(--cp-color-txt-3);
+            --bg-color           : var(--cp-color-txt-3);
+            --fg-color           : var(--cp-color-win-1);
+            --border-color-hover : color-mix(in srgb, var(--cp-color-txt-3) 80%, var(--cp-color-txt));
+            --bg-color-hover     : color-mix(in srgb, var(--cp-color-txt-3) 80%, var(--cp-color-txt));
+            --fg-color-hover     : var(--cp-color-win-1);
+            --border-color-active: color-mix(in srgb, var(--cp-color-txt-3) 60%, var(--cp-color-txt));
+            --bg-color-active    : color-mix(in srgb, var(--cp-color-txt-3) 60%, var(--cp-color-txt));
+            --fg-color-active    : var(--cp-color-win-1);
+        }
+    }
+}

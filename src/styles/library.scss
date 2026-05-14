@@ -1,0 +1,179 @@
+$colors: (
+    'red'   : #dc2626,
+    'amber' : #ee7700,
+    'yellow': #eecc00,
+    'green' : #009933,
+    'teal'  : #0088AA,
+    'blue'  : #2255dd,
+    'gray'  : #888888,
+    'purple': #7733dd,
+    'white' : #ffffff,
+    'black' : #000000,
+
+    'win'   : hsl(60, 4%, 100%),
+    'win-1' : hsl(60, 4%, 95%),
+    'win-2' : hsl(60, 4%, 90%),
+    'win-3' : hsl(60, 4%, 85%),
+    'win-4' : hsl(60, 4%, 80%),
+    'win-5' : hsl(60, 4%, 75%),
+    'win-6' : hsl(60, 4%, 70%),
+    'win-7' : hsl(60, 4%, 65%),
+    'txt'   : hsl(60, 4%, 0%),
+    'txt-1' : hsl(60, 4%, 5%),
+    'txt-2' : hsl(60, 4%, 10%),
+    'txt-3' : hsl(60, 4%, 20%),
+    'txt-4' : hsl(60, 4%, 30%),
+    'txt-5' : hsl(60, 4%, 40%),
+    'txt-6' : hsl(60, 4%, 50%),
+    'txt-7' : hsl(60, 4%, 60%)
+);
+
+$colorsDark: (
+    'win'   : hsl(60, 4%,  5%),
+    'win-1' : hsl(60, 4%, 10%),
+    'win-2' : hsl(60, 4%, 15%),
+    'win-3' : hsl(60, 4%, 20%),
+    'win-4' : hsl(60, 4%, 25%),
+    'win-5' : hsl(60, 4%, 30%),
+    'win-6' : hsl(60, 4%, 35%),
+    'win-7' : hsl(60, 4%, 40%),
+    'txt-7' : hsl(60, 4%, 45%),
+    'txt-6' : hsl(60, 4%, 50%),
+    'txt-5' : hsl(60, 4%, 55%),
+    'txt-4' : hsl(60, 4%, 60%),
+    'txt-3' : hsl(60, 4%, 65%),
+    'txt-2' : hsl(60, 4%, 70%),
+    'txt-1' : hsl(60, 4%, 75%),
+    'txt'   : hsl(60, 4%, 80%)
+);
+
+:root {
+    --cp-space-1     : 0.1rem;
+    --cp-space-2     : 0.2rem;
+    --cp-space-3     : 0.4rem;
+    --cp-space-4     : 0.8rem;
+    --cp-space-5     : 1rem;
+    --cp-space-6     : 1.5rem;
+    --cp-space-7     : 2rem;
+
+    --cp-radius-sm   : 3px;
+    --cp-radius-md   : 6px;
+    --cp-radius-lg   : 9px;
+    --cp-radius-pill : 999px;
+    --cp-radius-auto : 50%;
+
+    --cp-text-xs     : 0.7rem;
+    --cp-text-sm     : 0.85rem;
+    --cp-text-base   : 1rem;
+    --cp-text-lg     : 1.15rem;
+    --cp-text-xl     : 1.3rem;
+    --cp-text-2xl    : 1.45rem;
+    --cp-text-3xl    : 1.6rem;
+    --cp-text-4xl    : 1.75rem;
+    --cp-text-5xl    : 1.9rem;
+    --cp-text-6xl    : 2.05rem;
+
+
+    .cp-rounded-sm   { border-radius: var(--cp-radius-sm); }
+    .cp-rounded-md   { border-radius: var(--cp-radius-md); }
+    .cp-rounded-lg   { border-radius: var(--cp-radius-lg); }
+    .cp-rounded-pill { border-radius: var(--cp-radius-pill); }
+    .cp-rounded-full { border-radius: 50%; }
+    .cp-rounded-none { border-radius: 0; }
+
+    .cp-text-xs   { font-size: var(--cp-text-xs);   }
+    .cp-text-sm   { font-size: var(--cp-text-sm);   }
+    .cp-text-base { font-size: var(--cp-text-base); }
+    .cp-text-lg   { font-size: var(--cp-text-lg);   }
+    .cp-text-xl   { font-size: var(--cp-text-xl);   }
+    .cp-text-2xl  { font-size: var(--cp-text-2xl);  }
+    .cp-text-3xl  { font-size: var(--cp-text-3xl);  }
+    .cp-text-4xl  { font-size: var(--cp-text-4xl);  }
+    .cp-text-5xl  { font-size: var(--cp-text-5xl);  }
+    .cp-text-6xl  { font-size: var(--cp-text-6xl);  }
+
+    @each $name, $value in $colors {
+        --cp-color-#{$name}: #{$value};
+    }
+
+    &[data-theme='dark'] {
+        @each $name, $value in $colorsDark {
+            --cp-color-#{$name}: #{$value};
+        }
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        @each $name, $value in $colorsDark {
+            --cp-color-#{$name}: #{$value};
+        }
+    }
+}
+
+@each $name, $value in $colors {
+    .cp-fill-#{$name} {
+        background-color: var(--cp-color-#{$name});
+        @each $shade in (0,10,20,30,40,50,60,70,80,90,100) {
+            &.cp-fill-opacity-#{$shade} {
+                background-color: rgba(from var(--cp-color-#{$name}) r g b / #{ $shade / 100 });
+            }
+        }
+    }
+
+    .cp-border-#{$name} {
+        border-color: var(--cp-color-#{$name});
+        @each $shade in (0,10,20,30,40,50,60,70,80,90,100) {
+            &.cp-border-opacity-#{$shade} {
+                border-color: rgba(from var(--cp-color-#{$name}) r g b / #{ $shade / 100 });
+            }
+        }
+    }
+
+
+    .cp-text-#{$name} {
+        color: var(--cp-color-#{$name});
+        @each $shade in (0,10,20,30,40,50,60,70,80,90,100) {
+            &.cp-text-opacity-#{$shade} {
+                color: rgba(from var(--cp-color-#{$name}) r g b / #{ $shade / 100 });
+            }
+        }
+    }
+}
+
+@each $num in (1, 2, 3, 4, 5, 6, 7) {
+    .cp-p-#{$num} { padding: var(--cp-space-#{$num}); }
+    .cp-ps-#{$num} { padding-left: var(--cp-space-#{$num}); }
+    .cp-pe-#{$num} { padding-right: var(--cp-space-#{$num}); }
+    .cp-pt-#{$num} { padding-top: var(--cp-space-#{$num}); }
+    .cp-pb-#{$num} { padding-bottom: var(--cp-space-#{$num}); }
+    .cp-px-#{$num} { padding-left: var(--cp-space-#{$num}); padding-right: var(--cp-space-#{$num}); }
+    .cp-py-#{$num} { padding-top: var(--cp-space-#{$num}); padding-bottom: var(--cp-space-#{$num}); }
+
+    .cp-m-#{$num} { margin: var(--cp-space-#{$num}); }
+    .cp-ms-#{$num} { margin-left: var(--cp-space-#{$num}); }
+    .cp-me-#{$num} { margin-right: var(--cp-space-#{$num}); }
+    .cp-mt-#{$num} { margin-top: var(--cp-space-#{$num}); }
+    .cp-mb-#{$num} { margin-bottom: var(--cp-space-#{$num}); }
+
+    .cp-border-#{$num} { border-width: var(--cp-space-#{$num}); }
+    .cp-border-top-#{$num} { border-top-width: var(--cp-space-#{$num}); }
+    .cp-border-bottom-#{$num} { border-bottom-width: var(--cp-space-#{$num}); }
+    .cp-border-left-#{$num} { border-left-width: var(--cp-space-#{$num}); }
+    .cp-border-right-#{$num} { border-right-width: var(--cp-space-#{$num}); }
+
+    .cp-gap-#{$num} { gap: var(--cp-space-#{$num}); }
+}
+
+
+@each $style in ("solid", "dashed", "dotted", "double") {
+    .cp-border-#{$style} {
+        border-style: #{$style};
+    }
+}
+
+@each $weight in ("thin", "extralight", "light", "normal", "medium", "semibold", "bold", "extrabold", "black", 100, 200, 300, 400, 500, 600, 700, 800, 900) {
+    .cp-fw-#{$weight} { 
+        font-weight: #{$weight};
+    }
+}
