@@ -13,7 +13,6 @@ export { Panel }                  from './components/Panel/Panel';
 export { Sparkline }              from './components/Sparkline';
 export { Row }                    from './components/Row';
 export { Column }                 from './components/Column';
-export { FhirResourceJsonViewer } from './components/JsonViewer/FhirJsonViewer';
 export { Tab, TabBar, TabContents, Tabs, TabsBody } from './components/Tabs';
 
 // Clinical components ---------------------------------------------------------
@@ -27,6 +26,8 @@ export { EventFeed }               from './components/EventFeed';
 export { LabTrendPanel }           from './components/Observation/LabTrendPanel';
 export { FindingCard }             from './components/FindingCard';
 export { StaticComponent }         from './components/StaticComponent';
+export { FhirResourceJsonViewer }  from './components/JsonViewer/FhirJsonViewer';
+export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
 
 // Utils -----------------------------------------------------------------------
 import * as _utils       from './utils'; 
