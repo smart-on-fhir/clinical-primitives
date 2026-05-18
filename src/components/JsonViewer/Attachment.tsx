@@ -2,7 +2,7 @@ import type { Attachment }     from "fhir/r4";
 import { useEffect, useState } from "react";
 
 
-export default function AttachmentPreview({ attachment }: { attachment: Attachment }) {
+export function AttachmentPreview({ attachment }: { attachment: Attachment }) {
     const [url, setUrl] = useState<string | null>(null);
 
     useEffect(() => {

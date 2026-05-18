@@ -1,7 +1,7 @@
 import type { DocumentReference, Resource }  from "fhir/r4";
 import { Collapse }                          from "../Collapse";
 import { JsonViewer, type JSONValue }        from ".";
-import AttachmentPreview                     from "./Attachment";
+import { AttachmentPreview }                 from "./Attachment";
 import { ResourcesByType }                   from "../../fhir/types";
 import { SquareArrowUpRight, TriangleAlert } from "lucide-react";
 
