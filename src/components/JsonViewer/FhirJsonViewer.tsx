@@ -123,7 +123,7 @@ export function createValueRenderer(allResources: ResourcesByType) {
     };
 }
 
-export default function FhirResourceJsonViewer({
+export function FhirResourceJsonViewer({
     resource,
     allResources
 }: {

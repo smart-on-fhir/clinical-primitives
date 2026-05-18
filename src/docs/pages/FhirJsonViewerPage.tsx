@@ -1,6 +1,6 @@
-import { useEffect, useRef }     from "react";
+import { useEffect, useRef }      from "react";
 import { useClinicalData }        from "../..";
-import FhirResourceJsonViewer     from "../../components/JsonViewer/FhirJsonViewer";
+import { FhirResourceJsonViewer } from "../../components/JsonViewer/FhirJsonViewer";
 import { ClinicalPageHeader }     from "../components/ClinicalPageHeader";
 import { CodeBlock }              from "../components/CodeBlock";
 import type { Observation }       from "fhir/r4";

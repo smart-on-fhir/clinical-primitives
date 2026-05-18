@@ -1,18 +1,19 @@
 
 // Basic components ------------------------------------------------------------
-export { Badge }         from './components/Badge/Badge';
-export { Button }        from './components/Button/Button';
-export { Collapse }      from './components/Collapse';
-export { DateDisplay }   from './components/Date/DateDisplay';
-export { Dialog }        from './components/Dialog';
-export { Dot }           from './components/Dot';
-export { JsonViewer }    from './components/JsonViewer';
-export { List }          from './components/List/List';
-export { ListItem }      from './components/List/ListItem';
-export { Panel }         from './components/Panel/Panel';
-export { Sparkline }     from './components/Sparkline';
-export { Row }           from './components/Row';
-export { Column }        from './components/Column';
+export { Badge }                  from './components/Badge/Badge';
+export { Button }                 from './components/Button/Button';
+export { Collapse }               from './components/Collapse';
+export { DateDisplay }            from './components/Date/DateDisplay';
+export { Dialog }                 from './components/Dialog';
+export { Dot }                    from './components/Dot';
+export { JsonViewer }             from './components/JsonViewer';
+export { List }                   from './components/List/List';
+export { ListItem }               from './components/List/ListItem';
+export { Panel }                  from './components/Panel/Panel';
+export { Sparkline }              from './components/Sparkline';
+export { Row }                    from './components/Row';
+export { Column }                 from './components/Column';
+export { FhirResourceJsonViewer } from './components/JsonViewer/FhirJsonViewer';
 export { Tab, TabBar, TabContents, Tabs, TabsBody } from './components/Tabs';
 
 // Clinical components ---------------------------------------------------------
