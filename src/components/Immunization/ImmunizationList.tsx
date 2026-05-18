@@ -4,8 +4,7 @@ import ImmunizationListItem        from "./ImmunizationListItem";
 import type { Immunization }       from "fhir/r4";
 import { Badge, Button, useClinicalData } from "../..";
 import { getName, getOccurrence, getRoute, getStatusReason } from "./utils";
-import { Panel, PanelBody, PanelToolbar } from "../Panel/Panel";
-import { PanelHeader }             from "../Panel/Panel";
+import { Panel, PanelBody, PanelToolbar, PanelHeader } from "../Panel/Panel";
 import { AppWindowIcon }           from "lucide-react";
 
 

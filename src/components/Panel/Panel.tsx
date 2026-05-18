@@ -1,17 +1,5 @@
+import { makeWrapperComponent } from "../../utils";
 import "./Panel.scss";
-
-function makeWrapperComponent(baseClass: string) {
-    return function({
-        children,
-        className,
-        ...props
-    }: {
-        children: React.ReactNode;
-        className?: string
-    } & React.HTMLAttributes<HTMLDivElement>) {
-        return <div className={`${baseClass} ${className || ''}`} {...props}>{children}</div>;
-    };
-}
 
 export const Panel        = makeWrapperComponent('cp-panel');
 export const PanelBody    = makeWrapperComponent('cp-panel-body');

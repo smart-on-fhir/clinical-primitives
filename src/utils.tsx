@@ -17,3 +17,16 @@ export function roundToPrecision(num: number, precision: number) {
     const factor = Math.pow(10, precision);
     return Math.round(num * factor) / factor;
 }
+
+export function makeWrapperComponent(baseClass: string) {
+    return function({
+        children,
+        className,
+        ...props
+    }: {
+        children: React.ReactNode;
+        className?: string
+    } & React.HTMLAttributes<HTMLDivElement>) {
+        return <div className={`${baseClass} ${className || ''}`} {...props}>{children}</div>;
+    };
+}
