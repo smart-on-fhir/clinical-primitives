@@ -9,7 +9,7 @@
         gap        : var(--cp-space-3);
         flex-shrink: 0;
         position   : relative;
-        padding    : var(--cp-space-2) var(--cp-space-2) 0 var(--cp-space-2);
+        padding    : var(--cp-space-2) 1rem 0 1rem;
 
         &:after {
             content: '';

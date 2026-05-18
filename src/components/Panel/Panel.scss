@@ -17,10 +17,10 @@
         gap            : var(--cp-space-3);
         padding        : var(--cp-space-4) var(--cp-space-4);
         flex           : 0 0 auto;
-        background     : linear-gradient(
-            var(--cp-color-win) -100%,
-            var(--cp-color-win-1) 100%
-        );
+        // background     : linear-gradient(
+        //     var(--cp-color-win) -100%,
+        //     var(--cp-color-win-1) 100%
+        // );
 
         .cp-panel-icon > * {
             display: block;
@@ -50,9 +50,9 @@
     }
 
     .cp-panel-header + .cp-panel-toolbar {
-        border-top: 1px solid var(--cp-color-win-1);
+        // border-top: 1px solid var(--cp-color-win-1);
         padding-top: 0;
-        background: var(--cp-color-win-1);
+        // background: var(--cp-color-win-1);
     }
 
     .cp-panel-body {
