@@ -26,7 +26,7 @@ export { EventFeed }               from './components/EventFeed';
 export { LabTrendPanel }           from './components/Observation/LabTrendPanel';
 export { FindingCard }             from './components/FindingCard';
 export { StaticComponent }         from './components/StaticComponent';
-export { FhirResourceJsonViewer }  from './components/JsonViewer/FhirJsonViewer';
+export { FhirResourceJsonViewer, FhirJsonDecorator }  from './components/JsonViewer/FhirJsonViewer';
 export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
 
 // Utils -----------------------------------------------------------------------

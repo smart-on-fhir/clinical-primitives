@@ -6,7 +6,7 @@ import { ResourcesByType }                   from "../../fhir/types";
 import { SquareArrowUpRight, TriangleAlert } from "lucide-react";
 
 
-export function Decorator({ children, type }: { children: React.ReactNode; type?: 'number' | 'boolean' | 'string' }) {
+export function FhirJsonDecorator({ children, type }: { children: React.ReactNode; type?: 'number' | 'boolean' | 'string' }) {
     
     if (typeof children === 'string') {
         
