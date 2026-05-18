@@ -32,6 +32,7 @@
     "dev:lib": "concurrently -k -n types,bundle -c yellow,cyan \"npm:watch:types\" \"npm:watch:bundle\"",
     "dev": "vite",
     "preview": "vite preview",
+    "prepare": "npm run build:lib",
     "prepublishOnly": "npm run build:lib"
   },
   "repository": {
