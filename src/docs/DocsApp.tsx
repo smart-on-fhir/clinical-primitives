@@ -10,6 +10,7 @@ import { ObservationCardPage }    from './pages/ObservationCardPage';
 import { EventFeedPage }          from './pages/EventFeedPage';
 import { ObservationsPanelPage }  from './pages/ObservationsPanelPage';
 import { LabTrendPanelPage }      from './pages/LabTrendPanelPage';
+import { FindingCardPage }        from './pages/FindingCardPage';
 import { ClinicalDataProvider }   from '../index';
 import { DocsThemeContext }       from './components/DocsThemeContext';
 
@@ -89,6 +90,7 @@ export function DocsApp() {
     'event-feed':          <EventFeedPage />,
     'observations-panel':  <ObservationsPanelPage />,
     'lab-trend-panel':     <LabTrendPanelPage />,
+    'finding-card':        <FindingCardPage />,
   }[activeSection];
 
   return (

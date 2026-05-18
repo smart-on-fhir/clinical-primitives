@@ -11,6 +11,8 @@ export { List }          from './components/List/List';
 export { ListItem }      from './components/List/ListItem';
 export { Panel }         from './components/Panel/Panel';
 export { Sparkline }     from './components/Sparkline';
+export { Row }           from './components/Row';
+export { Column }        from './components/Column';
 export { Tab, TabBar, TabContents, Tabs, TabsBody } from './components/Tabs';
 
 // Clinical components ---------------------------------------------------------
@@ -22,6 +24,8 @@ export { ObservationHistoryTable } from './components/Observation/ObservationHis
 export { ObservationsPanel }       from './components/Observation/ObservationsPanel';
 export { EventFeed }               from './components/EventFeed';
 export { LabTrendPanel }           from './components/Observation/LabTrendPanel';
+export { FindingCard }             from './components/FindingCard';
+export { StaticComponent }         from './components/StaticComponent';
 
 // Utils -----------------------------------------------------------------------
 import * as _utils       from './utils'; 

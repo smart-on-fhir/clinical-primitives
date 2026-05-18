@@ -1,0 +1,99 @@
+.cp-finding-card {
+    --color: var(--cp-color-txt);
+    --color-weak: color-mix(in srgb, var(--color) 35%, var(--cp-color-win));
+    --color-weak-2: color-mix(in srgb, var(--color) 10%, var(--cp-color-win));
+    --color-strong: color-mix(in srgb, var(--color) 75%, var(--cp-color-txt));
+    --color-strong-2: color-mix(in srgb, var(--color) 55%, var(--cp-color-txt));
+
+    border: 2px solid var(--color-weak);
+    border-radius: 1rem;
+    background-color: var(--color-weak-2);
+    
+    .cp-finding-card-header {
+        border-bottom: 1px solid var(--color-weak);
+        padding: var(--cp-space-4);
+        color: var(--cp-color-txt-6);
+        display: flex;
+        gap: var(--cp-space-4);
+    }
+
+    .confidence-level-pct {
+        color: var(--color-strong);
+        font-size: var(--cp-text-sm);
+    }
+
+    .cp-finding-card-title {
+        color: var(--color-strong);
+        font-weight: 400;
+        font-size: var(--cp-text-lg);
+    }
+
+    .cp-badge {
+        background-color: var(--color-weak);
+        color: var(--color-strong);
+    }
+
+    .cp-finding-card-body {
+        background-color: var(--cp-color-win);
+        padding: var(--cp-space-4);
+    }
+
+    .cp-finding-card-heading {
+        color: var(--cp-color-txt-6);
+        text-transform: uppercase;
+        font-size: var(--cp-text-sm);
+        letter-spacing: 0.1em;
+        margin: 0 0 1em;
+    }
+
+    .cp-finding-card-footer {
+        background-color: var(--cp-color-win);
+        border-radius: 0 0 1rem 1rem;
+        padding: var(--cp-space-4);
+        border-top: 1px solid var(--cp-color-win-1);
+        display: flex;
+        gap: var(--cp-space-4);
+
+        button {
+            padding: 0.5em 1em;
+            // border-radius: 5em;
+            border: 1px solid var(--cp-color-win-2);
+            background-color: var(--cp-color-win);
+            color: var(--cp-color-txt-4);
+            border-radius: var(--cp-radius-md);
+            cursor: pointer;
+
+            &.primary {
+                background-color: var(--color-weak-2);
+                color: var(--color-strong);
+                border-color: var(--color-weak);
+            }
+        }
+    }
+
+    .cp-progress {
+        width: 100%;
+        background-color: var(--cp-color-win-2);
+        height: 0.35em;
+        border-radius: 5em;
+        vertical-align: middle;
+        display: inline-block;
+
+        .cp-progress-value {
+            background-color: var(--color);
+            font-size: var(--cp-text-xs);
+            height: 100%;
+            border-radius: 5em;
+        }
+    }
+
+    &.cp-finding-card--low {
+        --color: var(--cp-color-yellow);
+    }
+    &.cp-finding-card--moderate {
+        --color: var(--cp-color-amber);
+    }
+    &.cp-finding-card--high {
+        --color: var(--cp-color-red);
+    }
+}
