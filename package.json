@@ -72,6 +72,7 @@
   "dependencies": {
     "@types/fhir": "^0.0.41",
     "lucide-react": "^1.14.0",
-    "react-syntax-highlighter": "^16.1.1"
+    "react-syntax-highlighter": "^16.1.1",
+    "recharts": "^3.8.1"
   }
 }

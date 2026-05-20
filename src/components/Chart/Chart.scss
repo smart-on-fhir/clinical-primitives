@@ -1,0 +1,90 @@
+.cp-chart {
+    width: 100%;
+
+    // Inherit the app font so tick labels match the surrounding UI.
+    .recharts-wrapper,
+    .recharts-surface {
+        font-family: inherit;
+    }
+
+    .recharts-radar .recharts-polar-angle-axis-tick-line,
+    .recharts-radar .recharts-polar-angle-axis-line,
+    .recharts-polar-grid-concentric-polygon,
+    .recharts-polar-grid-angle line
+    {
+        stroke: var(--cp-color-win-3);
+    }
+    .recharts-text.recharts-polar-angle-axis-tick-value {
+        fill: var(--cp-color-txt-4);
+    }
+
+    .recharts-trapezoid {
+        stroke: var(--cp-color-win);
+    }
+    .recharts-pie .recharts-sector {
+        stroke: var(--cp-color-win);
+    }
+
+    .recharts-polar-radius-axis-line {
+        stroke: #FFF3;
+        mix-blend-mode: difference;
+    }
+    .recharts-layer.recharts-polar-radius-axis-ticks {
+        text {
+            fill: #FFF6;
+            mix-blend-mode: difference;
+        }
+    }
+
+    .recharts-radial-bar-background-sector {
+        fill: var(--cp-color-win-1);
+    }
+
+    // Axis tick text
+    .recharts-cartesian-axis-tick-value,
+    .recharts-polar-angle-axis-tick-value {
+        fill: var(--cp-color-txt-2);
+        font-size: 0.72rem;
+    }
+
+    // Axis labels
+    .recharts-label {
+        fill: var(--cp-color-txt-3);
+        font-size: 0.75rem;
+    }
+
+    // Grid lines
+    .recharts-cartesian-grid-horizontal line,
+    .recharts-cartesian-grid-vertical line {
+        stroke: var(--cp-color-win-2);
+    }
+
+    // Axis lines and ticks
+    .recharts-cartesian-axis-line,
+    .recharts-cartesian-axis-tick-line {
+        stroke: var(--cp-color-win-4);
+    }
+
+    // Legend text
+    .recharts-legend-item-text {
+        color: var(--cp-color-txt-2) !important;
+        font-size: 0.8rem;
+    }
+
+    // Default tooltip styling — consumers can override via className.
+    .recharts-default-tooltip {
+        border-radius: var(--cp-radius-md, 6px);
+        border-color: var(--cp-color-win-3) !important;
+        background: var(--cp-color-win) !important;
+        font-size: 0.8rem;
+
+        .recharts-tooltip-label {
+            color: var(--cp-color-txt-2);
+            margin-bottom: 4px;
+        }
+
+        .recharts-tooltip-item {
+            color: var(--cp-color-txt) !important;
+        }
+    }
+}

@@ -8,7 +8,9 @@ export const sections = [
   { id: 'observation-card',    label: 'ObservationCard',        path: '/observation-card'      },
   { id: 'event-feed',          label: 'EventFeed',              path: '/event-feed'            },
   { id: 'observations-panel',  label: 'ObservationsPanel',      path: '/observations-panel'    },
-  { id: 'lab-trend-panel',     label: 'LabTrendPanel',          path: '/lab-trend-panel'       },  { id: 'finding-card',        label: 'FindingCard',             path: '/finding-card'          },] as const;
+  { id: 'lab-trend-panel',     label: 'LabTrendPanel',          path: '/lab-trend-panel'       },  { id: 'finding-card',        label: 'FindingCard',             path: '/finding-card'          },
+  { id: 'chart',               label: 'Chart',                  path: '/chart'                 },
+] as const;
 
 export type SectionId = (typeof sections)[number]['id'];
 

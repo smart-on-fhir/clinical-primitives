@@ -11,6 +11,8 @@ export { List }                   from './components/List/List';
 export { ListItem }               from './components/List/ListItem';
 export { Panel }                  from './components/Panel/Panel';
 export { Sparkline }              from './components/Sparkline';
+export { Chart }                  from './components/Chart';
+export type { ChartProps, ChartType, SeriesDef, PieSlice, ChartDataRecord } from './components/Chart';
 export { Row }                    from './components/Row';
 export { Column }                 from './components/Column';
 export { Tab, TabBar, TabContents, Tabs, TabsBody } from './components/Tabs';

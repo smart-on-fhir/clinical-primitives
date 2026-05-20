@@ -23,7 +23,7 @@ export function ClinicalPageHeader({ title }: { title: string }) {
                       </span>
                 }
             </div>
-            <hr className="mb-6" />
+            <hr className="mb-6 cp-border-win-3 cp-border-solid" />
         </>
     );
 }
