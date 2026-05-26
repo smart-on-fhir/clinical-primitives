@@ -177,7 +177,12 @@ export function ObservationCard({
     );
 }
 
-export function ObservationCardWrapper({ observationId, style }: { observationId: string, style?: CSSProperties  }) {
+export interface ObservationCardWrapperProps {
+    observationId: string;
+    style?: CSSProperties;
+}
+
+export function ObservationCardWrapper({ observationId, style }: ObservationCardWrapperProps) {
     const { resources } = useClinicalData();    
     const observations  = resources?.Observation || [];
     const observation   = observations.find(o => o.id === observationId) as Observation | undefined;

@@ -150,18 +150,16 @@ function computeRowData(entry: LabTrendEntry, allObs: Observation[]): RowData | 
 // Component
 // ---------------------------------------------------------------------------
 
-export function LabTrendPanel({
-    title = "Lab Trends",
-    meta,
-    labs,
-}: {
+export interface LabTrendPanelProps {
     /** Panel header title */
     title?: ReactNode;
     /** Optional subtitle, e.g. "Last 5 draws · most recent right" */
     meta?: ReactNode;
     /** Ordered list of lab entries to display */
     labs: (LabTrendEntry | keyof typeof LABS)[];
-}) {
+}
+
+export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPanelProps) {
     const { resources } = useClinicalData();
     const allObs = (resources.Observation ?? []) as unknown as Observation[];
 

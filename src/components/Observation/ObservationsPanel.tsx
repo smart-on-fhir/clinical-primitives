@@ -221,7 +221,12 @@ export function ObservationsPanel({
     );
 }
 
-export function ObservationsPanelWrapper({ title, filters }: { title?: string; filters?: (keyof typeof FILTERS)[] }) {
+export interface ObservationsPanelWrapperProps {
+    title?: string;
+    filters?: (keyof typeof FILTERS)[];
+}
+
+export function ObservationsPanelWrapper({ title, filters }: ObservationsPanelWrapperProps) {
     return (
         <ObservationsPanel
             title={title ?? "Observations"}
