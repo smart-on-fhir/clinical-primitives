@@ -18,6 +18,7 @@ import {
 import './EventFeed.scss';
 import { Badge } from '../Badge/Badge';
 import { FunnelIcon } from 'lucide-react';
+import { useClinicalData } from '../../library';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -610,4 +611,13 @@ export function EventFeed({
             )}
         </div>
     );
+}
+
+// ---------------------------------------------------------------------------
+// Wrapper
+// ---------------------------------------------------------------------------
+
+export function EventFeedWrapper(props: Omit<Parameters<typeof EventFeed>[0], 'resources'>) {
+    const { resources } = useClinicalData();
+    return <EventFeed resources={resources} {...props} />;
 }

@@ -5,8 +5,8 @@ import { Row }                      from "./Row";
 import { MedicationListWrapper }    from "./Medication/MedicationList";
 import { ObservationCardWrapper, ObservationCardWrapperProps }   from "./Observation";
 import { ObservationsPanelWrapper, ObservationsPanelWrapperProps } from "./Observation/ObservationsPanel";
-import { EventFeed, LabTrendPanel }            from "../library";
-import type { RangeOption } from "./EventFeed";
+import { LabTrendPanel }            from "../library";
+import { EventFeedWrapper, type RangeOption } from "./EventFeed";
 import { LabTrendPanelProps } from "./Observation/LabTrendPanel";
 import { Chart } from "./Chart";
 import type { ChartProps, ChartType } from "./Chart";
@@ -154,7 +154,7 @@ export function StaticComponent({ instruction }: { instruction: string | Instruc
                 return <ComponentErrorBoundary><ImmunizationListWrapper title={parsed.title} /></ComponentErrorBoundary>;
             case "event_feed": {
                 const { type: _, ...props } = parsed;
-                return <ComponentErrorBoundary><EventFeed {...sanitizeProps(props) as any} /></ComponentErrorBoundary>;
+                return <ComponentErrorBoundary><EventFeedWrapper {...sanitizeProps(props) as any} /></ComponentErrorBoundary>;
             }
             case "column": {
                 const { type: _, children, ...columnRest } = parsed;
