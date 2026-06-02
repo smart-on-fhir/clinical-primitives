@@ -135,6 +135,29 @@ export function Chart({
     let chartData: ChartDataRecord[] = data ?? [];
     let resolvedSeries: SeriesDef[]  = series ?? [];
 
+    // Guard: detect empty or all-null data before wasting a render
+    const isPolarGuard = ['pie', 'radialBar', 'funnel', 'treemap'].includes(type);
+    const hasSlices    = slices && slices.length > 0;
+    const hasData      = chartData.length > 0;
+    const hasNamedData = isPolarGuard && (hasSlices || hasData);
+
+    if (!isPolarGuard && !hasData) {
+        return (
+            <div className={`cp-chart ${className} d-flex align-items-center justify-content-center text-muted`.trim()}
+                 style={{ height, border: '1px dashed var(--bs-border-color)', borderRadius: 6 }}>
+                No chart data available
+            </div>
+        );
+    }
+    if (isPolarGuard && !hasNamedData) {
+        return (
+            <div className={`cp-chart ${className} d-flex align-items-center justify-content-center text-muted`.trim()}
+                 style={{ height, border: '1px dashed var(--bs-border-color)', borderRadius: 6 }}>
+                No chart data available
+            </div>
+        );
+    }
+
     const isPolar    = ['pie', 'radialBar', 'funnel', 'treemap'].includes(type);
     const isScatter  = type === 'scatter';
 

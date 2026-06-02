@@ -67,6 +67,11 @@ export const LABS = {
     MPV:          { label: "MPV",          loincs: ['32623-4', '28542-9'],            keywords: ['mean platelet volume', 'mpv']},
     ALT:          { label: "ALT",          loincs: ['1742-6', '1743-4'],              keywords: ['alanine aminotransferase', 'alt', 'sgpt']},
     AST:          { label: "AST",          loincs: ['1920-8', '30239-8'],             keywords: ['aspartate aminotransferase', 'ast', 'sgot']},
+    HeartRate:    { label: "Heart Rate",   loincs: ['8867-4'],                        keywords: ['heart rate', 'pulse rate']},
+    OxygenSat:    { label: "O₂ Sat",       loincs: ['2708-6', '59408-5'],             keywords: ['oxygen saturation', 'spo2', 'o2 sat']},
+    Temperature:  { label: "Temperature",  loincs: ['8310-5', '8331-1'],              keywords: ['body temperature', 'temperature']},
+    RespRate:     { label: "Resp Rate",    loincs: ['9279-1'],                        keywords: ['respiratory rate', 'respiration rate', 'breathing rate']},
+    BloodPressure:{ label: "Blood Pressure",loincs: ['8480-6', '8462-4', '55284-4'],  keywords: ['blood pressure', 'systolic', 'diastolic']},
 } as const;
 
 export const FILTERS: Record<string, ObservationFilter> = {

@@ -12,6 +12,7 @@ export function Dot({ color = 'var(--cp-color-win-7)', style, ...props }: DotPro
         backgroundColor: `rgba(from ${color} r g b / 0.5)`,
         position: 'relative',
         top: '0.1em',
+        flexShrink: 0,
         ...style,
     }} {...props} />;
 }
