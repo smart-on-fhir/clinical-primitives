@@ -196,27 +196,31 @@ export function ObservationsPanel({
                     </Button>
                 </div> }
             </div>
-            { isEmpty ?
-                <div className="obs-empty">No observations to display.</div> :
-                tabs.length > 1 ?
-                    <Tabs>
-                        <TabBar>
-                            {tabs.map((t, i) => (
-                                <Tab key={i} hidden={t.hidden} style={{ display: 'flex', gap: '0.5em', alignItems: 'center' }}>
-                                    {t.label} <Badge variant="muted" className="cp-text-xs">{t.count}</Badge>
-                                </Tab>
-                            ))}
-                        </TabBar>
-                        <TabsBody>
-                            {tabs.map((t, i) => (
-                                <TabContents key={i} hidden={t.hidden}>
-                                    {t.content}
-                                </TabContents>
-                            ))}
-                        </TabsBody>
-                    </Tabs> :
-                    <div className="obs-empty">No observations to display.</div>
-            }
+
+            { isEmpty ? (
+                <div className="obs-empty">No observations to display.</div>
+            ) : tabs.length === 1 ? (
+                tabs[0].count > 0
+                    ? tabs[0].content
+                    : <div className="obs-empty">No observations in this category.</div>
+            ) : (
+                <Tabs>
+                    <TabBar>
+                        {tabs.map((t, i) => (
+                            <Tab key={i} hidden={t.hidden} style={{ display: 'flex', gap: '0.5em', alignItems: 'center' }}>
+                                {t.label} <Badge variant="muted" className="cp-text-xs">{t.count}</Badge>
+                            </Tab>
+                        ))}
+                    </TabBar>
+                    <TabsBody>
+                        {tabs.map((t, i) => (
+                            <TabContents key={i} hidden={t.hidden}>
+                                {t.content}
+                            </TabContents>
+                        ))}
+                    </TabsBody>
+                </Tabs>
+            )}
         </div>
     );
 }
