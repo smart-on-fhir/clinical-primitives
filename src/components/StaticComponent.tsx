@@ -79,6 +79,7 @@ interface RowComponentParsedProps {
     type: "row";
     children: Instruction | Instruction[];
     className?: string;
+    cols?: string;
 }
 
 type StaticComponentParsedProps =
