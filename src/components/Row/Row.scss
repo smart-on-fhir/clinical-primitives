@@ -8,7 +8,7 @@
     align-items: stretch;
     align-content: stretch;
 
-    .cp-row:has([class*="cp-"]) {
+    &:has([class*="cp-"]) {
         min-height: 500px;
     }
 }
