@@ -10,11 +10,36 @@
     background-color: var(--color-weak-2);
     
     .cp-finding-card-header {
-        border-bottom: 1px solid var(--color-weak);
+        // border-bottom: 1px solid var(--color-weak);
         padding: var(--cp-space-4);
         color: var(--cp-color-txt-6);
         display: flex;
         gap: var(--cp-space-4);
+        align-items: center;
+        flex-wrap: wrap;
+
+        p {
+            margin: 0;
+            font-size: var(--cp-text-sm);
+        }
+
+        .cp-badge {
+            display: block;
+            white-space: normal;
+            word-wrap: unset;
+        }
+    }
+
+    .cp-finding-card-header-main {
+        flex: 1 1 0;
+        min-width: 70%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+    }
+
+    &:has(.cp-finding-card-body, .cp-finding-card-footer) .cp-finding-card-header {
+        border-bottom: 1px solid var(--color-weak);
     }
 
     .confidence-level-pct {
@@ -24,11 +49,11 @@
 
     .cp-finding-card-title {
         color: var(--color-strong);
-        font-weight: 400;
+        font-weight: 500;
         font-size: var(--cp-text-lg);
     }
 
-    .cp-badge {
+    .cp-finding-card-header .cp-badge {
         background-color: var(--color-weak);
         color: var(--color-strong);
     }
@@ -36,6 +61,141 @@
     .cp-finding-card-body {
         background-color: var(--cp-color-win);
         padding: var(--cp-space-4);
+    }
+
+    // ── Evidence grid ────────────────────────────────────────────────────
+    // Lab/vital cells are half-width (span 1); all other item types span
+    // both columns so they render as full-width rows.
+    .cp-ev-items {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .cp-ev-cell {
+        grid-column: span 1;
+        background: var(--cp-color-win-1);
+        border-radius: var(--cp-radius-md);
+        padding: 10px 12px;
+    }
+
+    .cp-ev-row {
+        grid-column: span 2;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.5em 0;
+        border-top: 1px solid var(--cp-color-win-1);
+        margin-bottom: -8px;
+
+        &:first-child { border-top: none; }
+        &:last-child { margin-bottom: auto; }
+
+        &--doc { align-items: flex-start; flex-direction: column; }
+    }
+
+    .cp-ev-name { font-size: var(--cp-text-sm); color: var(--cp-color-txt-6); margin-bottom: 4px; font-weight: 600; }
+
+    .cp-ev-val {
+        font-size: 200%;
+        font-weight: 200;
+        color: var(--cp-color-txt);
+        line-height: 1;
+
+        &--flag     { color: var(--color); }
+        &--critical { color: var(--color-strong); }
+    }
+
+    .cp-ev-unit { font-size: var(--cp-text-sm); font-weight: 300; }
+    .cp-ev-sub  { font-size: var(--cp-text-xs); color: var(--cp-color-txt-6); margin-top: 3px; }
+
+    .cp-ev-row-label { flex: 1; font-size: var(--cp-text-sm); color: var(--cp-color-txt); font-weight: 500; }
+    .cp-ev-row-note  { color: var(--cp-color-txt-6); font-size: var(--cp-text-xs); }
+    .cp-ev-row-meta  { display: flex; align-items: center; gap: 6px; }
+
+    .cp-ev-doc-title   { font-size: var(--cp-text-sm); color: var(--cp-color-txt); }
+    .cp-ev-doc-snippet { font-size: var(--cp-text-xs); color: var(--cp-color-txt-6); margin-top: 3px; line-height: 1.5; }
+
+    .cp-ev-narrative-wrap {
+        grid-column: span 2;
+        padding: 8px 0;
+        border-top: 1px solid var(--cp-color-win-1);
+
+        &:first-child { border-top: none; padding-top: 0; }
+    }
+
+    .cp-ev-narrative {
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-5);
+        line-height: 1.6;
+        margin: 0 0 0.5em;
+
+        &:last-child { margin-bottom: 0; }
+
+        strong { color: var(--cp-color-txt-3); font-weight: 600; }
+        em     { font-style: italic; }
+        code   { font-family: monospace; font-size: 0.9em; background: var(--cp-color-win-2); padding: 0.1em 0.35em; border-radius: 3px; }
+    }
+
+    .cp-ev-md-list {
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-5);
+        line-height: 1.6;
+        margin: 0 0 0.5em 1.2em;
+        padding: 0;
+
+        &:last-child { margin-bottom: 0; }
+
+        li { margin-bottom: 0.2em; }
+        strong { color: var(--cp-color-txt-3); font-weight: 600; }
+        em     { font-style: italic; }
+        code   { font-family: monospace; font-size: 0.9em; background: var(--cp-color-win-2); padding: 0.1em 0.35em; border-radius: 3px; }
+    }
+
+    .cp-ev-cohort {
+        grid-column: span 2;
+        background: var(--cp-color-win-1);
+        border-radius: var(--cp-radius-md);
+        padding: 10px 12px;
+    }
+
+    .cp-ev-cohort-stat {
+        font-size: var(--cp-text-base);
+        font-weight: 500;
+        color: var(--color-strong);
+        margin-bottom: 4px;
+    }
+
+    .cp-ev-cohort-desc {
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-6);
+        line-height: 1.5;
+    }
+
+    .cp-ev-score {
+        grid-column: span 2;
+        background: var(--cp-color-win-1);
+        border-radius: var(--cp-radius-md);
+        padding: 0.5em 0.75em;
+    }
+
+    .cp-ev-score-name {
+        // font-size: var(--cp-text-sm);
+        font-weight: 500;
+        color: var(--cp-color-txt);
+    }
+
+    .cp-ev-score-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-4);
+        padding: 0.5em 0;
+        border-top: 1px dashed var(--cp-color-win-3);
+
+        &:nth-child(2) {
+            border-top: 2px solid var(--cp-color-win-3);
+        }
     }
 
     .cp-finding-card-heading {
@@ -53,27 +213,42 @@
         border-top: 1px solid var(--cp-color-win-1);
         display: flex;
         gap: var(--cp-space-4);
+        flex-wrap: wrap;
+    }
 
-        button {
-            padding: 0.5em 1em;
-            // border-radius: 5em;
-            border: 1px solid var(--cp-color-win-2);
-            background-color: var(--cp-color-win);
-            color: var(--cp-color-txt-4);
-            border-radius: var(--cp-radius-md);
-            cursor: pointer;
+    .cp-finding-card-header button,
+    .cp-finding-card-footer button {
+        padding: 0.5em 1em;
+        // border-radius: 5em;
+        border: 1px solid currentColor;
+        background-color: var(--cp-color-win);
+        color: var(--cp-color-txt-4);
+        border-radius: var(--cp-radius-md);
+        cursor: pointer;
 
-            &.primary {
-                background-color: var(--color-weak-2);
-                color: var(--color-strong);
-                border-color: var(--color-weak);
-            }
+        &.primary {
+            background-color: var(--color-weak-2);
+            color: var(--color-strong);
+            border-color: var(--color-weak);
         }
+    }
+
+    .cp-finding-card-footer button {
+        border-color: var(--cp-color-win-3);
+    }
+    .cp-finding-card-header button {
+        border-color: var(--color-weak);
+    }
+
+    .cp-finding-card-footer .cp-finding-card-action-button {
+        border-color: var(--color-weak);
+        background-color: var(--color-weak-2);
+        color: var(--color-strong);
     }
 
     .cp-progress {
         width: 100%;
-        background-color: var(--cp-color-win-2);
+        background-color: rgba(from var(--cp-color-txt) r g b / 0.2);
         height: 0.35em;
         border-radius: 5em;
         vertical-align: middle;
@@ -88,7 +263,7 @@
     }
 
     &.cp-finding-card--low {
-        --color: var(--cp-color-yellow);
+        --color: var(--cp-color-teal);
     }
     &.cp-finding-card--moderate {
         --color: var(--cp-color-amber);
