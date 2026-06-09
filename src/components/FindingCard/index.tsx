@@ -228,7 +228,7 @@ function EvidenceItemView({ item }: { item: EvidenceItem }) {
 // FindingCard
 // ---------------------------------------------------------------------------
 
-interface FindingCardProps {
+export interface FindingCardProps {
     /** What is the finding? */
     title: ReactNode;
 

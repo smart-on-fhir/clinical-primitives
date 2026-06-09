@@ -5,7 +5,8 @@ import { Row }                      from "./Row";
 import { MedicationListWrapper }    from "./Medication/MedicationList";
 import { ObservationCardWrapper, ObservationCardWrapperProps }   from "./Observation";
 import { ObservationsPanelWrapper, ObservationsPanelWrapperProps } from "./Observation/ObservationsPanel";
-import { LabTrendPanel }            from "../library";
+import { FindingCard, LabTrendPanel }            from "../library";
+import type { FindingCardProps, EvidenceTab } from "./FindingCard";
 import { EventFeedWrapper, type RangeOption } from "./EventFeed";
 import { LabTrendPanelProps } from "./Observation/LabTrendPanel";
 import { Chart } from "./Chart";
@@ -53,6 +54,14 @@ interface ChartComponentParsedProps extends Omit<ChartProps, 'type'> {
     chartType: ChartType;
 }
 
+// actionButtons and dismiss are functions — they can't come from JSON, so omitted here.
+interface FindingCardComponentParsedProps extends Omit<FindingCardProps, 'title' | 'description' | 'actionButtons' | 'dismiss'> {
+    type: "finding_card";
+    title: string;
+    description?: string;
+    evidenceTabs?: EvidenceTab[];
+}
+
 interface EventFeedComponentParsedProps {
     type: "event_feed";
     title?: string;
@@ -88,6 +97,7 @@ type StaticComponentParsedProps =
     ObservationPanelComponentParsedProps |
     LabTrendPanelComponentParsedProps |
     ChartComponentParsedProps |
+    FindingCardComponentParsedProps |
     EventFeedComponentParsedProps |
     ListComponentParsedProps |
     ColumnComponentParsedProps |
@@ -156,6 +166,10 @@ export function StaticComponent({ instruction }: { instruction: string | Instruc
             case "event_feed": {
                 const { type: _, ...props } = parsed;
                 return <ComponentErrorBoundary><EventFeedWrapper {...sanitizeProps(props) as any} /></ComponentErrorBoundary>;
+            }
+            case "finding_card": {
+                const { type: _, ...props } = parsed;
+                return <ComponentErrorBoundary><FindingCard {...sanitizeProps(props) as typeof props} /></ComponentErrorBoundary>;
             }
             case "column": {
                 const { type: _, children, ...columnRest } = parsed;
