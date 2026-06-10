@@ -118,6 +118,18 @@
     .cp-ev-doc-title   { font-size: var(--cp-text-sm); color: var(--cp-color-txt); }
     .cp-ev-doc-snippet { font-size: var(--cp-text-xs); color: var(--cp-color-txt-6); margin-top: 3px; line-height: 1.5; }
 
+    .cp-ev-link {
+        // color: var(--color-strong);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+        text-decoration-thickness: 0.5px;
+        &:hover {
+            opacity: 0.7;
+            text-decoration-thickness: 2px;
+        }
+    }
+
     .cp-ev-narrative-wrap {
         grid-column: span 2;
         padding: 8px 0;

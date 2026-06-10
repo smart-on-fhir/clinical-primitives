@@ -146,11 +146,13 @@ function DocRow({ item }: { item: EvidenceImagingItem | EvidenceNoteItem }) {
 // ---------------------------------------------------------------------------
 
 function renderInline(text: string): React.ReactNode[] {
-    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/);
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/);
     return parts.map((part, i) => {
         if (/^\*\*(.+)\*\*$/.test(part)) return <strong key={i}>{part.slice(2, -2)}</strong>;
         if (/^\*(.+)\*$/.test(part))     return <em key={i}>{part.slice(1, -1)}</em>;
         if (/^`(.+)`$/.test(part))       return <code key={i}>{part.slice(1, -1)}</code>;
+        const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (link) return <a key={i} href={link[2]} className="cp-ev-link">{link[1]}</a>;
         return part;
     });
 }
