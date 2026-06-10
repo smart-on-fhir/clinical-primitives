@@ -8,6 +8,8 @@
     border: 2px solid var(--color-weak);
     border-radius: 1rem;
     background-color: var(--color-weak-2);
+    overflow: hidden;
+    overflow: clip;
     
     .cp-finding-card-header {
         // border-bottom: 1px solid var(--color-weak);

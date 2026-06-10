@@ -130,11 +130,11 @@ function DocRow({ item }: { item: EvidenceImagingItem | EvidenceNoteItem }) {
     return (
         <div className="cp-ev-row cp-ev-row--doc">
             <div className="cp-ev-doc-title">
-                {item.title}
+                {renderInline(item.title)}
                 {item.date && <span className="cp-ev-row-note"> · {item.date}</span>}
             </div>
-            {'conclusion' in item && item.conclusion && <div className="cp-ev-doc-snippet">{item.conclusion}</div>}
-            {'snippet'    in item && item.snippet    && <div className="cp-ev-doc-snippet">{item.snippet}</div>}
+            {'conclusion' in item && item.conclusion && <div className="cp-ev-doc-snippet">{renderMarkdown(item.conclusion)}</div>}
+            {'snippet'    in item && item.snippet    && <div className="cp-ev-doc-snippet">{renderMarkdown(item.snippet)}</div>}
         </div>
     );
 }
