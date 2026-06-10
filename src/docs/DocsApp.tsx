@@ -12,6 +12,7 @@ import { ObservationsPanelPage }  from './pages/ObservationsPanelPage';
 import { LabTrendPanelPage }      from './pages/LabTrendPanelPage';
 import { FindingCardPage }        from './pages/FindingCardPage';
 import { ChartPage }              from './pages/ChartPage';
+import { Playground }             from './pages/StaticComponentPlayground';
 import { ClinicalDataProvider }   from '../index';
 import { DocsThemeContext }       from './components/DocsThemeContext';
 
@@ -93,6 +94,7 @@ export function DocsApp() {
     'lab-trend-panel':     <LabTrendPanelPage />,
     'finding-card':        <FindingCardPage />,
     'chart':               <ChartPage />,
+    'playground':          <Playground />,
   }[activeSection];
 
   return (
