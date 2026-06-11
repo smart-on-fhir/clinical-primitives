@@ -13,7 +13,12 @@ const akiTabs: EvidenceTab[] = [
             { kind: 'lab',  name: 'eGFR (today)',       value: '32',  unit: 'mL/min', sub: 'Was 58 on admission',           flag: 'high'     },
             { kind: 'lab',  name: 'BUN',                value: '34',  unit: 'mg/dL',  sub: 'Ref 7-25',                      flag: 'high'     },
             { kind: 'lab',  name: 'Urine output',       value: '340', unit: 'mL/8h',  sub: 'Oliguria threshold <400 mL/8h', flag: 'high'     },
-            { kind: 'narrative', text: 'Creatinine **rise ≥0.3 mg/dL within 48h** meets KDIGO Stage 1 AKI criteria. Concurrent oliguria suggests **progression to Stage 2**.' },
+            {
+                kind: 'narrative',
+                text: `Creatinine **rise ≥0.3 mg/dL within 48h** meets KDIGO Stage 1 AKI criteria. Concurrent oliguria suggests **progression to Stage 2**.
+    Supporting documents: [Progress Note, 2025-12-26 — Sophia Delano MD](fhir:DocumentReference/e5Al2AtZYMgBLlx8HmkUg28P2zcMaxEWBUmIQ183Qc-43),
+    [Progress Note, 2025-11-30 — Molly M Devine CNP](fhir:DocumentReference/e3TGJYkvchnbh5MKgMgm-v9QiQ4tJWkr3ycqdyspLwlg3)`
+            },
         ],
     },
     {

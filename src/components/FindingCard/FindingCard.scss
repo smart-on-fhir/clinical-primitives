@@ -130,6 +130,8 @@
         }
     }
 
+    // narrative ---------------------------------------------------------------
+
     .cp-ev-narrative-wrap {
         grid-column: span 2;
         padding: 8px 0;
@@ -141,7 +143,7 @@
     .cp-ev-narrative {
         font-size: var(--cp-text-sm);
         color: var(--cp-color-txt-5);
-        line-height: 1.6;
+        line-height: 1.4;
         margin: 0 0 0.5em;
 
         &:last-child { margin-bottom: 0; }
@@ -150,6 +152,8 @@
         em     { font-style: italic; }
         code   { font-family: monospace; font-size: 0.9em; background: var(--cp-color-win-2); padding: 0.1em 0.35em; border-radius: 3px; }
     }
+
+    // medications -------------------------------------------------------------
 
     .cp-ev-md-list {
         font-size: var(--cp-text-sm);
@@ -165,6 +169,8 @@
         em     { font-style: italic; }
         code   { font-family: monospace; font-size: 0.9em; background: var(--cp-color-win-2); padding: 0.1em 0.35em; border-radius: 3px; }
     }
+
+    // cohort ------------------------------------------------------------------
 
     .cp-ev-cohort {
         grid-column: span 2;
@@ -185,6 +191,8 @@
         color: var(--cp-color-txt-6);
         line-height: 1.5;
     }
+
+    // score -------------------------------------------------------------------
 
     .cp-ev-score {
         grid-column: span 2;
@@ -221,13 +229,15 @@
     }
 
     .cp-finding-card-footer {
-        background-color: var(--cp-color-win);
+        background-color: color-mix(var(--cp-color-win), var(--cp-color-txt) 2%);
         border-radius: 0 0 1rem 1rem;
         padding: var(--cp-space-4);
-        border-top: 1px solid var(--cp-color-win-1);
         display: flex;
         gap: var(--cp-space-4);
         flex-wrap: wrap;
+    }
+    .cp-finding-card-body + .cp-finding-card-footer {
+        border-top: 1px solid color-mix(var(--cp-color-win), var(--cp-color-txt) 7%);
     }
 
     .cp-finding-card-header button,
@@ -262,7 +272,8 @@
 
     .cp-progress {
         width: 100%;
-        background-color: rgba(from var(--cp-color-txt) r g b / 0.2);
+        background-color: rgba(from var(--cp-color-txt) r g b / 0.1);
+        box-shadow: 0 0 0 1px rgba(from var(--cp-color-txt) r g b / 0.1) inset;
         height: 0.35em;
         border-radius: 5em;
         vertical-align: middle;
