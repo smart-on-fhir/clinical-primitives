@@ -1,0 +1,80 @@
+.cp-alert {
+    --border-color: var(--cp-color-win-3);
+    --bg-color    : var(--cp-color-win-2);
+    --fg-color    : var(--cp-color-txt-2);
+    
+    display      : block;
+    font-weight  : inherit;
+    font-size    : inherit;
+    line-height  : normal;
+    border       : 1px solid var(--border-color);
+    background   : var(--bg-color);
+    color        : var(--fg-color);
+    padding      : var(--cp-space-3) var(--cp-space-4);
+
+    &--neutral-hard {
+        --border-color: var(--cp-color-txt-2);
+        --bg-color    : var(--cp-color-txt-2);
+        --fg-color    : var(--cp-color-win-1);
+    }
+
+    &--danger {
+        --border-color: rgba(from var(--cp-color-red) r g b / 0.2);
+        --bg-color    : rgba(from var(--cp-color-red) r g b / 0.2);
+        --fg-color    : color-mix(in srgb, var(--cp-color-red) 70%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-red);
+            --bg-color    : var(--cp-color-red);
+            --fg-color    : var(--cp-color-white);
+        }
+    }
+
+    &--warning {
+        --border-color: rgba(from var(--cp-color-amber) r g b / 0.2);
+        --bg-color    : rgba(from var(--cp-color-amber) r g b / 0.2);
+        --fg-color    : color-mix(in srgb, var(--cp-color-amber) 70%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-amber);
+            --bg-color    : var(--cp-color-amber);
+            --fg-color    : var(--cp-color-white);
+        }
+    }
+
+    &--success {
+        --border-color: rgba(from var(--cp-color-green) r g b / 0.2);
+        --bg-color    : rgba(from var(--cp-color-green) r g b / 0.2);
+        --fg-color    : color-mix(in srgb, var(--cp-color-green) 70%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-green);
+            --bg-color    : var(--cp-color-green);
+            --fg-color    : var(--cp-color-white);
+        }
+    }
+
+    &--info {
+        --border-color: rgba(from var(--cp-color-teal) r g b / 0.2);
+        --bg-color    : rgba(from var(--cp-color-teal) r g b / 0.2);
+        --fg-color    : color-mix(in srgb, var(--cp-color-teal) 70%, var(--cp-color-txt));
+
+        &-hard {
+            --border-color: var(--cp-color-teal);
+            --bg-color    : var(--cp-color-teal);
+            --fg-color    : var(--cp-color-white);
+        }
+    }
+
+    &--muted {
+        --border-color: var(--cp-color-win-3);
+        --bg-color    : var(--cp-color-win-2);
+        --fg-color    : var(--cp-color-txt-3);
+
+        &-hard {
+            --border-color: var(--cp-color-txt-3);
+            --bg-color    : var(--cp-color-txt-3);
+            --fg-color    : var(--cp-color-win-1);
+        }
+    }
+}
