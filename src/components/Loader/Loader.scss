@@ -1,0 +1,35 @@
+.spinner {
+    display       : inline-block;
+    width         : 1em;
+    height        : 1em;
+    border        : 2px solid currentColor;
+    border-left   : 2px solid rgba(from currentColor r g b / 0.2);
+    border-radius : 50%;
+    animation     : spin 1s linear infinite;
+    vertical-align: middle;
+    margin-top    : -0.2em;
+}
+
+.spinner-wrap {
+    transition: all 0.2s;
+    &.loader-cover {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        bottom: -2px;
+        left: -2px;
+        align-items: center;
+        justify-content: center;
+        display: grid;
+        background: var(--color-window);
+    }
+}
+
+@keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+}
