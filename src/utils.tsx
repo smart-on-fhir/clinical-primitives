@@ -30,3 +30,10 @@ export function makeWrapperComponent(baseClass: string) {
         return <div className={`${baseClass} ${className || ''}`} {...props}>{children}</div>;
     };
 }
+
+export function classList(classes: Record<string, boolean | undefined>): string {
+    return Object.entries(classes)
+        .filter(([_, value]) => !!value)
+        .map(([key, _]) => key)
+        .join(" ")
+}

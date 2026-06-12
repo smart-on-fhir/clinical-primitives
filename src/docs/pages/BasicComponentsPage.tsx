@@ -1,9 +1,19 @@
+import { useState } from 'react';
 import { Collapse }      from '../../components/Collapse';
 import { JsonViewer }    from '../../components/JsonViewer';
 import { Sparkline }     from '../../components/Sparkline';
-import { Button, Badge } from '../../index';
+import { Alert, Button, Badge, CheckBox, RadioButton, Loader } from '../../index';
+import { ButtonProps } from '../../components/Button/Button';
 import { Tab, TabBar, TabContents, Tabs, TabsBody } from '../../components/Tabs';
 
+type RadioButtonExampleProps = Omit<ButtonProps, 'value' | 'onChange'> & {
+  options: { value: string; label: string }[];
+};
+
+function RadioButtonExample({ options, ...btnProps }: RadioButtonExampleProps) {
+  const [value, setValue] = useState(options[0]?.value ?? '');
+  return <RadioButton value={value} onChange={(v) => setValue(v as string)} options={options} {...btnProps} />;
+}
 
 export function BasicComponentsPage() {
   return (
@@ -150,6 +160,142 @@ export function BasicComponentsPage() {
               <tr>
                 <td><Button hard className="cp-px-4 cp-py-3">Button</Button></td>
                 <td><code> &lt;Button hard&gt;Button&lt;/Button&gt;</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article>
+          <h3>Alert</h3>
+          <table style={{ borderSpacing: '0.5rem' }}>
+            <tbody>
+              <tr>
+                <td><Alert variant="danger">Danger</Alert></td>
+                <td><code>&lt;Alert variant="danger"&gt;Danger&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="warning">Warning</Alert></td>
+                <td><code>&lt;Alert variant="warning"&gt;Warning&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="success">Success</Alert></td>
+                <td><code>&lt;Alert variant="success"&gt;Success&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="info">Info</Alert></td>
+                <td><code>&lt;Alert variant="info"&gt;Info&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="neutral">Neutral</Alert></td>
+                <td><code>&lt;Alert variant="neutral"&gt;Neutral&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="muted">Muted</Alert></td>
+                <td><code>&lt;Alert variant="muted"&gt;Muted&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="link">Link</Alert></td>
+                <td><code>&lt;Alert variant="link"&gt;Link&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="danger" hard>Danger Hard</Alert></td>
+                <td><code>&lt;Alert variant="danger" hard&gt;Danger Hard&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="warning" hard>Warning Hard</Alert></td>
+                <td><code>&lt;Alert variant="warning" hard&gt;Warning Hard&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="success" hard>Success Hard</Alert></td>
+                <td><code>&lt;Alert variant="success" hard&gt;Success Hard&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="info" hard>Info Hard</Alert></td>
+                <td><code>&lt;Alert variant="info" hard&gt;Info Hard&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="neutral" hard>Neutral Hard</Alert></td>
+                <td><code>&lt;Alert variant="neutral" hard&gt;Neutral Hard&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="muted" hard>Muted Hard</Alert></td>
+                <td><code>&lt;Alert variant="muted" hard&gt;Muted Hard&lt;/Alert&gt;</code></td>
+              </tr>
+              <tr>
+                <td><Alert variant="link" hard>Link Hard</Alert></td>
+                <td><code>&lt;Alert variant="link" hard&gt;Link Hard&lt;/Alert&gt;</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article>
+          <h3>CheckBox</h3>
+          <table style={{ borderSpacing: '0.5rem' }}>
+            <tbody>
+              <tr>
+                <td><CheckBox /></td>
+                <td><code>&lt;CheckBox /&gt;</code></td>
+              </tr>
+              <tr>
+                <td><CheckBox defaultChecked /></td>
+                <td><code>&lt;CheckBox defaultChecked /&gt;</code></td>
+              </tr>
+              <tr>
+                <td><CheckBox indeterminate /></td>
+                <td><code>&lt;CheckBox indeterminate /&gt;</code></td>
+              </tr>
+              <tr>
+                <td><CheckBox disabled /></td>
+                <td><code>&lt;CheckBox disabled /&gt;</code></td>
+              </tr>
+              <tr>
+                <td><CheckBox disabled defaultChecked /></td>
+                <td><code>&lt;CheckBox disabled defaultChecked /&gt;</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article>
+          <h3>RadioButton</h3>
+          <table style={{ borderSpacing: '0.5rem' }}>
+            <tbody>
+              <tr>
+                <td><RadioButtonExample options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton value={value} onChange={setValue} options={[...]} />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="danger" options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="danger" ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="warning" options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="warning" ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="success" options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="success" ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="info" options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="info" ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="neutral" options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="neutral" ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="muted" options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="muted" ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="danger" hard options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="danger" hard ... />'}</code></td>
+              </tr>
+              <tr>
+                <td><RadioButtonExample variant="success" hard options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
+                <td><code>{'<RadioButton variant="success" hard ... />'}</code></td>
               </tr>
             </tbody>
           </table>
@@ -545,6 +691,25 @@ export function BasicComponentsPage() {
             missingValue: undefined,
           } as any}></JsonViewer>
         </div>
+      </article>
+
+      <article>
+        <h3>Loader</h3>
+        <code>&lt;Loader msg="Loading..." /&gt;</code>
+        <br/>
+        <br/>
+        <div className="flex flex-wrap gap-4">
+            <div className="cp-text-txt"><Loader msg="Loading..." /></div>
+            <div className="cp-text-blue"><Loader msg="Loading..." /></div>
+            <div className="cp-text-red"><Loader msg="Loading..." /></div>
+            <div className="cp-text-amber"><Loader msg="Loading..." /></div>
+            <div className="cp-text-green"><Loader msg="Loading..." /></div>
+            <div className="cp-text-purple"><Loader msg="Loading..." /></div>
+            <div className="cp-text-pink"><Loader msg="Loading..." /></div>
+            <div className="cp-text-teal"><Loader msg="Loading..." /></div>
+            <div className="cp-text-orange"><Loader msg="Loading..." /></div>
+            <div className="cp-text-gray"><Loader msg="Loading..." /></div>
+          </div>
       </article>
       <br />
       <br />
