@@ -16,6 +16,7 @@ export type { ChartProps, ChartType, SeriesDef, PieSlice, ChartDataRecord } from
 export { Row }                    from './components/Row';
 export { Column }                 from './components/Column';
 export { Tab, TabBar, TabContents, Tabs, TabsBody } from './components/Tabs';
+export { RadioButton }            from './components/RadioButton';
 
 // Clinical components ---------------------------------------------------------
 export { ConditionList }           from './components/Condition/ConditionList';

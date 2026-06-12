@@ -1,0 +1,32 @@
+.radio-button {
+    display       : inline-flex;
+    position      : relative;
+    vertical-align: middle;
+    touch-action  : manipulation;
+    max-width     : 100%;
+    overflow      : hidden;
+
+    .cp-button {
+        padding      : 0.4em 0.8em;
+        white-space  : nowrap;
+        overflow     : hidden;
+        text-overflow: ellipsis;
+        transition   : all 0.2s;
+        position     : relative;
+
+        &:not(:first-child) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            margin-left  : -1px;
+        }
+
+        &:not(:last-child) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        &[aria-checked="true"] {
+            z-index : 2;
+        }
+    }
+}
