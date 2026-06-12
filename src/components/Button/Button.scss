@@ -35,7 +35,7 @@
         --fg-color: var(--fg-color-hover);
     }
 
-    &:active {
+    &:active, &[aria-checked="true"] {
         --bg-color: var(--bg-color-active);
         --border-color: var(--border-color-active);
         --fg-color: var(--fg-color-active);
