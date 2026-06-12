@@ -17,6 +17,7 @@ export { Row }                    from './components/Row';
 export { Column }                 from './components/Column';
 export { Tab, TabBar, TabContents, Tabs, TabsBody } from './components/Tabs';
 export { Alert }                  from './components/Alert';
+export { CheckBox }               from './components/CheckBox';
 export { RadioButton }            from './components/RadioButton';
 
 // Clinical components ---------------------------------------------------------
