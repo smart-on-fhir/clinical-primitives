@@ -196,4 +196,10 @@
             --fg-color-active    : var(--cp-color-win-1);
         }
     }
+
+    &:disabled, &[aria-disabled="true"] {
+        cursor: not-allowed;
+        opacity: 0.5;
+        pointer-events: none;
+    }
 }
