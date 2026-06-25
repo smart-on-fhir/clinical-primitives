@@ -5,6 +5,7 @@ export { Button }                 from './components/Button/Button';
 export { Collapse }               from './components/Collapse';
 export { DateDisplay }            from './components/Date/DateDisplay';
 export { Dialog }                 from './components/Dialog';
+export { SourceDialog }           from './components/Dialog/SourceDialog';
 export { Dot }                    from './components/Dot';
 export { JsonViewer }             from './components/JsonViewer';
 export { List }                   from './components/List/List';
