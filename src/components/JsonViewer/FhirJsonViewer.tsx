@@ -14,8 +14,7 @@ export function FhirJsonDecorator({ children, type }: { children: React.ReactNod
         if (children.match(/^https?:\/\/.+/)) {
             return (
                 <a href={children} target="_blank" rel="noopener noreferrer" className="cp-text-blue">
-                    {children}
-                    <SquareArrowUpRight size={"1.2em"} style={{ verticalAlign: 'text-bottom', marginLeft: '0.25em' }} />
+                    {children}<SquareArrowUpRight size={"1.2em"} style={{ verticalAlign: 'text-bottom', marginLeft: '0.25em' }} />
                 </a>
             );
         }
@@ -57,8 +56,7 @@ export function createValueRenderer(allResources: ResourcesByType) {
         if (value.match(/^https?:\/\/.+/)) {
             return (
                 <a href={value} target="_blank" rel="noopener noreferrer" className="cp-text-blue">
-                    {value}
-                    <SquareArrowUpRight size={"1.2em"} style={{ verticalAlign: 'text-bottom', marginLeft: '0.25em' }} />
+                    {value}<SquareArrowUpRight size={"1.2em"} style={{ verticalAlign: 'text-bottom', marginLeft: '0.25em' }} />
                 </a>
             );
         }
