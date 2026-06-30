@@ -4,6 +4,7 @@ interface IdentifierFilters {
     system?: string
     value?: string
     use?: 'usual' | 'official' | 'temp' | 'secondary' | 'old'
+    typeCode?: string
     periodStart?: string
     periodEnd?: string
 }
@@ -27,6 +28,14 @@ export function matches(identifier: Identifier, filters: IdentifierFilters): boo
 
     if (filters.use && identifier.use !== filters.use)
         return false;
+
+    if (filters.typeCode) {
+        const coding = Array.isArray(identifier.type?.coding) ?
+            identifier.type.coding.find(c => c.code === filters.typeCode) :
+            null;
+        if (!coding)
+            return false;
+    }
 
     if (filters.periodStart) {
         if (!identifier.period || !identifier.period.start || new Date(identifier.period.start) < new Date(filters.periodStart))
