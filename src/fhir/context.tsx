@@ -12,9 +12,9 @@ import type {
     FhirResource,
     PatientDataSet,
     PatientDataSource,
-    PatientResource,
     ResourcesByType
 } from './types';
+import { Patient } from 'fhir/r4';
 
 // --- Singleton file input (one per page regardless of how many providers) ---
 
@@ -41,23 +41,23 @@ function getSharedInput(): HTMLInputElement {
 // ---------------------------------------------------------------------------
 
 export type ClinicalDataContextValue = {
-    patient: PatientResource | null;
-    resources: ResourcesByType;
-    isLoading: boolean;
-    error: Error | null;
-    loadFromBundle: (bundle: FhirBundle) => Promise<PatientDataSet>;
+    patient           : Patient | null;
+    resources         : ResourcesByType;
+    isLoading         : boolean;
+    error             : Error | null;
+    loadFromBundle    : (bundle: FhirBundle) => Promise<PatientDataSet>;
     loadFromBundleFile: (file: File) => Promise<PatientDataSet>;
-    loadFromResources: (resources: FhirResource[]) => Promise<PatientDataSet>;
-    loadFromNdjson: (ndjson: string) => Promise<PatientDataSet>;
+    loadFromResources : (resources: FhirResource[]) => Promise<PatientDataSet>;
+    loadFromNdjson    : (ndjson: string) => Promise<PatientDataSet>;
     loadFromNdjsonFile: (file: File) => Promise<PatientDataSet>;
-    selectFile: () => void;
-    clear: () => void;
+    selectFile        : () => void;
+    clear             : () => void;
 };
 
 const ClinicalDataContext = createContext<ClinicalDataContextValue | null>(null);
 
 function useClinicalDataState() {
-    const [patient  , setPatient  ] = useState<PatientResource | null>(null);
+    const [patient  , setPatient  ] = useState<Patient | null>(null);
     const [resources, setResources] = useState<ResourcesByType>({});
     const [isLoading, setIsLoading] = useState(false);
     const [error    , setError    ] = useState<Error | null>(null);
