@@ -11,7 +11,7 @@ export function displayName(name: HumanName): string {
 }
 
 export function displayPersonName(person: Patient | Practitioner | RelatedPerson, use?: HumanName['use']): string | null {
-    if (!person.name || person.name.length === 0) return null;
+    if (!Array.isArray(person.name) || person.name.length === 0) return null;
 
     if (use) {
         const name = person.name.find(n => n.use === use);
@@ -39,7 +39,7 @@ export function displayAddress(address: Address): string {
 }
 
 export function displayPersonAddress(person: Patient | Practitioner | RelatedPerson, use?: Address['use']): string | null {
-    if (!person.address || person.address.length === 0) return null;
+    if (!Array.isArray(person.address) || person.address.length === 0) return null;
 
     if (use) {
         const address = person.address.find(a => a.use === use);
