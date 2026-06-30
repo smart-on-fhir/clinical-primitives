@@ -37,6 +37,7 @@ export { FhirResourceJsonViewer, FhirJsonDecorator }  from './components/JsonVie
 export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
 
 // Utils -----------------------------------------------------------------------
+export * as lib          from './lib';
 import * as _utils       from './utils'; 
 import * as Immunization from './components/Immunization/utils';
 import * as Medication   from './components/Medication/utils';
