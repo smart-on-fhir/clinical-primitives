@@ -1,4 +1,5 @@
-import { resolvePatientDataSource } from './parse';
+import { mergeResourcesByType, resolvePatientDataSource, resourcesToPatientDataSet } from './parse';
+import { fetchPatientEverything, type FetchEverythingOptions } from './server';
 import {
     createContext,
     useCallback,
@@ -12,6 +13,7 @@ import type {
     FhirResource,
     PatientDataSet,
     PatientDataSource,
+    PatientResource,
     ResourcesByType
 } from './types';
 import { Patient } from 'fhir/r4';
@@ -41,17 +43,18 @@ function getSharedInput(): HTMLInputElement {
 // ---------------------------------------------------------------------------
 
 export type ClinicalDataContextValue = {
-    patient           : Patient | null;
-    resources         : ResourcesByType;
-    isLoading         : boolean;
-    error             : Error | null;
-    loadFromBundle    : (bundle: FhirBundle) => Promise<PatientDataSet>;
-    loadFromBundleFile: (file: File) => Promise<PatientDataSet>;
-    loadFromResources : (resources: FhirResource[]) => Promise<PatientDataSet>;
-    loadFromNdjson    : (ndjson: string) => Promise<PatientDataSet>;
-    loadFromNdjsonFile: (file: File) => Promise<PatientDataSet>;
-    selectFile        : () => void;
-    clear             : () => void;
+    patient              : Patient | null;
+    resources            : ResourcesByType;
+    isLoading            : boolean;
+    error                : Error | null;
+    loadFromBundle       : (bundle: FhirBundle) => Promise<PatientDataSet>;
+    loadFromBundleFile   : (file: File) => Promise<PatientDataSet>;
+    loadFromResources    : (resources: FhirResource[]) => Promise<PatientDataSet>;
+    loadFromNdjson       : (ndjson: string) => Promise<PatientDataSet>;
+    loadFromNdjsonFile   : (file: File) => Promise<PatientDataSet>;
+    loadFromFHIRServer   : (baseUrl: string, patientId: string, options?: FetchEverythingOptions) => Promise<PatientDataSet>;
+    selectFile           : () => Promise<Patient | null>;
+    clear                : () => void;
 };
 
 const ClinicalDataContext = createContext<ClinicalDataContextValue | null>(null);
@@ -82,6 +85,34 @@ function useClinicalDataState() {
         }
     }
 
+    async function loadFromFHIRServer(baseUrl: string, patientId: string, options?: FetchEverythingOptions) {
+        setIsLoading(true);
+        setError(null);
+        setPatient(null);
+        setResources({});
+
+        const accumulated: FhirResource[] = [];
+
+        try {
+            await fetchPatientEverything(baseUrl, patientId, (pageResources) => {
+                accumulated.push(...pageResources);
+                setResources(prev => mergeResourcesByType(prev, pageResources));
+                const pagePatient = pageResources.find(r => r.resourceType === 'Patient');
+                if (pagePatient) setPatient(pagePatient as PatientResource);
+            }, options);
+
+            return resourcesToPatientDataSet(accumulated);
+        } catch (loadError) {
+            const normalizedError = loadError instanceof Error ?
+                loadError :
+                new Error('Failed to load patient data from FHIR server.');
+            setError(normalizedError);
+            throw normalizedError;
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     function clear() {
         setPatient(null);
         setResources({});
@@ -95,20 +126,24 @@ function useClinicalDataState() {
         isLoading,
         error,
         load,
+        loadFromFHIRServer,
         clear
     };
 }
 
 export function ClinicalDataProvider({ children }: PropsWithChildren) {
-    const { patient, resources, isLoading, error, load, clear } = useClinicalDataState();
+    const { patient, resources, isLoading, error, load, loadFromFHIRServer, clear } = useClinicalDataState();
 
     const selectFile = useCallback(() => {
-        const input = getSharedInput();
-        _pendingCallback = async (file) => {
-            const isNdjson = file.name.endsWith('.ndjson') || file.type === 'application/x-ndjson';
-            await load(isNdjson ? { type: 'ndjson-file', file } : { type: 'bundle-file', file });
-        };
-        input.click();
+        return new Promise<Patient | null>((resolve) => {
+            const input = getSharedInput();
+            _pendingCallback = async (file) => {
+                const isNdjson = file.name.endsWith('.ndjson') || file.type === 'application/x-ndjson';
+                const dataSet = await load(isNdjson ? { type: 'ndjson-file', file } : { type: 'bundle-file', file });
+                resolve(dataSet.patient ?? null);
+            };
+            input.click();
+        });
     }, [load]);
 
     const value = useMemo<ClinicalDataContextValue>(
@@ -122,6 +157,7 @@ export function ClinicalDataProvider({ children }: PropsWithChildren) {
             loadFromResources : (nextResources) => load({ type: 'resources'  , resources: nextResources }),
             loadFromNdjson    : (ndjson)        => load({ type: 'ndjson'     , ndjson }),
             loadFromNdjsonFile: (file)          => load({ type: 'ndjson-file', file }),
+            loadFromFHIRServer,
             selectFile,
             clear
         }),

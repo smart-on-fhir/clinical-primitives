@@ -3,7 +3,8 @@ import type {
   FhirResource,
   PatientDataSet,
   PatientDataSource,
-  PatientResource
+  PatientResource,
+  ResourcesByType
 } from './types';
 
 function isFhirResource(value: unknown): value is FhirResource {
@@ -25,8 +26,9 @@ function assertSinglePatient(resources: FhirResource[]): PatientResource {
     throw new Error('Expected one Patient resource, but none were found.');
   }
 
-  if (patients.length > 1) {
-    throw new Error('Expected one Patient resource, but multiple were found.');
+  const uniqueIds = new Set(patients.map(p => p.id));
+  if (uniqueIds.size > 1) {
+    throw new Error('Expected one Patient resource, but multiple distinct patients were found.');
   }
 
   return patients[0];
@@ -45,6 +47,17 @@ export function groupResourcesByType(resources: FhirResource[]) {
     accumulator[resource.resourceType] = resourceList;
     return accumulator;
   }, {});
+}
+
+export function mergeResourcesByType(existing: ResourcesByType, incoming: FhirResource[]): ResourcesByType {
+  const result = { ...existing };
+  for (const resource of incoming) {
+    const list = result[resource.resourceType] ?? [];
+    // Skip duplicates (some servers repeat resources across pages)
+    if (resource.id && list.some(r => r.id === resource.id)) continue;
+    result[resource.resourceType] = [...list, resource];
+  }
+  return result;
 }
 
 export function resourcesToPatientDataSet(resources: FhirResource[]): PatientDataSet {

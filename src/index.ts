@@ -40,12 +40,10 @@ export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
 export * as lib          from './lib';
 import * as _utils       from './utils'; 
 import * as Immunization from './components/Immunization/utils';
-import * as Medication   from './components/Medication/utils';
 import * as Condition    from './components/Condition/utils';
 export const utils = {
   ..._utils,
   Immunization,
-  Medication,
   Condition
 };
 
