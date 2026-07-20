@@ -75,7 +75,8 @@
 //     // overflow: visible;
     code {
         background: transparent !important;
-        filter: contrast(0.25);
+        // filter: contrast(0.25);
         line-height: 1.3em !important;
+        font-size     : var(--cp-text-xs);
     }   
 }

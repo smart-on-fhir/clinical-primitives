@@ -5,6 +5,9 @@ import { useClinicalData }        from "../../library";
 import { Tab, TabBar, TabContents, Tabs, TabsBody } from "../Tabs";
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+
+SyntaxHighlighter.registerLanguage('json', json);
 
 
 interface TabDefinition {
