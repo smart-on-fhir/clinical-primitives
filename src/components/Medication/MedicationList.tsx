@@ -4,7 +4,7 @@ import MedicationListItem     from "./MedicationListItem";
 import { groupBy }            from "../../utils";
 import type { MedicationAdministration, MedicationRequest } from "fhir/r4";
 import { Badge, Button, useClinicalData }   from "../..";
-import { getMedicationName }                from "./utils";
+import { getMedicationName }                from "../../lib/Medication";
 import { Panel, PanelBody, PanelHeader, PanelToolbar } from "../Panel/Panel";
 import { AppWindowIcon }                    from "lucide-react";
 import { List } from "../List/List";
