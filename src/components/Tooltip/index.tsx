@@ -1,0 +1,554 @@
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { renderTooltipMarkdown } from './markdown';
+import {
+    computePlacement,
+    type Box,
+    type Placement,
+    type TooltipPosition,
+    type TooltipX,
+    type TooltipY
+} from './position';
+import './Tooltip.scss';
+
+export type TooltipTrigger = 'mouseover' | 'click' | 'focus';
+
+/**
+ * Author-facing axis values. `pointer` makes that axis track the cursor instead
+ * of the trigger's box, which is what a wide target — a timeline bar, a table
+ * row, a map region — needs: anchoring to the middle of a bar that spans half
+ * the screen points at a place the user is not looking.
+ *
+ * Only meaningful with the `mouseover` trigger; a click- or focus-opened
+ * tooltip has no live cursor to follow and falls back to the axis default.
+ */
+export type TooltipAxisX = TooltipX | 'pointer';
+export type TooltipAxisY = TooltipY | 'pointer';
+
+export interface TooltipProps {
+    /** Delay in ms before a hover tooltip appears. Overridden per element by `data-tooltip-delay`. */
+    delay?: number;
+    /** Gap in px between the anchor and the tooltip. Overridden by `data-tooltip-offset`. */
+    offset?: number;
+    /** Keeps the tooltip this far from the viewport edges. */
+    viewportPadding?: number;
+    /** Default max width of the bubble, as a CSS length. Overridden by `data-tooltip-max-width`. */
+    maxWidth?: string;
+}
+
+interface ResolvedOptions {
+    x        : TooltipAxisX;
+    y        : TooltipAxisY;
+    position : TooltipPosition;
+    trigger  : TooltipTrigger;
+    delay    : number;
+    offset   : number;
+    maxWidth : string;
+    viewport : string | null;
+    className: string | null;
+}
+
+interface ActiveTooltip {
+    target : HTMLElement;
+    content: ReactNode;
+    options: ResolvedOptions;
+    /** Distinguishes a click-latched tooltip from a transient hover one. */
+    latched: boolean;
+}
+
+const ARROW_SIZE   = 6;
+const ARROW_INSET  = 10;
+const TOOLTIP_ID   = 'cp-tooltip';
+
+function oneOf<T extends string>(value: string | null | undefined, allowed: readonly T[], fallback: T): T {
+    return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+function numberOr(value: string | null | undefined, fallback: number): number {
+    const parsed = Number(value);
+    return value != null && value !== '' && Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readOptions(el: HTMLElement, defaults: Required<TooltipProps>): ResolvedOptions {
+    return {
+        x        : oneOf(el.getAttribute('data-tooltip-x'), ['left', 'center', 'right', 'pointer'] as const, 'center'),
+        y        : oneOf(el.getAttribute('data-tooltip-y'), ['top', 'middle', 'bottom', 'pointer'] as const, 'top'),
+        position : oneOf(el.getAttribute('data-tooltip-position'), ['inside', 'outside'] as const, 'outside'),
+        trigger  : oneOf(el.getAttribute('data-tooltip-trigger'), ['mouseover', 'click', 'focus'] as const, 'mouseover'),
+        delay    : numberOr(el.getAttribute('data-tooltip-delay'), defaults.delay),
+        offset   : numberOr(el.getAttribute('data-tooltip-offset'), defaults.offset),
+        maxWidth : el.getAttribute('data-tooltip-max-width') || defaults.maxWidth,
+        viewport : el.getAttribute('data-tooltip-viewport'),
+        className: el.getAttribute('data-tooltip-class')
+    };
+}
+
+function rectToBox(rect: DOMRect): Box {
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+}
+
+/**
+ * The region the tooltip must stay within: the window, or the element named by
+ * `data-tooltip-viewport` clipped to the window so an off-screen container can
+ * never push the tooltip out of sight.
+ */
+function resolveViewport(selector: string | null, padding: number): Box {
+    const windowBox: Box = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+
+    let box = windowBox;
+
+    if (selector) {
+        const el = document.querySelector(selector);
+
+        if (el) {
+            const rect = rectToBox(el.getBoundingClientRect());
+            const left = Math.max(rect.left, windowBox.left);
+            const top  = Math.max(rect.top, windowBox.top);
+
+            box = {
+                left,
+                top,
+                width : Math.min(rect.left + rect.width, windowBox.width) - left,
+                height: Math.min(rect.top + rect.height, windowBox.height) - top
+            };
+        }
+    }
+
+    return {
+        left  : box.left + padding,
+        top   : box.top + padding,
+        width : Math.max(0, box.width - padding * 2),
+        height: Math.max(0, box.height - padding * 2)
+    };
+}
+
+/**
+ * Whether this tooltip tracks the cursor on either axis. Restricted to hover:
+ * a click- or focus-opened tooltip has no cursor to follow, and pinning one to
+ * wherever the mouse happens to rest would be arbitrary.
+ */
+function usesPointer(options: ResolvedOptions): boolean {
+    return options.trigger === 'mouseover' && (options.x === 'pointer' || options.y === 'pointer');
+}
+
+/**
+ * Resolve `pointer` axes into plain geometry.
+ *
+ * A pointer axis collapses the anchor to a zero-size point at the cursor, and
+ * asks for the axis default around it. That keeps the placement math free of
+ * any notion of a pointer: aligning, flipping and clamping all still operate on
+ * a box, and a cursor is simply a box with no extent.
+ */
+function resolveAnchor(
+    target : HTMLElement,
+    options: ResolvedOptions,
+    pointer: { x: number; y: number } | null
+): { anchor: Box; x: TooltipX; y: TooltipY } {
+    const anchor = rectToBox(target.getBoundingClientRect());
+    const usable = pointer && usesPointer(options);
+
+    if (usable && options.x === 'pointer') {
+        anchor.left  = pointer.x;
+        anchor.width = 0;
+    }
+
+    if (usable && options.y === 'pointer') {
+        anchor.top    = pointer.y;
+        anchor.height = 0;
+    }
+
+    return {
+        anchor,
+        // Centering on the cursor is what "follow the pointer" means on the
+        // horizontal; vertically the tooltip still sits clear of it, above.
+        x: options.x === 'pointer' ? 'center' : options.x,
+        y: options.y === 'pointer' ? 'top'    : options.y
+    };
+}
+
+function samePlacement(a: Placement | null, b: Placement): boolean {
+    return !!a
+        && Math.abs(a.left - b.left) < 0.5
+        && Math.abs(a.top - b.top) < 0.5
+        && a.side === b.side
+        && Math.abs((a.arrow?.left ?? 0) - (b.arrow?.left ?? 0)) < 0.5
+        && Math.abs((a.arrow?.top ?? 0) - (b.arrow?.top ?? 0)) < 0.5;
+}
+
+/**
+ * Global tooltip layer. Render it once, near the root of the app; every element
+ * carrying `data-tooltip` anywhere on the page is then handled by delegation,
+ * including elements rendered outside React.
+ *
+ * Because it portals into `document.body`, tooltips escape `overflow: hidden`
+ * and stacking contexts of their triggers.
+ */
+export function Tooltip({
+    delay           = 100,
+    offset          = 8,
+    viewportPadding = 8,
+    maxWidth        = '20rem'
+}: TooltipProps = {}) {
+    const defaults: Required<TooltipProps> = { delay, offset, viewportPadding, maxWidth };
+    const defaultsRef = useRef(defaults);
+    defaultsRef.current = defaults;
+
+    const [active, setActive]       = useState<ActiveTooltip | null>(null);
+    const [placement, setPlacement] = useState<Placement | null>(null);
+
+    const bubbleRef  = useRef<HTMLDivElement>(null);
+    const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Read inside document-level listeners, which are registered once and must
+    // not close over a stale `active`.
+    const activeRef  = useRef<ActiveTooltip | null>(null);
+    activeRef.current = active;
+    // The anchor whose open delay is currently counting down. Tracked so that
+    // moving across the anchor's own children neither cancels nor restarts it.
+    const pendingRef = useRef<HTMLElement | null>(null);
+    // Last known cursor position, for `pointer` axes. Recorded from the moment
+    // the trigger is entered, so a delayed tooltip already knows where the
+    // cursor is when it finally opens.
+    const pointerRef = useRef<{ x: number; y: number } | null>(null);
+
+    const clearTimer = useCallback(() => {
+        if (timerRef.current !== null) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+        pendingRef.current = null;
+    }, []);
+
+    const hide = useCallback(() => {
+        clearTimer();
+        setActive(null);
+        setPlacement(null);
+    }, [clearTimer]);
+
+    const show = useCallback((target: HTMLElement, latched: boolean) => {
+        clearTimer();
+
+        const content = renderTooltipMarkdown(target.getAttribute('data-tooltip') || '');
+
+        // An empty `data-tooltip` shows nothing, and must also dismiss whatever
+        // was open rather than leaving a stale bubble behind.
+        if (content === null) {
+            hide();
+            return;
+        }
+
+        const options = readOptions(target, defaultsRef.current);
+        const commit  = () => {
+            timerRef.current   = null;
+            pendingRef.current = null;
+            setPlacement(null);
+            setActive({ target, content, options, latched });
+        };
+
+        // Click and focus are explicit user intent, so they open immediately;
+        // only hover pays the delay.
+        if (latched || options.trigger !== 'mouseover' || options.delay <= 0) {
+            commit();
+        }
+        else {
+            pendingRef.current = target;
+            timerRef.current   = setTimeout(commit, options.delay);
+        }
+    }, [clearTimer, hide]);
+
+    /** Recompute the position against the anchor's current box. */
+    const update = useCallback(() => {
+        const current = activeRef.current;
+        const bubble  = bubbleRef.current;
+
+        if (!current || !bubble) {
+            return;
+        }
+
+        // The anchor may have been unmounted while the tooltip was open.
+        if (!current.target.isConnected) {
+            hide();
+            return;
+        }
+
+        const { anchor, x, y } = resolveAnchor(current.target, current.options, pointerRef.current);
+
+        // Measured with getBoundingClientRect, not offsetWidth/offsetHeight:
+        // those round to whole pixels, and the arrow is positioned at exactly
+        // the measured height. A bubble 27.6px tall reports 28, putting the
+        // arrow 0.4px past the edge it is supposed to sit on — which shows up
+        // as the arrow's borders stepping away from the bubble's. The error
+        // depends on the fractional part of the height, so identical tooltips
+        // on one page look fine or misaligned depending on their content.
+        const rect = bubble.getBoundingClientRect();
+
+        const next = computePlacement({
+            anchor,
+            x,
+            y,
+            tooltip   : { width: rect.width, height: rect.height },
+            viewport  : resolveViewport(current.options.viewport, defaultsRef.current.viewportPadding),
+            position  : current.options.position,
+            offset    : current.options.offset,
+            arrowInset: ARROW_INSET
+        });
+
+        setPlacement(previous => (samePlacement(previous, next) ? previous : next));
+    }, [hide]);
+
+    // --- Trigger delegation --------------------------------------------------
+    // One set of document-level listeners covers the whole page, so triggers can
+    // appear and disappear freely without any registration step.
+    useEffect(() => {
+        const findTrigger = (node: EventTarget | null): HTMLElement | null =>
+            node instanceof Element ? node.closest<HTMLElement>('[data-tooltip]') : null;
+
+        const onPointerOver = (event: PointerEvent) => {
+            const trigger = findTrigger(event.target);
+            const current = activeRef.current;
+
+            // Recorded before the early returns below: a tooltip that opens
+            // after a delay still needs the cursor position from entry.
+            pointerRef.current = { x: event.clientX, y: event.clientY };
+
+            if (!trigger) {
+                // Left the trigger for unrelated content; drop transient tooltips
+                // and abandon any tooltip still waiting on its delay.
+                if (!bubbleRef.current?.contains(event.target as Node)) {
+                    if (pendingRef.current) {
+                        clearTimer();
+                    }
+                    if (current && !current.latched) {
+                        hide();
+                    }
+                }
+                return;
+            }
+
+            if (readOptions(trigger, defaultsRef.current).trigger !== 'mouseover') {
+                return;
+            }
+
+            // Already shown for this anchor, or already counting down for it.
+            // Re-entering via a child element must not restart the delay.
+            if (current?.target === trigger || pendingRef.current === trigger) {
+                return;
+            }
+
+            show(trigger, false);
+        };
+
+        const onPointerOut = (event: PointerEvent) => {
+            const current = activeRef.current;
+
+            if (!current || current.latched) {
+                return;
+            }
+
+            const to = event.relatedTarget as Node | null;
+
+            // Ignore moves within the anchor, and let the pointer travel onto the
+            // bubble itself so selectable tooltip text stays reachable.
+            if (to && (current.target.contains(to) || bubbleRef.current?.contains(to))) {
+                return;
+            }
+
+            if (current.target.contains(event.target as Node)) {
+                hide();
+            }
+        };
+
+        const onClick = (event: MouseEvent) => {
+            const trigger = findTrigger(event.target);
+            const current = activeRef.current;
+
+            if (bubbleRef.current?.contains(event.target as Node)) {
+                return;
+            }
+
+            if (trigger && readOptions(trigger, defaultsRef.current).trigger === 'click') {
+                if (current?.target === trigger && current.latched) {
+                    hide();
+                }
+                else {
+                    show(trigger, true);
+                }
+                return;
+            }
+
+            // A click anywhere else dismisses a latched tooltip.
+            if (current?.latched) {
+                hide();
+            }
+        };
+
+        const onFocusIn = (event: FocusEvent) => {
+            const trigger = findTrigger(event.target);
+
+            if (!trigger) return;
+
+            // Keyboard users reach hover tooltips through focus too, so both
+            // triggers respond here; only `click` stays pointer-driven.
+            if (readOptions(trigger, defaultsRef.current).trigger !== 'click') {
+                show(trigger, false);
+            }
+        };
+
+        const onFocusOut = (event: FocusEvent) => {
+            const current = activeRef.current;
+
+            if (current && !current.latched && current.target.contains(event.target as Node)) {
+                hide();
+            }
+        };
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && activeRef.current) {
+                hide();
+            }
+        };
+
+        document.addEventListener('pointerover', onPointerOver);
+        document.addEventListener('pointerout', onPointerOut);
+        document.addEventListener('click', onClick);
+        document.addEventListener('focusin', onFocusIn);
+        document.addEventListener('focusout', onFocusOut);
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.removeEventListener('pointerover', onPointerOver);
+            document.removeEventListener('pointerout', onPointerOut);
+            document.removeEventListener('click', onClick);
+            document.removeEventListener('focusin', onFocusIn);
+            document.removeEventListener('focusout', onFocusOut);
+            document.removeEventListener('keydown', onKeyDown);
+            clearTimer();
+        };
+    }, [show, hide, clearTimer]);
+
+    // --- Follow the anchor ---------------------------------------------------
+    useLayoutEffect(() => {
+        if (!active) {
+            return;
+        }
+
+        update();
+
+        // Capture phase catches scrolling in any ancestor container, not just
+        // the window.
+        window.addEventListener('scroll', update, { capture: true, passive: true });
+        window.addEventListener('resize', update, { passive: true });
+
+        const resizeObserver = new ResizeObserver(update);
+        resizeObserver.observe(active.target);
+
+        if (bubbleRef.current) {
+            // Content reflow (fonts loading, wrapping changes) moves the bubble.
+            resizeObserver.observe(bubbleRef.current);
+        }
+
+        // Catches an anchor removed while the tooltip is open without any scroll
+        // or resize to prompt a recheck. Scoped to the tooltip's lifetime.
+        const mutationObserver = new MutationObserver(() => {
+            if (!activeRef.current?.target.isConnected) {
+                hide();
+            }
+        });
+        mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+        // Only a pointer-tracking tooltip cares about cursor movement; every
+        // other one is pinned to its anchor and would just be recomputing the
+        // same placement on every mouse move.
+        let frame = 0;
+
+        const onPointerMove = (event: PointerEvent) => {
+            pointerRef.current = { x: event.clientX, y: event.clientY };
+
+            // Coalesced to one reposition per frame. pointermove fires far
+            // faster than the display refreshes, and each update runs layout
+            // measurement plus a React render.
+            if (!frame) {
+                frame = requestAnimationFrame(() => {
+                    frame = 0;
+                    update();
+                });
+            }
+        };
+
+        if (usesPointer(active.options)) {
+            document.addEventListener('pointermove', onPointerMove, { passive: true });
+        }
+
+        return () => {
+            window.removeEventListener('scroll', update, { capture: true });
+            window.removeEventListener('resize', update);
+            document.removeEventListener('pointermove', onPointerMove);
+            if (frame) {
+                cancelAnimationFrame(frame);
+            }
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+        };
+    }, [active, update, hide]);
+
+    // Point assistive tech at the bubble while it is open.
+    useEffect(() => {
+        const target = active?.target;
+
+        if (!target || !placement) {
+            return;
+        }
+
+        const previous = target.getAttribute('aria-describedby');
+        target.setAttribute('aria-describedby', TOOLTIP_ID);
+
+        return () => {
+            if (previous === null) {
+                target.removeAttribute('aria-describedby');
+            }
+            else {
+                target.setAttribute('aria-describedby', previous);
+            }
+        };
+    }, [active, placement]);
+
+    if (!active) {
+        return null;
+    }
+
+    const className = [
+        'cp-tooltip',
+        active.options.position === 'inside' ? 'cp-tooltip--inside' : `cp-tooltip--${placement?.side ?? 'top'}`,
+        placement ? 'cp-tooltip--visible' : null,
+        // Only click-latched tooltips accept the pointer; hover ones stay
+        // transparent to it so they cannot flicker or block the anchor.
+        active.latched ? 'cp-tooltip--interactive' : null,
+        active.options.className
+    ].filter(Boolean).join(' ');
+
+    return createPortal(
+        <div
+            id={TOOLTIP_ID}
+            ref={bubbleRef}
+            role="tooltip"
+            className={className}
+            style={{
+                // Rendered off-placement for the first measuring pass, then
+                // moved into position once the size is known.
+                left            : placement?.left ?? 0,
+                top             : placement?.top ?? 0,
+                maxWidth        : active.options.maxWidth,
+                '--cp-tooltip-arrow-left': `${placement?.arrow?.left ?? 0}px`,
+                '--cp-tooltip-arrow-top' : `${placement?.arrow?.top ?? 0}px`,
+                '--cp-tooltip-arrow-size': `${ARROW_SIZE}px`
+            } as React.CSSProperties}
+        >
+            <div className="cp-tooltip-content">{active.content}</div>
+            {placement?.arrow && <span className="cp-tooltip-arrow" aria-hidden="true" />}
+        </div>,
+        document.body
+    );
+}
+
+export { renderTooltipMarkdown, escapeTooltipMarkdown } from './markdown';
+export { computePlacement, resolveSideAlign } from './position';
+export type { Placement, TooltipPosition, TooltipX, TooltipY, TooltipSide, TooltipAlign } from './position';
