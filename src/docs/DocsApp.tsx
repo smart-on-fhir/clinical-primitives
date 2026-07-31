@@ -12,8 +12,9 @@ import { ObservationsPanelPage }  from './pages/ObservationsPanelPage';
 import { LabTrendPanelPage }      from './pages/LabTrendPanelPage';
 import { FindingCardPage }        from './pages/FindingCardPage';
 import { ChartPage }              from './pages/ChartPage';
+import { TooltipPage }            from './pages/TooltipPage';
 import { Playground }             from './pages/StaticComponentPlayground';
-import { ClinicalDataProvider }   from '../index';
+import { ClinicalDataProvider, Tooltip } from '../index';
 import { DocsThemeContext }       from './components/DocsThemeContext';
 
 type ThemeMode = 'light' | 'dark' | 'system';

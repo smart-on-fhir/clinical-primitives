@@ -11,6 +11,7 @@ export const sections = [
   { id: 'lab-trend-panel',     label: 'LabTrendPanel',          path: '/lab-trend-panel'       },
   { id: 'finding-card',        label: 'FindingCard',            path: '/finding-card'          },
   { id: 'chart',               label: 'Chart',                  path: '/chart'                 },
+  { id: 'tooltip',             label: 'Tooltip',                path: '/tooltip'               },
   { id: 'playground',          label: 'Playground',             path: '/playground'            },
 ] as const;
 
