@@ -14,6 +14,13 @@ import './Tooltip.scss';
 export type TooltipTrigger = 'mouseover' | 'click' | 'focus';
 
 /**
+ * What actually opened the tooltip this time, which is not the same thing as
+ * its configured trigger: a `mouseover` tooltip also opens on focus, and only
+ * the hover route should pay the open delay.
+ */
+type TooltipSource = 'hover' | 'click' | 'focus';
+
+/**
  * Author-facing axis values. `pointer` makes that axis track the cursor instead
  * of the trigger's box, which is what a wide target — a timeline bar, a table
  * row, a map region — needs: anchoring to the middle of a bar that spans half
@@ -45,12 +52,12 @@ interface ResolvedOptions {
     offset   : number;
     maxWidth : string;
     viewport : string | null;
+    anchor   : string | null;
     className: string | null;
 }
 
 interface ActiveTooltip {
     target : HTMLElement;
-    content: ReactNode;
     options: ResolvedOptions;
     /** Distinguishes a click-latched tooltip from a transient hover one. */
     latched: boolean;
@@ -59,6 +66,8 @@ interface ActiveTooltip {
 const ARROW_SIZE   = 6;
 const ARROW_INSET  = 10;
 const TOOLTIP_ID   = 'cp-tooltip';
+// Referenced both in the render and imperatively in `update`, which must agree.
+const GLIDE_CLASS  = 'cp-tooltip--glide';
 
 function oneOf<T extends string>(value: string | null | undefined, allowed: readonly T[], fallback: T): T {
     return allowed.includes(value as T) ? (value as T) : fallback;
@@ -79,6 +88,7 @@ function readOptions(el: HTMLElement, defaults: Required<TooltipProps>): Resolve
         offset   : numberOr(el.getAttribute('data-tooltip-offset'), defaults.offset),
         maxWidth : el.getAttribute('data-tooltip-max-width') || defaults.maxWidth,
         viewport : el.getAttribute('data-tooltip-viewport'),
+        anchor   : el.getAttribute('data-tooltip-anchor'),
         className: el.getAttribute('data-tooltip-class')
     };
 }
@@ -132,6 +142,24 @@ function usesPointer(options: ResolvedOptions): boolean {
 }
 
 /**
+ * The element the tooltip positions against, which need not be the one that
+ * triggered it. A chart tracking the cursor is the motivating case: the whole
+ * plot is the trigger, but the bubble should point at the marker.
+ *
+ * Searched inside the trigger first so that several charts on one page each
+ * resolve to their own marker rather than all matching the first in document
+ * order; only then does it fall back to a document-wide lookup. A selector that
+ * matches nothing leaves the trigger itself as the anchor.
+ */
+function resolveAnchorElement(target: HTMLElement, selector: string | null): Element {
+    if (!selector) {
+        return target;
+    }
+
+    return target.querySelector(selector) ?? document.querySelector(selector) ?? target;
+}
+
+/**
  * Resolve `pointer` axes into plain geometry.
  *
  * A pointer axis collapses the anchor to a zero-size point at the cursor, and
@@ -140,11 +168,11 @@ function usesPointer(options: ResolvedOptions): boolean {
  * a box, and a cursor is simply a box with no extent.
  */
 function resolveAnchor(
-    target : HTMLElement,
+    element: Element,
     options: ResolvedOptions,
     pointer: { x: number; y: number } | null
 ): { anchor: Box; x: TooltipX; y: TooltipY } {
-    const anchor = rectToBox(target.getBoundingClientRect());
+    const anchor = rectToBox(element.getBoundingClientRect());
     const usable = pointer && usesPointer(options);
 
     if (usable && options.x === 'pointer') {
@@ -195,6 +223,14 @@ export function Tooltip({
 
     const [active, setActive]       = useState<ActiveTooltip | null>(null);
     const [placement, setPlacement] = useState<Placement | null>(null);
+    // Held apart from `active` on purpose: content can change while a tooltip
+    // stays open on the same anchor, and folding it into `active` would tear
+    // down and re-attach every observer on each change.
+    const [content, setContent]     = useState<ReactNode>(null);
+    // Whether the current left/top change animates. Decided per reposition by
+    // `update`, not per tooltip: only a move the anchor itself initiated earns
+    // easing. Opening, scrolling, resizing and cursor-tracking all jump.
+    const [glide, setGlide]         = useState(false);
 
     const bubbleRef  = useRef<HTMLDivElement>(null);
     const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,7 +260,7 @@ export function Tooltip({
         setPlacement(null);
     }, [clearTimer]);
 
-    const show = useCallback((target: HTMLElement, latched: boolean) => {
+    const show = useCallback((target: HTMLElement, source: TooltipSource) => {
         clearTimer();
 
         const content = renderTooltipMarkdown(target.getAttribute('data-tooltip') || '');
@@ -240,13 +276,20 @@ export function Tooltip({
         const commit  = () => {
             timerRef.current   = null;
             pendingRef.current = null;
+            // Clicking a second trigger while one is latched swaps the anchor
+            // without unmounting the bubble, so a glide left over from the old
+            // one would animate this reset to 0,0 as a slide to the corner.
+            setGlide(false);
             setPlacement(null);
-            setActive({ target, content, options, latched });
+            setContent(content);
+            setActive({ target, options, latched: source === 'click' });
         };
 
-        // Click and focus are explicit user intent, so they open immediately;
-        // only hover pays the delay.
-        if (latched || options.trigger !== 'mouseover' || options.delay <= 0) {
+        // Click and keyboard focus are explicit user intent, so they open
+        // immediately. Only hover pays the delay, whose job is to keep the
+        // tooltip from flashing as the pointer crosses a trigger on its way
+        // somewhere else — a problem no deliberate open has.
+        if (source !== 'hover' || options.delay <= 0) {
             commit();
         }
         else {
@@ -255,8 +298,17 @@ export function Tooltip({
         }
     }, [clearTimer, hide]);
 
-    /** Recompute the position against the anchor's current box. */
-    const update = useCallback(() => {
+    /**
+     * Recompute the position against the anchor's current box.
+     *
+     * `animate` glides the bubble to the new spot instead of jumping there, and
+     * belongs to the *cause* of the move rather than to the tooltip: a bubble
+     * hopping between chart markers wants easing, the same bubble riding a
+     * scroll wants to be welded to its anchor. Set alongside the placement so
+     * both land in one render — a transition declared in the same style
+     * recalculation as the change it covers still animates.
+     */
+    const update = useCallback((animate = false) => {
         const current = activeRef.current;
         const bubble  = bubbleRef.current;
 
@@ -270,7 +322,11 @@ export function Tooltip({
             return;
         }
 
-        const { anchor, x, y } = resolveAnchor(current.target, current.options, pointerRef.current);
+        // Re-resolved on every reposition, so a marker that moves, is replaced,
+        // or disappears is picked up without any registration step.
+        const anchorElement = resolveAnchorElement(current.target, current.options.anchor);
+
+        const { anchor, x, y } = resolveAnchor(anchorElement, current.options, pointerRef.current);
 
         // Measured with getBoundingClientRect, not offsetWidth/offsetHeight:
         // those round to whole pixels, and the arrow is positioned at exactly
@@ -291,6 +347,44 @@ export function Tooltip({
             offset    : current.options.offset,
             arrowInset: ARROW_INSET
         });
+
+        // Never while tracking the cursor: there the bubble is already moving
+        // with the pointer, and easing only turns that into lag.
+        const easing = animate && !usesPointer(current.options);
+
+        if (easing) {
+            // Left to React, so the transition and the coordinates it animates
+            // arrive in one commit — a frame of latency is invisible under a
+            // 0.2s ease anyway.
+            setGlide(true);
+        }
+        else {
+            setGlide(false);
+
+            // Dropped synchronously, not just via the state above: the write
+            // below happens now, while a `--glide` left over from a previous
+            // anchor move is still on the element, and the stylesheet would
+            // animate it. That is the transition reappearing on scroll. React
+            // is already heading to the same class list, so this only brings
+            // the removal forward to where it is needed.
+            bubble.classList.remove(GLIDE_CLASS);
+
+            // Written straight to the node rather than waiting for the render.
+            // Scroll events are dispatched inside the frame's rendering steps,
+            // so a synchronous write here is painted with the scroll that
+            // caused it, while a setState lands a frame or more later — the
+            // bubble visibly trailing the anchor and then catching up. Same
+            // for the rAF-driven pointer and anchor updates. The state below
+            // still runs, re-rendering these exact numbers and carrying the
+            // side class and arrow offsets.
+            bubble.style.left = `${next.left}px`;
+            bubble.style.top  = `${next.top}px`;
+
+            if (next.arrow) {
+                bubble.style.setProperty('--cp-tooltip-arrow-left', `${next.arrow.left}px`);
+                bubble.style.setProperty('--cp-tooltip-arrow-top', `${next.arrow.top}px`);
+            }
+        }
 
         setPlacement(previous => (samePlacement(previous, next) ? previous : next));
     }, [hide]);
@@ -334,7 +428,7 @@ export function Tooltip({
                 return;
             }
 
-            show(trigger, false);
+            show(trigger, 'hover');
         };
 
         const onPointerOut = (event: PointerEvent) => {
@@ -370,7 +464,7 @@ export function Tooltip({
                     hide();
                 }
                 else {
-                    show(trigger, true);
+                    show(trigger, 'click');
                 }
                 return;
             }
@@ -389,7 +483,7 @@ export function Tooltip({
             // Keyboard users reach hover tooltips through focus too, so both
             // triggers respond here; only `click` stays pointer-driven.
             if (readOptions(trigger, defaultsRef.current).trigger !== 'click') {
-                show(trigger, false);
+                show(trigger, 'focus');
             }
         };
 
@@ -431,14 +525,19 @@ export function Tooltip({
             return;
         }
 
-        update();
+        // The opening placement, and every move the tooltip does not initiate:
+        // a scroll or resize is the anchor being carried somewhere by the user,
+        // and the bubble has to stay welded to it rather than easing after it.
+        const reposition = () => update();
+
+        reposition();
 
         // Capture phase catches scrolling in any ancestor container, not just
         // the window.
-        window.addEventListener('scroll', update, { capture: true, passive: true });
-        window.addEventListener('resize', update, { passive: true });
+        window.addEventListener('scroll', reposition, { capture: true, passive: true });
+        window.addEventListener('resize', reposition, { passive: true });
 
-        const resizeObserver = new ResizeObserver(update);
+        const resizeObserver = new ResizeObserver(reposition);
         resizeObserver.observe(active.target);
 
         if (bubbleRef.current) {
@@ -454,6 +553,45 @@ export function Tooltip({
             }
         });
         mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+        // An anchor may rewrite its own `data-tooltip` while the tooltip is
+        // showing — a chart tracking the nearest point to the cursor keeps one
+        // anchor and changes what it describes. Without this the bubble would
+        // keep displaying whatever was true when the pointer first arrived.
+        const contentObserver = new MutationObserver(() => {
+            const next = renderTooltipMarkdown(active.target.getAttribute('data-tooltip') || '');
+
+            if (next === null) {
+                hide();
+                return;
+            }
+
+            setContent(next);
+        });
+        contentObserver.observe(active.target, { attributes: true, attributeFilter: ['data-tooltip'] });
+
+        // A separate anchor element moves on its own schedule — React rewriting
+        // a marker's coordinates is neither a scroll nor a resize, so nothing
+        // else here would notice. Watching the trigger's subtree covers the
+        // marker moving, being replaced, or being removed entirely.
+        let anchorFrame = 0;
+
+        const scheduleUpdate = () => {
+            if (!anchorFrame) {
+                anchorFrame = requestAnimationFrame(() => {
+                    anchorFrame = 0;
+                    // The one reposition worth animating: the anchor jumped to
+                    // a new place on its own — a chart marker snapping between
+                    // data points — so the bubble glides after it instead of
+                    // teleporting.
+                    update(true);
+                });
+            }
+        };
+
+        const anchorObserver = active.options.anchor ? new MutationObserver(scheduleUpdate) : null;
+
+        anchorObserver?.observe(active.target, { attributes: true, childList: true, subtree: true });
 
         // Only a pointer-tracking tooltip cares about cursor movement; every
         // other one is pinned to its anchor and would just be recomputing the
@@ -479,14 +617,19 @@ export function Tooltip({
         }
 
         return () => {
-            window.removeEventListener('scroll', update, { capture: true });
-            window.removeEventListener('resize', update);
+            window.removeEventListener('scroll', reposition, { capture: true });
+            window.removeEventListener('resize', reposition);
             document.removeEventListener('pointermove', onPointerMove);
             if (frame) {
                 cancelAnimationFrame(frame);
             }
             resizeObserver.disconnect();
             mutationObserver.disconnect();
+            contentObserver.disconnect();
+            anchorObserver?.disconnect();
+            if (anchorFrame) {
+                cancelAnimationFrame(anchorFrame);
+            }
         };
     }, [active, update, hide]);
 
@@ -519,6 +662,7 @@ export function Tooltip({
         'cp-tooltip',
         active.options.position === 'inside' ? 'cp-tooltip--inside' : `cp-tooltip--${placement?.side ?? 'top'}`,
         placement ? 'cp-tooltip--visible' : null,
+        glide ? GLIDE_CLASS : null,
         // Only click-latched tooltips accept the pointer; hover ones stay
         // transparent to it so they cannot flicker or block the anchor.
         active.latched ? 'cp-tooltip--interactive' : null,
@@ -542,7 +686,7 @@ export function Tooltip({
                 '--cp-tooltip-arrow-size': `${ARROW_SIZE}px`
             } as React.CSSProperties}
         >
-            <div className="cp-tooltip-content">{active.content}</div>
+            <div className="cp-tooltip-content">{content}</div>
             {placement?.arrow && <span className="cp-tooltip-arrow" aria-hidden="true" />}
         </div>,
         document.body

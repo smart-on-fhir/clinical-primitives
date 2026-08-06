@@ -1,22 +1,35 @@
 .cp-tooltip {
     // Shared with the arrow, which has to subtract it — see .cp-tooltip-arrow.
-    --cp-tooltip-border-width: 1px;
+    --cp-tooltip-border-width: 1.75px;
+    --cp-tooltip-border-color: var(--cp-color-txt-7);
 
     position      : fixed;
     z-index       : 2000; // above .cp-dialog-backdrop (1000)
     box-sizing    : border-box;
     background    : var(--cp-color-win);
     color         : var(--cp-color-txt-3);
-    border        : var(--cp-tooltip-border-width) solid var(--cp-color-txt-5);
+    border        : var(--cp-tooltip-border-width) solid var(--cp-tooltip-border-color);
     border-radius : var(--cp-radius-md);
-    box-shadow    : 0 2px 8px rgba(from var(--cp-color-txt) r g b / 0.15);
+    box-shadow    : 0 2px 8px #0002;
     padding       : 0.5em 0.75em;
     font-size     : var(--cp-text-sm);
     line-height   : 1.4;
     text-align    : left;
     pointer-events: none;
     opacity       : 0;
-    transition    : opacity 0.12s ease-out;
+    // Fade only. The show delay lives in JS (the `delay` prop), which is the
+    // only place that knows whether the tooltip was opened by hover, click or
+    // focus; a transition-delay here would make all three wait alike.
+    transition    : opacity 0.2s ease-out;
+
+    // Position transitions, applied per reposition rather than unconditionally,
+    // because whether a move should ease depends on what caused it: an anchor
+    // that jumps on its own (a chart marker snapping to a data point) glides,
+    // while opening, scrolling, resizing and cursor-tracking all have to be
+    // instant. See `update`'s `animate` argument in index.tsx.
+    &.cp-tooltip--glide {
+        transition: opacity 0.2s ease-out, left 0.2s ease-out, top 0.2s ease-out;
+    }
 
     // Held back until the first measuring pass has produced a real position,
     // otherwise the bubble would flash in the top-left corner.
@@ -30,7 +43,12 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        transition: none;
+        // The glide rule below is a compound selector, so it outranks a bare
+        // `transition: none` here; it has to be silenced by name.
+        &,
+        &.cp-tooltip--glide {
+            transition: none;
+        }
     }
 }
 
@@ -87,8 +105,8 @@
     top       : calc(var(--cp-tooltip-arrow-top)  - var(--cp-tooltip-border-width));
     // A square rotated 45°, so its tip protrudes half its diagonal — about
     // 0.707 × the width set here — past the bubble edge.
-    width     : calc(var(--cp-tooltip-arrow-size) * 1);
-    height    : calc(var(--cp-tooltip-arrow-size) * 1);
+    width     : calc(var(--cp-tooltip-arrow-size) * 1.2);
+    height    : calc(var(--cp-tooltip-arrow-size) * 1.2);
     background: var(--cp-color-win);
     // Centers the square exactly on the bubble's outer edge, so its two upper
     // corners land on that edge and the bordered lower faces continue the
@@ -96,28 +114,32 @@
     // because the placement now measures the bubble with getBoundingClientRect
     // instead of the pixel-rounded offsetHeight — hence no per-side nudges.
     transform : translate(-50%, -50%) rotate(45deg);
-    border    : 0 solid var(--cp-color-txt-5);
+    border    : 0 solid var(--cp-tooltip-border-color);
     margin    : 0;
 }
 
 // Only the two faces pointing away from the bubble get a border, so the seam
 // with the bubble edge stays invisible.
 .cp-tooltip--top .cp-tooltip-arrow {
-    border-right-width : 1px;
-    border-bottom-width: 1px;
+    border-right-width : var(--cp-tooltip-border-width);
+    border-bottom-width: var(--cp-tooltip-border-width);
+    border-bottom-right-radius: 1px;
 }
 
 .cp-tooltip--bottom .cp-tooltip-arrow {
-    border-left-width: 1px;
-    border-top-width : 1px;
+    border-left-width: var(--cp-tooltip-border-width);
+    border-top-width : var(--cp-tooltip-border-width);
+    border-top-left-radius: 1px;
 }
 
 .cp-tooltip--left .cp-tooltip-arrow {
-    border-top-width  : 1px;
-    border-right-width: 1px;
+    border-top-width  : var(--cp-tooltip-border-width);
+    border-right-width: var(--cp-tooltip-border-width);
+    border-top-right-radius: 1px;
 }
 
 .cp-tooltip--right .cp-tooltip-arrow {
-    border-left-width  : 1px;
-    border-bottom-width: 1px;
+    border-left-width  : var(--cp-tooltip-border-width);
+    border-bottom-width: var(--cp-tooltip-border-width);
+    border-bottom-left-radius: 1px;
 }

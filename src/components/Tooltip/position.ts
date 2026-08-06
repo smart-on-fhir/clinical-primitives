@@ -58,34 +58,32 @@ const PERPENDICULAR: Record<TooltipSide, TooltipSide[]> = {
 };
 
 /**
- * The arrow snaps to one of these fractions along the bubble's edge rather than
- * sliding continuously with the anchor. Quarter positions still communicate
- * which side of the bubble the anchor is on, without letting the arrow drift
- * into the rounded corners.
- */
-export const ARROW_SNAP_FRACTIONS = [0.05, 0.5, 0.95];
-
-/**
- * Pick the snap position nearest to where the anchor's center actually falls.
+ * Where the arrow sits along the bubble's edge: directly over the anchor's
+ * center, pulled in only as far as the corners demand.
  *
- * Corner clearance is applied by clamping, not by discarding: a fraction close
- * to 0 or 1 is pulled in to `inset` rather than dropped, so the outer positions
- * keep working on bubbles too small for them to fit literally. Discarding
- * instead would silently collapse every arrow to the midpoint whenever the
- * fractions sit nearer the edge than `inset` — the setting would appear to do
- * nothing.
+ * This used to snap to a set of fixed fractions — 5%, 50%, 95% — which is what
+ * put the arrow off the thing it was pointing at. The two are irreconcilable
+ * once the bubble has been clamped to the viewport: clamping slides the bubble
+ * out from under the anchor, so the anchor's position along the bubble's edge
+ * becomes arbitrary, and rounding it to the nearest of three fractions moved the
+ * arrow by up to a fifth of the bubble's width. On a wide bubble that is over a
+ * hundred pixels, which is how an arrow ended up at the far corner from its own
+ * trigger.
+ *
+ * The snapping was never load-bearing either. With the default centered
+ * alignment an unclamped bubble puts the anchor at exactly 50% already, so
+ * snapping is a no-op; the only time it changed the answer was the clamped case,
+ * where it was wrong. What it was asked to do — keep the arrow out of the
+ * rounded corners — is what `inset` does, and does exactly.
  */
-function snapArrow(ideal: number, size: number, inset: number): number {
-    // No room for an off-center arrow that still clears both corners.
+function arrowOffset(ideal: number, size: number, inset: number): number {
+    // Too narrow for an off-center arrow to clear both corners; the midpoint is
+    // the only position that does.
     if (inset * 2 >= size) {
         return size / 2;
     }
 
-    return ARROW_SNAP_FRACTIONS
-        .map(fraction => clamp(size * fraction, inset, size - inset))
-        .reduce((best, candidate) =>
-            Math.abs(candidate - ideal) < Math.abs(best - ideal) ? candidate : best
-        );
+    return clamp(ideal, inset, size - inset);
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -212,15 +210,17 @@ export function computePlacement(input: PlacementInput): Placement {
     const left = clamp(rect.left, minLeft, maxLeft);
     const top  = clamp(rect.top,  minTop,  maxTop);
 
-    // Aim at the anchor's center, then snap to the nearest quarter position.
+    // Aim at the anchor's center, measured against the bubble's final position
+    // rather than its intended one — `left`/`top` above are already clamped, and
+    // the whole point of the arrow is to bridge the gap that clamping opened.
     const arrow = side === 'top' || side === 'bottom'
         ? {
-            left: snapArrow(anchor.left + anchor.width / 2 - left, tooltip.width, arrowInset),
+            left: arrowOffset(anchor.left + anchor.width / 2 - left, tooltip.width, arrowInset),
             top : side === 'top' ? tooltip.height : 0
         }
         : {
             left: side === 'left' ? tooltip.width : 0,
-            top : snapArrow(anchor.top + anchor.height / 2 - top, tooltip.height, arrowInset)
+            top : arrowOffset(anchor.top + anchor.height / 2 - top, tooltip.height, arrowInset)
         };
 
     return { left, top, side, align: effectiveAlign, arrow };
