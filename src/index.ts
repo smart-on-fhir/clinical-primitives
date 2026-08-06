@@ -31,6 +31,11 @@ export { ImmunizationList }        from './components/Immunization/ImmunizationL
 export { MedicationList }          from './components/Medication/MedicationList';
 export { ObservationCard }         from './components/Observation';
 export { ObservationHistoryTable } from './components/Observation/ObservationHistoryTable';
+export { ObservationChart }        from './components/Observation/ObservationChart';
+export type { ObservationChartSeries } from './components/Observation/ObservationChart';
+export { resolveRange, statusFor, toneFor, rangeZones, RANGE_MARGIN, readInterpretation, boundsFromObservation, boundRuns, rangeGradientStops } from './components/Observation/referenceRange';
+export type { ReferenceRangeResolver, ResolvedRange, Bounds, RangeStatus, RangeTone, RangeBand, RangeZones, BoundedPoint, BoundRun, RangeGradient, RangeGradientStop } from './components/Observation/referenceRange';
+export { splinePath }              from './components/Observation/spline';
 export { ObservationsPanel }       from './components/Observation/ObservationsPanel';
 export { EventFeed }               from './components/EventFeed';
 export { LabTrendPanel }           from './components/Observation/LabTrendPanel';

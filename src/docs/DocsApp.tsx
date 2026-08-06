@@ -13,6 +13,7 @@ import { LabTrendPanelPage }      from './pages/LabTrendPanelPage';
 import { FindingCardPage }        from './pages/FindingCardPage';
 import { ChartPage }              from './pages/ChartPage';
 import { TooltipPage }            from './pages/TooltipPage';
+import { ObservationChartPage }   from './pages/ObservationChartPage';
 import { Playground }             from './pages/StaticComponentPlayground';
 import { ClinicalDataProvider, Tooltip } from '../index';
 import { DocsThemeContext }       from './components/DocsThemeContext';
@@ -95,6 +96,8 @@ export function DocsApp() {
     'lab-trend-panel':     <LabTrendPanelPage />,
     'finding-card':        <FindingCardPage />,
     'chart':               <ChartPage />,
+    'tooltip':             <TooltipPage />,
+    'observation-chart':   <ObservationChartPage />,
     'playground':          <Playground />,
   }[activeSection];
 
@@ -176,6 +179,7 @@ export function DocsApp() {
           </ClinicalDataProvider>
         </main>
       </div>
+      <Tooltip />
     </DocsThemeContext.Provider>
   );
 }

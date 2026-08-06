@@ -12,6 +12,7 @@ export const sections = [
   { id: 'finding-card',        label: 'FindingCard',            path: '/finding-card'          },
   { id: 'chart',               label: 'Chart',                  path: '/chart'                 },
   { id: 'tooltip',             label: 'Tooltip',                path: '/tooltip'               },
+  { id: 'observation-chart',   label: 'ObservationChart',       path: '/observation-chart'     },
   { id: 'playground',          label: 'Playground',             path: '/playground'            },
 ] as const;
 
