@@ -105,8 +105,14 @@ $colorsDark: (
     }
 }
 
+// Follow the OS, but only where the page has not stated a preference of its
+// own. Without the `:not`, this block and the light `:root` above have equal
+// specificity and this one comes later, so it wins outright — `data-theme`
+// selects a theme that the very next rule then overrides, and a page pinned to
+// light stays dark on a dark OS. Explicit dark needs no help here: the
+// `[data-theme='dark']` rule above already outranks the unqualified `:root`.
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme='light']) {
         @each $name, $value in $colorsDark {
             --cp-color-#{$name}: #{$value};
         }
