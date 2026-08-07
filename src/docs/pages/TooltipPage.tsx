@@ -140,6 +140,28 @@ export function TooltipPage() {
             </article>
 
             <article className="mb-12">
+                <h3 className="mb-2">Anchoring elsewhere</h3>
+                <p className="mb-4 cp-text-txt-5">
+                    <code>data-tooltip-anchor</code> takes a CSS selector for the element the bubble should
+                    point at, which need not be the one that triggered it. Hovering anywhere in the box below
+                    opens a tooltip anchored to the small square, not to the box. The selector is resolved
+                    inside the trigger first, so repeated instances on a page each find their own child
+                    rather than all matching the first in document order.
+                </p>
+                <div
+                    tabIndex={0}
+                    data-tooltip="Anchored to the square, triggered by the whole box."
+                    data-tooltip-anchor=".tooltip-anchor-demo-target"
+                    className="cp-rounded-md p-6 flex justify-end cp-fill-win-2 cursor-default"
+                >
+                    <span
+                        className="tooltip-anchor-demo-target cp-rounded-md"
+                        style={{ width: "2rem", height: "2rem", background: "var(--cp-color-blue)" }}
+                    />
+                </div>
+            </article>
+
+            <article className="mb-12">
                 <h3 className="mb-2">Triggers</h3>
                 <p className="mb-4 cp-text-txt-5">
                     <code>data-tooltip-trigger</code> accepts <code>mouseover</code> (default),{' '}
@@ -230,6 +252,7 @@ export function TooltipPage() {
                             ['data-tooltip-position',  'inside | outside',            'outside'],
                             ['data-tooltip-trigger',   'mouseover | click | focus',   'mouseover'],
                             ['data-tooltip-viewport',  'CSS selector',                'the window'],
+                            ['data-tooltip-anchor',    'CSS selector for the element to point at', 'the trigger itself'],
                             ['data-tooltip-delay',     'milliseconds',                '100'],
                             ['data-tooltip-offset',    'pixels',                      '8'],
                             ['data-tooltip-max-width', 'CSS length',                  '20rem'],
