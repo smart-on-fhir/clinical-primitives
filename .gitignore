@@ -2,3 +2,4 @@ node_modules
 dist
 docs-dist
 .DS_Store
+src/docs/html-examples
