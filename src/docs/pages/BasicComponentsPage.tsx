@@ -22,8 +22,8 @@ export function BasicComponentsPage() {
 
       <div className="flex flex-wrap gap-8">
         <article>
-          <h3>Badge</h3>
-          <table style={{ borderSpacing: '0.5rem' }}>
+          <h3 className='mb-1'>Badge</h3>
+          <table style={{ borderSpacing: '0.25rem', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><Badge variant="danger">Danger</Badge></td>
@@ -94,8 +94,8 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Button</h3>
-          <table style={{ borderSpacing: '0.5rem' }}>
+          <h3 className='mb-1'>Button</h3>
+          <table style={{ borderSpacing: '0.25rem', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><Button variant="danger" className="cp-px-4 cp-py-3">Button</Button></td>
@@ -166,8 +166,8 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Alert</h3>
-          <table style={{ borderSpacing: '0.5rem' }}>
+          <h3 className='mb-1'>Alert</h3>
+          <table style={{ borderSpacing: '0.25rem', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><Alert variant="danger">Danger</Alert></td>
@@ -230,8 +230,8 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>CheckBox</h3>
-          <table style={{ borderSpacing: '0.5rem' }}>
+          <h3 className='mb-1'>CheckBox</h3>
+          <table style={{ borderSpacing: '0.25rem', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><CheckBox /></td>
@@ -258,8 +258,8 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>RadioButton</h3>
-          <table style={{ borderSpacing: '0.5rem' }}>
+          <h3 className='mb-1'>RadioButton</h3>
+          <table style={{ borderSpacing: '0.25rem', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><RadioButtonExample options={[{ value: 'a', label: 'Option A' }, { value: 'b', label: 'Option B' }, { value: 'c', label: 'Option C' }]} /></td>
@@ -302,8 +302,8 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Border Radius</h3>
-          <table style={{ borderSpacing: '0.5rem' }}>
+          <h3 className='mb-1'>Border Radius</h3>
+          <table style={{ borderSpacing: '0.25rem', borderCollapse: 'separate' }}>
             <tbody>
               <tr>
                 <td><div className='cp-rounded-full bg-blue-500 text-white px-4 py-2 text-center'>.cp-rounded-full</div></td>
@@ -328,7 +328,7 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Fill Colors</h3>
+          <h3 className='mb-1'>Fill Colors</h3>
           <div className="flex flex-wrap gap-4">
             <div className="cp-fill-red cp-border-danger rounded p-3 text-white">.cp-fill-red</div>
             <div className="cp-fill-amber cp-border-warning rounded p-3 text-white">.cp-fill-amber</div>
@@ -344,7 +344,7 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Fill Opacity</h3>
+          <h3 className='mb-1'>Fill Opacity</h3>
           <div className="flex flex-wrap gap-4">
             <div className="cp-fill-red cp-fill-opacity-10 cp-border-danger rounded p-3">.cp-fill-opacity-10</div>
             <div className="cp-fill-red cp-fill-opacity-20 cp-border-danger rounded p-3">.cp-fill-opacity-20</div>
@@ -360,39 +360,39 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Border Colors</h3>
+          <h3 className='mb-1'>Border Colors</h3>
           <div className="flex flex-wrap gap-4">
-            <div className="border-solid cp-border-red rounded p-3">.cp-border-red</div>
-            <div className="border-solid cp-border-amber rounded p-3">.cp-border-amber</div>
-            <div className="border-solid cp-border-yellow rounded p-3">.cp-border-yellow</div>
-            <div className="border-solid cp-border-green rounded p-3">.cp-border-green</div>
-            <div className="border-solid cp-border-teal rounded p-3">.cp-border-teal</div>
-            <div className="border-solid cp-border-blue rounded p-3">.cp-border-blue</div>
-            <div className="border-solid cp-border-purple rounded p-3">.cp-border-purple</div>
-            <div className="border-solid cp-border-gray rounded p-3">.cp-border-gray</div>
-            <div className="border-solid cp-border-white rounded p-3">.cp-border-white</div>
-            <div className="border-solid cp-border-black rounded p-3">.cp-border-black</div>
+            <div className="cp-border-2 border-solid cp-border-red rounded p-3">.cp-border-red</div>
+            <div className="cp-border-2 border-solid cp-border-amber rounded p-3">.cp-border-amber</div>
+            <div className="cp-border-2 border-solid cp-border-yellow rounded p-3">.cp-border-yellow</div>
+            <div className="cp-border-2 border-solid cp-border-green rounded p-3">.cp-border-green</div>
+            <div className="cp-border-2 border-solid cp-border-teal rounded p-3">.cp-border-teal</div>
+            <div className="cp-border-2 border-solid cp-border-blue rounded p-3">.cp-border-blue</div>
+            <div className="cp-border-2 border-solid cp-border-purple rounded p-3">.cp-border-purple</div>
+            <div className="cp-border-2 border-solid cp-border-gray rounded p-3">.cp-border-gray</div>
+            <div className="cp-border-2 border-solid cp-border-white rounded p-3">.cp-border-white</div>
+            <div className="cp-border-2 border-solid cp-border-black rounded p-3">.cp-border-black</div>
           </div>
         </article>
 
         <article>
-          <h3>Border Opacity</h3>
+          <h3 className='mb-1'>Border Opacity</h3>
           <div className="flex flex-wrap gap-4">
-            <div className="border-solid cp-border-red cp-border-opacity-10 rounded p-3">.cp-border-opacity-10</div>
-            <div className="border-solid cp-border-red cp-border-opacity-20 rounded p-3">.cp-border-opacity-20</div>
-            <div className="border-solid cp-border-red cp-border-opacity-30 rounded p-3">.cp-border-opacity-30</div>
-            <div className="border-solid cp-border-red cp-border-opacity-40 rounded p-3">.cp-border-opacity-40</div>
-            <div className="border-solid cp-border-red cp-border-opacity-50 rounded p-3">.cp-border-opacity-50</div>
-            <div className="border-solid cp-border-red cp-border-opacity-60 rounded p-3">.cp-border-opacity-60</div>
-            <div className="border-solid cp-border-red cp-border-opacity-70 rounded p-3">.cp-border-opacity-70</div>
-            <div className="border-solid cp-border-red cp-border-opacity-80 rounded p-3">.cp-border-opacity-80</div>
-            <div className="border-solid cp-border-red cp-border-opacity-90 rounded p-3">.cp-border-opacity-90</div>
-            <div className="border-solid cp-border-red cp-border-opacity-100 rounded p-3">.cp-border-opacity-100</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-10 rounded p-3">.cp-border-opacity-10</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-20 rounded p-3">.cp-border-opacity-20</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-30 rounded p-3">.cp-border-opacity-30</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-40 rounded p-3">.cp-border-opacity-40</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-50 rounded p-3">.cp-border-opacity-50</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-60 rounded p-3">.cp-border-opacity-60</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-70 rounded p-3">.cp-border-opacity-70</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-80 rounded p-3">.cp-border-opacity-80</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-90 rounded p-3">.cp-border-opacity-90</div>
+            <div className="cp-border-2 border-solid cp-border-red cp-border-opacity-100 rounded p-3">.cp-border-opacity-100</div>
           </div>
         </article>
 
         <article>
-          <h3>Text Colors</h3>
+          <h3 className='mb-1'>Text Colors</h3>
           <div className="flex flex-wrap gap-4">
             <div className="cp-text-red">.cp-text-red</div>
             <div className="cp-text-amber">.cp-text-amber</div>
@@ -408,7 +408,7 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Text Opacity</h3>
+          <h3 className='mb-1'>Text Opacity</h3>
           <div className="flex flex-wrap gap-4">
             <div className="cp-text-txt cp-text-opacity-10">.cp-text-opacity-10</div>
             <div className="cp-text-txt cp-text-opacity-20">.cp-text-opacity-20</div>
@@ -424,7 +424,7 @@ export function BasicComponentsPage() {
         </article>
 
         <article>
-          <h3>Tabs</h3>
+          <h3 className='mb-1'>Tabs</h3>
           <div className="flex flex-wrap gap-4">
             <Tabs defaultIndex={1}>
               <TabBar>
@@ -458,8 +458,8 @@ export function BasicComponentsPage() {
       </div>
 
       <article>
-          <h3>Sparkline</h3>
-          <div className="flex gap-8 items-start flex-wrap">
+          <h3 className='mb-1'>Sparkline</h3>
+          <div className="flex gap-8 items-start flex-wrap mb-4">
             <div className="border border-solid cp-border-win-3 rounded-lg overflow-hidden cp-fill-win-1 overflow-hidden flex-1 min-w-[300px]">
               <div className="p-2 font-bold cp-text-txt-4">
                 Minimal Example
@@ -656,8 +656,8 @@ export function BasicComponentsPage() {
       </article>
 
       <article>
-        <h3>Collapse</h3>
-        <div className="border border-solid cp-border-win-3 rounded-lg overflow-hidden cp-fill-win-1 flex-1 max-w-[300px] p-4">
+        <h3 className='mb-1'>Collapse</h3>
+        <div className="border border-solid cp-border-win-3 rounded-lg overflow-hidden cp-fill-win-1 flex-1 max-w-[300px] p-4 mb-4">
           <Collapse label={ <b>Click to Toggle</b> }>
             <p>
               This is the content of the collapse component.<br />
@@ -672,8 +672,8 @@ export function BasicComponentsPage() {
       </article>
 
       <article>
-        <h3>JSON Viewer</h3>
-        <div className="border border-solid cp-border-win-3 rounded-lg overflow-hidden cp-fill-win-1 flex-1 max-w-[800px] p-4">
+        <h3 className='mb-1'>JSON Viewer</h3>
+        <div className="border border-solid cp-border-win-3 rounded-lg overflow-hidden cp-fill-win-1 flex-1 max-w-[800px] p-4 mb-4">
           <JsonViewer data={{
             name: "John Doe",
             age: 30,
@@ -694,7 +694,7 @@ export function BasicComponentsPage() {
       </article>
 
       <article>
-        <h3>Loader</h3>
+        <h3 className='mb-1'>Loader</h3>
         <code>&lt;Loader msg="Loading..." /&gt;</code>
         <br/>
         <br/>

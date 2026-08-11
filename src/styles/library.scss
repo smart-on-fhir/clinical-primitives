@@ -1,5 +1,10 @@
 @use "sass:math";
 
+// First, so its zero-specificity rules are the ones anything else overrides.
+// Order is not what decides that — see the note in the file — but reading the
+// stylesheet top to bottom should match how it resolves.
+@use "reset";
+
 $colors: (
     'red'   : #dc2626,
     'amber' : #ee7700,

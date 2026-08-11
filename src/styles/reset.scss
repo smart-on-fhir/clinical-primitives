@@ -1,0 +1,110 @@
+// A predictable baseline for everything this library renders.
+//
+// Why a library ships one at all
+// ------------------------------
+// These components were written against a page with no CSS reset — the docs run
+// Tailwind with `preflight: false` — so wherever a component did not state a
+// value it quietly inherited the browser's. An app with a reset then rendered
+// the same markup differently: Tailwind v4 zeroes `margin`, `padding` and
+// `border` on *every* element through the universal selector, so a button whose
+// padding the library never declared collapsed onto its text. Neither page was
+// wrong; the library simply had no baseline of its own and took whichever one
+// the host happened to have.
+//
+// This is that baseline. It matches what a reset-bearing host would have done
+// anyway, so components look the same in both — and the difference is no longer
+// something a consumer can accidentally change.
+//
+// How it is scoped
+// ----------------
+// To elements the library renders and their contents, never to the document. A
+// component library that resets `*` globally is rewriting pages it knows
+// nothing about, and there is no way for an app to opt out of a stylesheet it
+// has to import to get anything at all.
+//
+// Content an app passes in as children is inside that scope, and is reset too.
+// That is deliberate — a heading handed to a chart's `title` should look like
+// the chart's own — but it is worth knowing about, and an app's own rules still
+// win over every rule here.
+//
+// Why `:where()`
+// --------------
+// It contributes no specificity, so everything outranks it: the library's own
+// component rules, and any rule an app writes. That also settles the fight with
+// a host reset without depending on load order — Tailwind puts its preflight in
+// `@layer base`, and unlayered declarations beat layered ones however weak they
+// are. The one thing that must not happen is this file winning an argument
+// against a rule someone wrote on purpose.
+
+// Elements carrying a library class, whether it leads the attribute or follows
+// another class.
+$scope: '[class^="cp-"], [class*=" cp-"]';
+
+// The scope elements themselves and everything inside them.
+$all: '#{$scope}, :where(#{$scope}) *';
+
+:where(#{$all}),
+:where(#{$scope}) *::before,
+:where(#{$scope}) *::after {
+    // Sizes that mean what they say. Every layout in the library is written
+    // assuming padding and borders are inside the box.
+    box-sizing: border-box;
+
+    // Nothing carries spacing it was not given. The alternative is spacing that
+    // depends on the user agent, which is where this all started.
+    margin : 0;
+    padding: 0;
+
+    // Width zero, style solid: a border shows up only where one is asked for,
+    // and asking takes a width alone. Matches what the components already do,
+    // all of which name a style anyway.
+    border: 0 solid;
+}
+
+// Text elements keep their block layout but none of their invented spacing —
+// stated here as well because the rules above only reach elements inside the
+// library's scope, and a component root is itself a scope element.
+:where(#{$all}) {
+    // Headings on the library's own scale rather than the browser's, which
+    // ranges from twice the body size to smaller than it. Left at `inherit`
+    // they would be indistinguishable from body text under any host that
+    // flattens them, which every reset does.
+    &:where(h1) { font-size: var(--cp-text-4xl); font-weight: 600; }
+    &:where(h2) { font-size: var(--cp-text-3xl); font-weight: 600; }
+    &:where(h3) { font-size: var(--cp-text-2xl); font-weight: 600; }
+    &:where(h4) { font-size: var(--cp-text-xl);  font-weight: 600; }
+    &:where(h5) { font-size: var(--cp-text-lg);  font-weight: 600; }
+    &:where(h6) { font-size: var(--cp-text-base); font-weight: 600; }
+
+    // Markers are decoration the library never relies on: its lists are laid
+    // out, not bulleted. A component that wants them says so.
+    &:where(ul, ol) { list-style: none; }
+
+    // Controls inherit their type instead of falling back to the system font,
+    // which is smaller than body text and looks like a different application.
+    &:where(button, input, select, optgroup, textarea) {
+        font           : inherit;
+        letter-spacing : inherit;
+        color          : inherit;
+        background     : transparent;
+    }
+
+    // Kept out of the text baseline, where the descender gap under an icon
+    // makes a row look misaligned by a pixel or two for no visible reason.
+    &:where(svg, img, video, canvas) {
+        display       : block;
+        vertical-align: middle;
+    }
+
+    &:where(img, video) { max-width: 100%; height: auto; }
+
+    &:where(table) { border-collapse: collapse; text-indent: 0; }
+
+    // A rule, not a gap with a line in it. Components draw their own separators
+    // with borders; this is only for the rare literal `<hr>`.
+    &:where(hr) { height: 0; border-top-width: 1px; color: inherit; }
+
+    &:where(b, strong) { font-weight: bolder; }
+
+    &:where(code, kbd, samp, pre) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+}
