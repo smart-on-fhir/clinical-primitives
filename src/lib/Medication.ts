@@ -28,7 +28,26 @@ export function normalizeMedName(raw: string): string {
     // Tokens that may appear before the drug name (e.g. "24 HR Metformin...")
     const PREFIX_SKIP = new Set(['HR', 'H', 'MIN', 'SEC']);
 
-    const tokens = raw.trim().split(/[\s,/()[\]]+/).filter(Boolean);
+    // A bracketed aside is a gloss on the name, not more of the name.
+    //
+    // Records routinely restate the drug in brackets — "ferrous sulfate (ferrous
+    // sulfate)" from Epic, "Humira (adalimumab)" or "Humira [adalimumab]"
+    // wherever a brand is being tied to its generic. Both bracket styles are in
+    // the wild for the same purpose, so both are dropped. Treating them as mere
+    // separators, which is what splitting on them did, ran the two names
+    // together: "Ferrous Sulfate Ferrous Sulfate". Dropping the gloss keeps
+    // whichever name the record chose to lead with, and the full product name is
+    // still a `getMedicationName` away for anywhere the difference matters.
+    //
+    // An unclosed bracket takes the rest of the string with it — a name truncated
+    // mid-gloss is more likely to be cut off than to be meaningful.
+    const glossed  = raw.replace(/\s*(\([^)]*(\)|$)|\[[^\]]*(\]|$))/g, " ");
+
+    // Except where that leaves nothing: a wholly parenthesized name is still a
+    // name, and the brackets are then just punctuation around it.
+    const withName = glossed.trim() ? glossed : raw;
+
+    const tokens = withName.trim().split(/[\s,/()[\]]+/).filter(Boolean);
     const nameTokens: string[] = [];
     let nameStarted = false;
 
