@@ -1,0 +1,76 @@
+.cp-timeline-chart {
+
+    .cp-timeline-bar-row {
+        // Clips bars that run past the visible range. The rounded cap is cut off
+        // with them, so a bar continuing off-screen ends square instead.
+        overflow: hidden;
+    }
+
+    // Overlapping bars are stacked rather than drawn on top of each other, so a
+    // row is as many lanes tall as its worst overlap. Rows are sized by their
+    // content through subgrid, so the label opposite stays aligned for free.
+    .cp-timeline-bar-lane {
+        position: relative;
+        min-height: var(--cp-timeline-chart-row-height, 1.4em);
+    }
+
+    .cp-timeline-bar {
+        box-shadow: 0 0 0 0.5px rgb(from var(--cp-color-txt) r g b / 0.5) inset, 0px 0px 0px 0.5px rgb(from var(--cp-color-win) r g b / 0.5);
+        position: absolute;
+        z-index: 2;
+
+        // Bars are clickable, so they keep a pointer even where the surrounding
+        // content area offers a grab cursor for panning.
+        cursor: pointer;
+        top: 50%;
+        transform: translateY(-50%);
+        // bottom: 0.25em;
+        border-radius: 1em;
+
+        min-height: 1em;
+
+        // A bar zoomed out far enough to round to nothing still has to be
+        // visible and clickable. It grows rightward from its true start, which
+        // is correct for a span.
+        min-width: 5px;
+
+        filter: saturate(.6) opacity(0.8);
+
+        // A zero-length bar is a point rather than a span, so it is centered on
+        // its instant instead of growing to one side of it.
+        &.cp-timeline-bar-instant {
+            margin-left: -2px;
+        }
+
+        // The selected bar keeps its fill color — the outline is what changes,
+        // so the row still reads as the same drug.
+        &.cp-timeline-bar-selected {
+            // Earlier shadows paint on top, so the thin window-colored ring has
+            // to come first to show as a gap between the fill and the outline.
+            box-shadow:
+                0 0 0 1px var(--cp-color-txt) inset,
+                0 0 0 1px var(--cp-color-win);
+            z-index: 2;
+            filter: saturate(.8);
+        }
+
+        // Present but no longer current — a stopped medication beside one the
+        // patient is still on. Drawn back rather than recolored or hatched, so
+        // it stays recognizably the same thing as its active courses: the row
+        // reads as one drug over time, with the past further away.
+        //
+        // `opacity` rather than a translucent fill, so the outline fades with
+        // it. A bar keeping its full-strength ring around a washed-out fill
+        // reads as emphasized, which is the opposite of the intent.
+        &.cp-timeline-bar-muted {
+            opacity: 0.4;
+
+            // Selecting one brings it back. The selection ring is drawn in
+            // theme colors at 1px, and dimming it would leave the bar the user
+            // just clicked the hardest on the row to see.
+            &.cp-timeline-bar-selected {
+                opacity: 1;
+            }
+        }
+    }
+}

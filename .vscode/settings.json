@@ -21,6 +21,8 @@
         "chartable",
         "cobalamin",
         "COPD",
+        "elastase",
+        "Entitic",
         "extralight",
         "flowsheet",
         "Folate",
@@ -71,6 +73,7 @@
         "unclickable",
         "uncoded",
         "uncollapsible",
+        "unplottable",
         "unpositioned",
         "Westergren",
         "µmol"

@@ -1,0 +1,656 @@
+.cp-timeline-chart {
+
+    // The rule between rows within a section. Exposed as a variable so a layer
+    // whose rows are meant to run together — a single band split only for
+    // stacking, say — can set `--cp-timeline-chart-row-rule: none` on itself
+    // rather than needing a prop for it.
+    --cp-timeline-chart-row-rule: 0.5px solid rgb(from var(--cp-color-txt) r g b / 0.15);
+
+    // The chart proper on the left, the metadata/settings sidebar on the right.
+    // `minmax(0, …)` keeps the inner grid from forcing the column wider than its
+    // share — without it a long bar label would push the sidebar off-screen.
+    display: grid;
+    align-items: start;
+
+    // The sidebar column is always present, collapsed to nothing when closed.
+    // Keeping the track count the same in both states is what makes the columns
+    // interpolable — going from one track to two would snap instead.
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
+    column-gap: 0;
+    row-gap: var(--cp-space-4);
+
+    // border: 1px solid var(--cp-color-win-3);
+    // padding: var(--cp-space-4);
+    // background: var(--cp-color-win);
+    // border-radius: var(--cp-radius-md);
+
+    transition:
+        grid-template-columns var(--cp-timeline-sidebar-duration, 400ms) ease,
+        column-gap var(--cp-timeline-sidebar-duration, 400ms) ease;
+
+    &.cp-timeline-chart-with-sidebar {
+        grid-template-columns: minmax(0, 4fr) minmax(18em, 1fr);
+        column-gap: var(--cp-space-4);
+    }
+
+    // Animation here is decorative — the layout is legible without it.
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+    }
+
+    .cp-timeline-chart-main {
+        overflow: hidden;
+    }
+
+    button.cp-button {
+        padding: 0.5rem 1rem;
+
+        &:has(> .lucide) {
+            padding: 0.25rem 0.5rem;
+            // padding: var(--cp-space-1) var(--cp-space-3);
+            // line-height: var(--cp-space-5);
+            .lucide {
+                height: 1.2rem;
+                width: 1.2rem;
+                stroke-width: 1px;
+            }
+        }
+    }
+
+    .cp-timeline-chart-toolbar {
+        display: flex;
+        align-items: center;
+        gap: var(--cp-space-3);
+        justify-content: space-between;
+        margin-bottom: var(--cp-space-4);
+
+        
+
+        .radio-button {
+            min-height: 1.84rem;
+        }
+    }
+
+    .cp-timeline-chart-toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: var(--cp-space-2) var(--cp-space-4);
+        flex-wrap: wrap;
+        flex: 1 1 auto;
+    }
+    .cp-timeline-chart-toolbar-right {
+        color: var(--cp-color-txt-7);
+
+        // The sidebar toggle carries an icon and no text, so it wants the same
+        // padding on all four sides — the base button's wider sides are for
+        // holding a word.
+        .cp-button {
+            padding: var(--cp-space-1) var(--cp-space-3);
+        }
+    }
+
+    // Pushed left rather than the row being switched to `space-between`, so a
+    // chart with no title keeps the right-aligned row it had before.
+    .cp-timeline-chart-title {
+        margin-right: auto;
+
+        // A long title shortens instead of forcing the toolbar wider than the
+        // chart and pushing the controls out of reach.
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        h4 {
+            margin: 0;
+        }
+    }
+
+    .cp-timeline-chart-ranges {
+        display: flex;
+        gap: var(--cp-space-3);
+        font-size: var(--cp-text-xs);
+
+        // Tighter than the base button: these are pills in a dense toolbar
+        // rather than form buttons.
+        .cp-button {
+            padding: var(--cp-space-2) var(--cp-space-4);
+        }
+
+        // The pill for the window the chart is showing.
+        //
+        // The group's own variant supplies a pressed grey, which is enough where
+        // something is always selected. Here nothing need be — any pan or zoom
+        // releases every pill — so the selected one has to look chosen rather
+        // than merely pressed, and it carries the accent the old active pill had.
+        //
+        // The variant sets these same properties, so this has to outrank it:
+        // hence the nesting rather than a class on its own.
+        .cp-timeline-chart-range-active {
+            --border-color      : rgba(from var(--cp-color-teal) r g b / 0.4);
+            --bg-color          : rgba(from var(--cp-color-teal) r g b / 0.3);
+            --fg-color          : color-mix(in srgb, var(--cp-color-teal) 50%, var(--cp-color-txt));
+            --border-color-hover: rgba(from var(--cp-color-teal) r g b / 0.5);
+            --bg-color-hover    : rgba(from var(--cp-color-teal) r g b / 0.4);
+            --fg-color-hover    : color-mix(in srgb, var(--cp-color-teal) 40%, var(--cp-color-txt));
+        }
+    }
+
+    // The zoom pair, sitting beside the range presets and matching them.
+    //
+    // Its buttons carry an icon and no text, so the sides come in — the presets'
+    // wider padding is for holding a word, and applied here it would leave two
+    // small glyphs adrift in a wide pill.
+    .cp-timeline-chart-zoom {
+        font-size: var(--cp-text-xs);
+
+        .cp-button {
+            padding: var(--cp-space-2) var(--cp-space-3);
+        }
+    }
+
+    .cp-timeline-chart-sidebar {
+        border-left: 1px solid var(--cp-color-win-3);
+
+        // Fills the row the chart column defines, but contributes no height of
+        // its own — the scroller inside is out of flow, so however tall its
+        // content gets, this cell stays the height of the chart beside it.
+        align-self: stretch;
+        position: relative;
+        z-index: 4;
+
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-5);
+
+        // Collapsed state. `visibility` also takes the panel out of the tab
+        // order, and is transitioned so it only flips once the width animation
+        // has finished — otherwise the content would vanish before it shrank.
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity var(--cp-timeline-sidebar-duration, 400ms) ease,
+            visibility var(--cp-timeline-sidebar-duration, 400ms);
+
+        // The border would otherwise sit as a stray line against the collapsed
+        // column edge.
+        border-left-color: transparent;
+
+        @media (prefers-reduced-motion: reduce) {
+            transition: none;
+        }
+    }
+
+    &.cp-timeline-chart-with-sidebar .cp-timeline-chart-sidebar {
+        opacity: 1;
+        visibility: visible;
+        border-left-color: var(--cp-color-win-3);
+    }
+
+    .cp-timeline-chart-sidebar-scroll {
+        position: absolute;
+        inset: 0;
+        overflow: auto;
+        padding-left: var(--cp-space-4);
+        scroll-behavior: smooth;
+
+        > .cp-collapse > .cp-collapse-header :not(:first-child) {
+            color: var(--cp-color-txt-4);
+            padding: 0.2em 0;
+        }
+    }
+
+    .cp-timeline-setting {
+        display: flex;
+        align-items: center;
+        gap: var(--cp-space-2);
+        cursor: pointer;
+        margin-bottom: var(--cp-space-3);
+        color: var(--cp-color-txt-2);
+    }
+
+    // A row the record has nothing for: listed so the section's coverage stays
+    // visible, but with nothing to show and nothing to toggle. Dropping such
+    // entries instead would make a panel look as though it only ever covered
+    // what this patient happens to have.
+    .cp-timeline-setting-disabled {
+        opacity: 0.55;
+        cursor : default;
+    }
+
+    .cp-timeline-selection-detail {
+
+        // "Source" plus its pop-out button, sitting inside the collapse header.
+        .cp-timeline-source-label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--cp-space-2);
+        }
+
+        > h4 {
+            margin: 0 0 var(--cp-space-1);
+            color: var(--cp-color-txt);
+        }
+
+        > p {
+            margin: 0 0 var(--cp-space-3);
+            font-size: var(--cp-text-xs);
+        }
+
+        > dl {
+            margin: 0 0 var(--cp-space-3);
+
+            > dt {
+                font-size: 80%;
+                text-transform: uppercase;
+                letter-spacing: 0.05rem;
+                font-weight: 500;
+                color: var(--cp-color-txt-7);
+                &::before {
+                    margin-left: 0.2em;
+                    content: "• ";
+                }
+            }
+
+            > dd {
+                margin: 0 0 var(--cp-space-4) var(--cp-space-4);
+                color: var(--cp-color-txt-1);
+                font-size: 87%;
+            }
+
+            // Separates one dosing instruction from the next in a taper. It has
+            // no `dd`, so it takes the whole width and stops the term column
+            // from lining up against nothing.
+            > dt.cp-timeline-dosage-step {
+                grid-column: 1 / -1;
+                justify-self: stretch;
+                margin-top: var(--cp-space-2);
+                padding-top: var(--cp-space-2);
+                border-top: 1px solid var(--cp-color-win-3);
+                color: var(--cp-color-txt-4);
+
+                &::after {
+                    content: none;
+                }
+            }
+        }
+    }
+
+    // One section's panel inside its sidebar entry: an "About" narrative, what
+    // the selection means to it, and its settings.
+    .cp-timeline-chart-sidebar-panel {
+        padding-bottom: var(--cp-space-3);
+        padding-top: var(--cp-space-3);
+        border-top: 1px solid var(--cp-color-win-3);
+
+        > section {
+            margin-bottom: var(--cp-space-4);
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        h5 {
+            margin: 0 0 var(--cp-space-2);
+            font-size: var(--cp-text-xs);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+
+            // No color here on purpose: it inherits the sidebar's, and setting it
+            // would out-specify any `cp-text-*` utility put on the heading.
+        }
+
+        p {
+            margin: 0 0 var(--cp-space-2);
+        }
+    }
+
+    .cp-timeline-chart-highlight {
+        $color: #6AF;
+        // grid-column: 2 / -1;
+        position: absolute;
+        // top: 0;
+        bottom: 0;
+        height: 100%;
+        background: rgb(from $color r g b / 0.2) repeating-linear-gradient(
+                -45deg,
+                rgb(from $color r g b / 0.075),
+                rgb(from $color r g b / 0.075) 5px,
+                transparent 5px,
+                transparent 7px
+            );
+        box-shadow: 0 0 0 1px rgb(from $color r g b / 0.4);
+        border-radius: var(--cp-space-1);
+        pointer-events: none;
+
+        // A selection whose start and end are the same instant has no width to
+        // hatch, so it renders as a single line instead of a band.
+        &.cp-timeline-chart-highlight-instant {
+            min-width: 1px;
+            background: rgb(from $color r g b / 0.4);
+            box-shadow: none;
+            border-radius: 0;
+        }
+    }
+
+    .cp-timeline-chart-grid {
+        display: grid;
+        grid-template-columns: minmax(15em, 1fr) 10fr;
+        gap: var(--cp-space-2) 0;
+        font-size: var(--cp-text-sm);
+        align-items: center;
+    }
+
+    .cp-timeline-chart-ruler {
+        position      : absolute;
+        top           : 0;
+        bottom        : 0;
+        width         : 1px;
+        // Positioned within its own layer's content box, so the rule spans that
+        // section only.
+        // Must never intercept the pointer it is following, or panning and mark
+        // hovering would break the moment the rule caught up with the cursor.
+        pointer-events: none;
+        opacity       : 0.5;
+        z-index       : 5;
+
+        // A gradient rather than `border-left: dashed`, whose dash length the
+        // browser picks and varies between engines. The 3/3 pattern matches
+        // ObservationChart's own crosshair, so the two read as one idiom.
+        background: repeating-linear-gradient(
+            to bottom,
+            var(--cp-color-txt-6) 0 3px,
+            transparent 3px 6px
+        );
+    }
+
+    .cp-timeline-chart-layer-header {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: var(--cp-space-3);
+        justify-content: space-between;
+        color: var(--cp-color-txt-7);
+        font-size: var(--cp-text-xs);
+        margin-top: var(--cp-space-4);
+        margin-bottom: var(--cp-space-2);
+        &:first-of-type {
+            margin-top: 0;
+        }
+    }
+
+    .cp-timeline-chart-layer-header-label {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05rem;
+        color: var(--cp-color-txt-7);
+    }
+
+    // Took the decorative dot's place at the head of the section, and its job
+    // of marking where a section starts — now while also being the control that
+    // opens and closes it.
+    .cp-timeline-chart-layer-toggle {
+        display: flex;
+        align-items: center;
+        padding: var(--cp-space-1) !important;
+        color: var(--cp-color-txt-7);
+        margin-right: -0.25em;
+
+        // Only the glyph turns. Rotating the button would take its focus ring
+        // and hover background with it, which read as tilted rather than as
+        // pointing somewhere.
+        svg {
+            transition: transform 150ms ease;
+        }
+
+        // Pointing at the section's contents when they are showing, and at the
+        // header when they are not.
+        &[aria-expanded="false"] svg {
+            transform: rotate(-90deg);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            svg {
+                transition: none;
+            }
+        }
+    }
+
+    // A key to the section's marks, on its own row beneath the header and
+    // aligned with the plot column.
+    .cp-timeline-chart-layer-legend {
+        grid-column: 2 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--cp-space-1) var(--cp-space-4);
+        color: var(--cp-color-txt-7);
+        font-size: var(--cp-text-xs);
+        margin-bottom: var(--cp-space-4);
+    }
+
+    // One entry in a legend: a swatch and what it means.
+    .cp-timeline-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--cp-space-1);
+    }
+
+    .cp-timeline-legend-swatch {
+        width: 0.8em;
+        height: 0.8em;
+        border-radius: 2px;
+        margin-right: var(--cp-space-1);
+
+        // Never let the swatch shrink when the legend wraps.
+        flex: none;
+
+        // Keeps a pale swatch visible against the page.
+        box-shadow: 0 0 0 1px rgb(from var(--cp-color-txt) r g b / 0.2) inset;
+    }
+
+    // The two layer columns adopt the parent grid's row tracks, so row N of the
+    // labels is by definition row N of the content. Row heights are intrinsic —
+    // whichever side is taller sizes the track for both.
+    .cp-timeline-chart-layer-y-axis,
+    .cp-timeline-chart-layer-y-content {
+        display: grid;
+        grid-template-rows: subgrid;
+        row-gap: 0;
+        align-self: stretch;
+
+        // Every in-flow child is one row. Overlays — the highlight and the
+        // ruler — are absolutely positioned and sit outside the row flow;
+        // giving them a min-height would make each claim a row of its own.
+        > :not(.cp-timeline-chart-highlight):not(.cp-timeline-chart-ruler) {
+            min-height: var(--cp-timeline-chart-row-height, 1.4em);
+        }
+
+        // A hairline between rows, drawn on both columns so it reads as one
+        // line running across the section rather than two stubs.
+        //
+        // Adjacent-sibling rather than `:not(:first-child)`, and repeating the
+        // overlay exclusions on both sides, because the highlight and the ruler
+        // are siblings of these rows: matching on position alone would draw a
+        // rule above an overlay — an absolutely positioned box that is not a
+        // row at all — and put a stray line across the plot.
+        > :not(.cp-timeline-chart-highlight):not(.cp-timeline-chart-ruler)
+        + :not(.cp-timeline-chart-highlight):not(.cp-timeline-chart-ruler) {
+            border-top: var(--cp-timeline-chart-row-rule);
+        }
+    }
+
+    // Lifts a row's content above the selection highlight, which is a later
+    // sibling in the layer and would otherwise tint the data drawn under it.
+    // The highlight is a wash over the background, so marks belong in front of
+    // it — bars manage this themselves, but an embedded chart is in-flow
+    // content and would paint behind any positioned sibling whatever its
+    // z-index.
+    //
+    // Put this on the element *inside* the row, never on the row itself.
+    // Lifting the row box carries its background up with it, and the row
+    // background is exactly what should stay behind the highlight — a hovered
+    // row would otherwise erase the selection it overlaps. Still below the
+    // ruler at 5, which is meant to cross everything.
+    .cp-timeline-chart-row-content {
+        position: relative;
+        z-index : 1;
+    }
+
+    // Hovering either column marks both, so a row reads as one thing across the
+    // gap between the label and its content. Driven by a class rather than
+    // `:hover` because the two columns are separate subgrid containers, with no
+    // shared element for CSS to hang the correlation on — the layer pairs them
+    // by index instead.
+    .cp-timeline-row-hover {
+        // The tint as an opaque color rather than a translucent overlay, and
+        // published as the row's backdrop. Anything a section draws inside the
+        // row that needs to read as separated from what is behind it — a
+        // chart's edge-label halos, its marker rings — picks this up and keeps
+        // matching. Those want a color to paint, not a layer to composite
+        // against, so a translucent tint could not be handed on.
+        //
+        // `color-mix` of the same 5% over the window color, so the row looks
+        // exactly as it did when this was `rgb(from … / 0.05)`.
+        --cp-chart-backdrop: color-mix(in srgb, var(--cp-color-txt) 5%, var(--cp-color-win));
+
+        background: var(--cp-chart-backdrop);
+        box-shadow: 0 0.5px 0 rgb(from var(--cp-color-txt) r g b / 0.1) inset,
+                    0 -0.5px 0 rgb(from var(--cp-color-txt) r g b / 0.1) inset;
+    }
+
+    .cp-timeline-chart-layer-y-axis {
+        color: var(--cp-color-txt-4);
+        font-size: var(--cp-text-sm);
+        font-weight: 500;
+
+        // Stretches to fill the label track rather than shrinking to its own
+        // widest label. The track is `auto`, so it is sized by whichever layer
+        // has the longest labels; a cell that hugged its own content would leave
+        // narrower layers short of the column edge, and anything drawn on the
+        // cell — a background, a row separator — would stop short with it.
+        // Alignment is unaffected: the labels inside already right-align.
+        justify-self: stretch;
+
+        // border-right: 0.5px solid rgb(from var(--cp-color-win-4) r g b / 0.5);
+        // position: relative;
+        // z-index: 3;
+        // margin-right: 2px;
+        
+        > div {
+            text-align: left;
+            vertical-align: middle;
+            display: flex;
+            align-items: center;
+            justify-content: start;
+            padding: 0.25em 0.75em;
+            // word-break: break-all;
+            white-space: normal;
+            line-height: normal;
+        }
+
+        // A two-line label has to beat the rule above, not extend it. Turning
+        // the direction vertical re-points both flex properties: `flex-end`
+        // would pin the label to the bottom of its row and `center` would
+        // center it horizontally, undoing the right alignment every other
+        // label in the column keeps. Three classes to that rule's two-plus-an
+        // -element, so this wins — and the padding is deliberately left to it,
+        // being the one declaration that still means what it says.
+        > .cp-timeline-chart-row-label {
+            flex-direction : column;
+            align-items    : flex-start;
+            justify-content: center;
+            line-height    : 1.2;
+            gap            : 0.2em;
+        }
+    }
+
+    // The label cell rule above already supplies these inside the y-axis
+    // column, which is where this belongs. Stated again here so the component
+    // still stacks its two lines if a section renders it anywhere else, rather
+    // than quietly laying them out side by side.
+    .cp-timeline-chart-row-label {
+        display       : flex;
+        flex-direction: column;
+    }
+
+    .cp-timeline-chart-row-label-name {
+        font-size  : var(--cp-text-sm);
+        color      : var(--cp-color-txt-4);
+        font-weight: 500;
+    }
+
+    .cp-timeline-chart-row-label-detail {
+        font-size  : var(--cp-text-xs);
+        color      : var(--cp-color-txt-6);
+        font-weight: 300;
+
+        // The unit is the part that identifies the scale; wrapping it across
+        // two lines in a narrow column makes it read as another row.
+        white-space: nowrap;
+    }
+
+    .cp-timeline-chart-layer-y-content {
+        position: relative;
+
+        // Claim the horizontal axis for panning, but leave vertical scrolling to
+        // the browser so the chart is not a scroll trap on touch devices.
+        touch-action: pan-y;
+    }
+
+    // The pan affordance, shown whenever the pointer is over a plot.
+    //
+    // It used to wait for the chart to have focus, back when focus was what
+    // armed the wheel. Dragging never needed it — `usePan` works from pointer
+    // events alone — so the gate only ever hid the one hint that the plot can be
+    // dragged at all. Left in place it would now key off whichever toolbar
+    // button was last clicked, which is nothing to do with panning.
+    .cp-timeline-chart-layer-y-content {
+        cursor: grab;
+    }
+
+    .cp-timeline-chart-layer-y-content.cp-timeline-chart-panning {
+        cursor: grabbing;
+
+        // Suppress text/element selection for the duration of the drag.
+        user-select: none;
+    }
+
+    .cp-timeline-chart-x-axis {
+        grid-column: 2 / -1;
+
+        // Each label is placed at its own fraction of the range, which needs a
+        // containing block to be a fraction of.
+        position: relative;
+
+        color: var(--cp-color-txt-5);
+        margin-top: var(--cp-space-4);
+        border-top: 1px solid var(--cp-color-win-4);
+        font-size: var(--cp-text-xs);
+        font-weight: 300;
+
+        // Absolutely positioned children contribute no height, so the row has to
+        // declare its own: one line of text, plus the gap that used to be
+        // padding. Padding would not do here — an absolutely positioned child is
+        // placed against the padding box, so the labels would ignore it.
+        height: calc(1.4em + var(--cp-space-3));
+
+        > div {
+            position: absolute;
+            top: var(--cp-space-3);
+
+            // A label that wrapped would break both the row height and the
+            // measurement the label count was chosen from.
+            white-space: nowrap;
+        }
+
+        .cp-timeline-chart-x-axis-tick {
+            width: 1px;
+            height: var(--cp-space-3);
+            background: var(--cp-color-win-4);
+            position: absolute;
+            top: 0;
+        }
+    }
+}

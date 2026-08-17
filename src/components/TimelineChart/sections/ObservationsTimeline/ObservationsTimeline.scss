@@ -1,0 +1,153 @@
+.cp-observations-timeline-row {
+    // Deliberately unpositioned. Getting the trend lines above the selection
+    // highlight is `cp-timeline-chart-row-content`'s job, applied to the chart
+    // inside — lifting this box instead would take the row's hover background
+    // up with it, and that background would then paint over the selection.
+
+    // The chart measures its container, so the row must not collapse or shrink
+    // below the height the layer allotted it.
+    display : flex;
+    align-items: stretch;
+
+    > * {
+        width: 100%;
+    }
+}
+
+// Marks a row whose reference interval has been relaxed. Deliberately not in a
+// muted shade: it qualifies what the coloring beside it means, and a reader who
+// misses it reads an adjusted band as the published one.
+.cp-observations-timeline-adjusted {
+    // Leads the detail line, so the gap goes after it rather than before.
+    margin-right : var(--cp-space-3);
+    padding      : 0 4px 1px;
+    border-radius: var(--cp-radius-sm);
+    background   : color-mix(in srgb, var(--cp-color-txt) 25%, transparent);
+    color        : var(--cp-color-win);
+    
+    background   : color-mix(in srgb, var(--cp-color-amber) 35%, var(--cp-color-win));
+    color        : color-mix(in srgb, var(--cp-color-txt) 60%, transparent);
+
+    font-size    : var(--cp-text-xs);
+    font-variant-numeric: tabular-nums;
+    white-space  : nowrap;
+
+    // Every amber badge in this section explains itself on hover, so they all
+    // take the help cursor — the badge is short by design and the sentence
+    // behind it is the part that matters.
+    cursor       : help;
+}
+
+// Marks an analyte the record holds but the chart cannot draw — a coded finding,
+// a free-text result. Kept in the amber the adjusted badge uses rather than muted
+// like the count beside it: a disabled row with a grey note beside it reads as
+// "not ordered", which is the opposite of what this says.
+.cp-observations-timeline-unplottable {
+    padding      : 0 4px 1px;
+    border-radius: var(--cp-radius-sm);
+    background   : color-mix(in srgb, var(--cp-color-amber) 35%, var(--cp-color-win));
+    color        : color-mix(in srgb, var(--cp-color-txt) 60%, transparent);
+    font-size    : var(--cp-text-xs);
+    white-space  : nowrap;
+    cursor       : help;
+}
+
+// One analyte's entry in the settings panel: its checkbox, its name and how many
+// readings there are. Used both as a collapse header, where the range editors
+// fold away underneath it, and on its own for a row that has none.
+.cp-observations-timeline-setting {
+    display    : flex;
+    align-items: center;
+    gap        : var(--cp-space-2);
+    color      : var(--cp-color-txt-2);
+
+    // The count stays beside the name rather than being pushed to the far edge,
+    // which is where it sat before these rows became collapses. The name is what
+    // gives way when the sidebar is narrow — analyte names run long, and a
+    // truncated one is still recognizable where a wrapped one costs a line.
+    .cp-observations-timeline-setting-name {
+        flex         : 0 1 auto;
+        min-width    : 0;
+        overflow     : hidden;
+        text-overflow: ellipsis;
+        white-space  : nowrap;
+    }
+
+    [type="checkbox"], [type="radio"] {
+        display: block;
+    }
+}
+
+// The collapse wraps its label in a plain div, which sizes to its content — so
+// the row above never becomes narrow enough for its own truncation to engage.
+.cp-observations-timeline-setting-row .cp-collapse-header > div {
+    flex: 1 1 auto;
+}
+
+// One entry in the list, with or without a collapse inside it. The spacing sits
+// here rather than on the collapse so both kinds of row are spaced alike — each
+// is one analyte, whether or not it has anything to fold away.
+.cp-observations-timeline-setting-row {
+    margin-bottom: var(--cp-space-2);
+}
+
+// A row with nothing to fold away. Indented by the caret it does not have, so
+// the names line up down the list either way.
+.cp-observations-timeline-setting-flat {
+    padding-left: calc(0.6em + var(--cp-space-2));
+}
+
+// Set in from the header it belongs to, so an open row reads as that analyte's
+// settings rather than as the next thing in the list.
+.cp-observations-timeline-ranges {
+    padding: var(--cp-space-2) 0 var(--cp-space-3) calc(0.6em + var(--cp-space-2));
+}
+
+// The legend for `carryRange`'s dashed stretches.
+//
+// Sits below the analyte list rather than above it: the list is what the panel
+// is for, and this explains a mark the reader will have met on the chart before
+// coming here to look it up.
+.cp-observations-timeline-carry-note {
+    display      : flex;
+    align-items  : flex-start;
+    gap          : var(--cp-space-3);
+    margin       : var(--cp-space-4) 0 0 !important;
+    padding      : var(--cp-space-3);
+    border-radius: var(--cp-radius-md);
+    background   : var(--cp-color-win-1);
+    color        : var(--cp-color-txt-5);
+    font-size    : var(--cp-text-xs);
+    line-height  : 1.5;
+
+    // The sample sits on the first line's baseline rather than at the top of the
+    // box, so it reads as a specimen of the line being described.
+    svg {
+        flex-shrink: 0;
+        margin-top : 0.45em;
+    }
+
+    // Shared with the chart's own carried stretches, so the specimen cannot
+    // describe a pattern the chart no longer draws.
+    line {
+        stroke-dasharray: var(--cp-chart-carried-dash);
+    }
+}
+
+.cp-observations-timeline-reset {
+    margin       : var(--cp-space-3) 0;
+    padding      : var(--cp-space-2) var(--cp-space-4);
+    border       : 1px solid var(--cp-color-win-2);
+    border-radius: var(--cp-radius-sm);
+    background   : var(--cp-color-win-1);
+    color        : var(--cp-color-txt-5);
+    font-size    : var(--cp-text-xs);
+    cursor       : pointer;
+
+    &:hover {
+        background: var(--cp-color-win-2);
+        border-color: var(--cp-color-win-3);
+        color        : var(--cp-color-txt-4);
+    }
+}
+

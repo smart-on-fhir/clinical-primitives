@@ -34,7 +34,6 @@ export { ObservationHistoryTable } from './components/Observation/ObservationHis
 export { ObservationChart }        from './components/Observation/ObservationChart';
 export type { ObservationChartSeries } from './components/Observation/ObservationChart';
 export { resolveRange, statusFor, toneFor, rangeZones, RANGE_MARGIN, readInterpretation, boundsFromObservation, boundRuns, rangeGradientStops } from './components/Observation/referenceRange';
-export type { ReferenceRangeResolver, ResolvedRange, Bounds, RangeStatus, RangeTone, RangeBand, RangeZones, BoundedPoint, BoundRun, RangeGradient, RangeGradientStop } from './components/Observation/referenceRange';
 export { splinePath }              from './components/Observation/spline';
 export { ObservationsPanel }       from './components/Observation/ObservationsPanel';
 export { EventFeed }               from './components/EventFeed';
@@ -43,6 +42,17 @@ export { FindingCard }             from './components/FindingCard';
 export { StaticComponent }         from './components/StaticComponent';
 export { FhirResourceJsonViewer, FhirJsonDecorator }  from './components/JsonViewer/FhirJsonViewer';
 export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
+
+// TimelineChart
+export { TimelineChart } from './components/TimelineChart';
+export type {
+	// MedicationClassification,
+	MedicationClassifier,
+	MedicationLegendEntry,
+	TimelineMedication
+} from './components/TimelineChart/sections/MedicationsTimeline';
+
+
 
 // Utils -----------------------------------------------------------------------
 export * as lib          from './lib';
