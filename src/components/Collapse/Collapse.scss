@@ -4,7 +4,7 @@
         display: flex;
         flex: 1;
         gap: var(--cp-space-2);
-        align-items: baseline;
+        align-items: anchor-center;
         cursor: pointer;
         user-select: none;
     }
@@ -16,6 +16,10 @@
 
 
     .cp-collapse-caret {
+        line-height: 0;
+        justify-self: center;
+        vertical-align: middle;
+
         &::before {
             display: inline-block;
             border-width: 0.3em;

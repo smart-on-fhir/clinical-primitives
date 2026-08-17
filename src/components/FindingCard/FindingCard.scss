@@ -162,6 +162,12 @@
         margin: 0 0 0.5em 1.2em;
         padding: 0;
 
+        // These are markdown lists and want their markers. Stated because the
+        // library's own reset takes them off — as every host reset does — and
+        // the indent above exists precisely to make room for them.
+        &:where(ul) { list-style: disc; }
+        &:where(ol) { list-style: decimal; }
+
         &:last-child { margin-bottom: 0; }
 
         li { margin-bottom: 0.2em; }
