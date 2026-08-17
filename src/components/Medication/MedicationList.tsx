@@ -66,8 +66,6 @@ export function MedicationList({
                 <List>
                     { sortedMeds.length > 0 ? sortedMeds.map((med, idx) => {
                         const name = getMedicationName(med) || 'Unnamed Medication';
-                        // const medClass = classifyMedication(med.medication || '');
-                        // const classLabel = medClass && medClass !== 'other' ? medClass : null;
                         const reason = med.reasonCode?.[0]?.text ||
                                     med.reasonCode?.[0]?.coding?.[0]?.display ||
                                     med.reasonCode?.[0]?.coding?.[0]?.code ||
@@ -86,9 +84,6 @@ export function MedicationList({
                                 authoredOn={med.authoredOn}
                                 status={med.status}
                                 statusReasonText={med.statusReasonText}
-                                // decoration={<>
-                                //     {classLabel ? <div className={`cp-badge cp-badge-neutral fw-normal`}>{classLabel}</div> : null}
-                                // </>}
                                 reason={reason}
                                 intent={med.intent}
                                 dose={dose}
