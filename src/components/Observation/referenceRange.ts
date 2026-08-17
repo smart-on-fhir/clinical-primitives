@@ -25,11 +25,102 @@ export interface Bounds {
 
 export interface ResolvedRange extends Bounds {
     /**
-     * Where the numbers came from. Worth carrying: a range the performing
-     * laboratory reported alongside the specimen is a stronger claim than one
-     * looked up in a table, and a caller may want to say so.
+     * Where the numbers came from. Worth carrying, because these are not equally
+     * strong claims: a range the performing laboratory reported alongside the
+     * specimen beats one looked up in a table, and both beat `manual` — an
+     * interval a reader typed in, which no source published and which nothing
+     * but their own recollection stands behind.
+     *
+     * `carried` is weaker again in a different way. The numbers came from a real
+     * source, but from a *different specimen* — see {@link carryForward}. It is
+     * the only source that says nothing about the reading it is attached to, so
+     * a chart drawing one has to show that it is inferred.
      */
-    source: "observation" | "table"
+    source: "observation" | "table" | "manual" | "carried",
+
+    /**
+     * Set when the bounds above are not the ones the source quoted, but a
+     * viewer's own relaxation of them. Carried so a chart can say so: an
+     * adjusted interval is a third and much weaker thing than either source,
+     * and presenting it unmarked would state a reference interval nobody
+     * published.
+     */
+    overridden?: RangeOverride
+}
+
+/**
+ * A reader's own limits, replacing whatever the sources give for one analyte.
+ *
+ * The use this exists for: within a sick cohort, a population interval flags
+ * nearly every reading, and the flagging stops distinguishing anyone. A
+ * clinician reading an IBD chart may want the ceiling on an inflammatory marker
+ * lifted, or the floor on hemoglobin dropped, so that what stands out is
+ * unusual *for these patients* rather than unusual for the healthy.
+ *
+ * Absolute values, in the reading's own unit. "Flag CRP above 15" is a claim a
+ * clinician can make and check; the same limit as a factor requires knowing the
+ * published number it multiplies, which is nowhere on the chart.
+ *
+ * The two sides are independent, which is what keeps this from being blunter
+ * than it needs to be. An untouched side goes on resolving per reading — an
+ * age-banded analyte still changes its floor part-way along the record while its
+ * ceiling is pinned to what the reader asked for. Only what is overridden goes
+ * flat across the series.
+ *
+ * This is a display control and nothing more. The result is not a reference
+ * interval, is not clinically sourced, and must never be presented as one — see
+ * {@link ResolvedRange.overridden}.
+ *
+ * Values that cross leave an interval with no normal band at all, which the
+ * chart can only draw as a hard edge between the two abnormal zones.
+ * {@link RangeAdjuster} will not let a reader reach that state; anything setting
+ * these directly has to keep them apart itself.
+ */
+export interface RangeOverride {
+    /**
+     * Lower bound to use instead of the resolved one. Absent leaves it to the
+     * sources; `null` withdraws it — see below.
+     */
+    low?: number | null,
+
+    /** Upper bound to use instead of the resolved one. Same convention. */
+    high?: number | null
+}
+
+/**
+ * `null` is not a bound of zero; it withdraws the bound.
+ *
+ * A reader who does not accept an interval needs somewhere to go other than
+ * pushing it out until it stops flagging anything, which leaves a limit on the
+ * chart that they have decided is wrong. Withdrawing it says the honest thing
+ * instead: nothing here is being assessed. With both sides withdrawn there is no
+ * interval at all, and the curve goes back to its plain series color.
+ */
+
+/** Whether an override replaces or withdraws anything. */
+export function isOverridden(override?: RangeOverride): boolean {
+    return override !== undefined && (override.low !== undefined || override.high !== undefined);
+}
+
+/**
+ * Apply a reader's limits over one reading's resolved bounds.
+ *
+ * A side the override says nothing about keeps whatever resolved for this
+ * reading, which is what lets one bound be pinned while the other goes on
+ * varying. A side set to a number takes it whether or not anything resolved
+ * there — this is also how an analyte with no published interval at all gets
+ * one.
+ */
+export function applyOverride({ low, high }: Bounds, override?: RangeOverride): Bounds {
+    if (!isOverridden(override)) return { low, high };
+
+    const side = (bound?: number, replacement?: number | null) =>
+        replacement === undefined ? bound : replacement ?? undefined;
+
+    return {
+        low : side(low,  override!.low),
+        high: side(high, override!.high)
+    };
 }
 
 /**
@@ -41,6 +132,19 @@ export interface ResolvedRange extends Bounds {
  * intervals mid-record. Returning `null` means "no applicable interval", which
  * leaves that reading uncolored rather than assumed normal.
  */
+/**
+ * What a resolver hands back: bounds, and optionally what kind of source they
+ * came from.
+ *
+ * `source` is how a resolver that is not consulting a table — a reader's own
+ * typed-in interval, say — keeps {@link ResolvedRange.source} from describing it
+ * as one. Left out, which is what every ordinary lookup does, the answer is
+ * taken as a table.
+ */
+export interface ResolverBounds extends Bounds {
+    source?: "table" | "manual"
+}
+
 export type ReferenceRangeResolver = (context: {
     observation: Observation,
 
@@ -67,7 +171,179 @@ export type ReferenceRangeResolver = (context: {
      * history on their birthday.
      */
     time: number
-}) => Bounds | null;
+}) => ResolverBounds | null;
+
+/**
+ * One row of a reference table: an interval, and who it applies to.
+ *
+ * Shaped after the tables these actually come from, which quote a band per age
+ * range and occasionally per sex. Every field is optional because real tables
+ * are ragged — an analyte may be banded by age and not sex, may quote only a
+ * ceiling, and may have a row reserved with the numbers not yet filled in.
+ */
+export interface AgeBand extends Bounds {
+    /**
+     * Age band in years: low inclusive, high exclusive. So a source's "6–8 y",
+     * meaning a child through the end of their eighth year, is written 6 to 9.
+     *
+     * Keeping that convention in the data rather than in the comparison is what
+     * stops the off-by-one being reinvented at each call site. Both absent means
+     * the interval is not age-restricted.
+     */
+    ageLowYears?: number,
+    ageHighYears?: number,
+
+    /** Set where the interval differs by sex. */
+    sex?: "male" | "female",
+
+    /**
+     * Unit these numbers are quoted in. Compared against the reading's own, and
+     * a mismatch declines the band rather than converting it.
+     *
+     * Optional because tables state it either per row or once for the analyte.
+     * Left out, {@link matchBand}'s `declaredUnit` stands in — and a band with
+     * neither is unchecked, which is the one way to lose the guard.
+     */
+    unit?: string
+}
+
+/**
+ * Age in whole years at a given instant.
+ *
+ * Deliberately takes the moment as an argument instead of reading the clock. An
+ * age-banded interval has to be resolved against the date the specimen was
+ * taken: a record spanning childhood crosses bands part-way along, and resolving
+ * every reading against the patient's age today would apply one band to a whole
+ * history and silently re-color all of it on their birthday.
+ */
+export function ageYearsAt(birthDate: string, time: number): number | null {
+    const born = new Date(birthDate).getTime();
+    if (!Number.isFinite(born) || !Number.isFinite(time) || time < born) return null;
+
+    // Calendar difference rather than elapsed milliseconds divided by 365.25:
+    // the latter drifts, and around a band edge the drift is the whole answer.
+    const from = new Date(born);
+    const to   = new Date(time);
+
+    let years = to.getUTCFullYear() - from.getUTCFullYear();
+
+    const beforeBirthday =
+        to.getUTCMonth() < from.getUTCMonth() ||
+        (to.getUTCMonth() === from.getUTCMonth() && to.getUTCDate() < from.getUTCDate());
+
+    if (beforeBirthday) years--;
+
+    return years;
+}
+
+/**
+ * The band applying to one reading, or null where none does.
+ *
+ * Declines rather than guesses, in every case where it cannot be sure: no band
+ * covers the age, the age is unknown and the bands are age-restricted, the band
+ * is sex-specific and the sex is not recorded, the units disagree. The
+ * alternative is a chart stating a clinical finding on the strength of an
+ * interval that does not apply to this patient — an uncolored line says "not
+ * assessed", which is true, where a colored one would say "abnormal", which
+ * would not be.
+ *
+ * A band that matches but quotes no numbers also declines. Those rows are
+ * placeholders in the source — an analyte someone has reserved a line for and
+ * not yet filled in — and they carry no more meaning than an absent row.
+ */
+export function matchBand(
+    bands: AgeBand[],
+    context: {
+        age : number | null,
+        sex?: string,
+
+        /** The unit the reading was reported in. */
+        unit: string | null,
+
+        /**
+         * Unit to check bands that state none of their own against — the one
+         * the analyte is quoted in.
+         *
+         * Here because tables put the unit in one of two places: on each row, as
+         * an exported CSV usually does, or once for the analyte with the rows
+         * assuming it. Without this a table of the second kind would pass bands
+         * with no `unit` and lose the check entirely, which is precisely the
+         * silent thousand-fold mis-grading the comparison exists to stop.
+         */
+        declaredUnit?: string
+    }
+): Bounds | null {
+    const match = bands.find(band => {
+        const bandUnit = band.unit ?? context.declaredUnit;
+        // An interval quoted for one sex says nothing about the other, and
+        // nothing at all about a patient whose sex is unrecorded.
+        if (band.sex && band.sex !== context.sex) return false;
+
+        // Compared, never converted: a ceiling of 5 quoted in mg/L against data
+        // reported in mg/dL is wrong by a factor of ten, and comparing them
+        // anyway would flag an ordinary series as grossly abnormal with nothing
+        // on the chart to suggest anything had gone wrong.
+        if (bandUnit && context.unit && cleanUnit(bandUnit) !== context.unit) return false;
+
+        // A row with neither bound is a reserved line, not an assertion that
+        // this analyte has no interval.
+        if (band.low === undefined && band.high === undefined) return false;
+
+        const banded = band.ageLowYears !== undefined || band.ageHighYears !== undefined;
+        if (!banded) return true;
+
+        if (context.age === null) return false;
+
+        return (band.ageLowYears  === undefined || context.age >= band.ageLowYears) &&
+               (band.ageHighYears === undefined || context.age <  band.ageHighYears);
+    });
+
+    return match ? { low: match.low, high: match.high } : null;
+}
+
+/**
+ * Fill gaps in a series' intervals from the last reading that had one.
+ *
+ * Laboratories commonly report a reference interval on some results and not
+ * others, which leaves a curve alternating between colored and plain — a chart
+ * that looks broken rather than one that looks partly unassessed. This carries
+ * the last known interval forward across those gaps.
+ *
+ * Forward only, and never across a change of unit: an interval carried into a
+ * different unit is the silent mis-grading that every other decision in this
+ * file is arranged to prevent. Points before the first resolved interval are
+ * left alone — there is nothing behind them to carry, and reaching backwards
+ * from the first one would be a second, separate assumption.
+ *
+ * What this is claiming is that the interval did not change between two
+ * specimens. Usually true and never guaranteed, which is why the result is
+ * marked {@link ResolvedRange.source} `"carried"` rather than passed off as
+ * whatever the original was: it is an inference about a reading, drawn from a
+ * different reading, and a chart has to be able to say so.
+ *
+ * @param points In time order. Each carries its resolved interval, or null, and
+ *               the unit its own value was reported in.
+ */
+export function carryForward(
+    points: { range: ResolvedRange | null, unit: string | null }[]
+): (ResolvedRange | null)[] {
+    let last: { range: ResolvedRange, unit: string | null } | undefined;
+
+    return points.map(point => {
+        if (point.range) {
+            last = { range: point.range, unit: point.unit };
+            return point.range;
+        }
+
+        if (!last) return null;
+
+        // Both known and different: not comparable, and this is the one place a
+        // wrong answer would look entirely deliberate.
+        if (last.unit !== null && point.unit !== null && last.unit !== point.unit) return null;
+
+        return { ...last.range, source: "carried" as const };
+    });
+}
 
 /**
  * FHIR interpretation codes, grouped by which side of the interval they name.
@@ -178,19 +454,45 @@ export function boundsFromObservation(
  * The record's own bounds always win. A table is a generalization about a
  * population; the observation's `referenceRange` is a statement about this
  * specimen, from the laboratory that measured it.
+ *
+ * `override` is applied last, over whichever source won. Deliberately here
+ * rather than by wrapping `fallback`: a resolver is only ever consulted for
+ * readings that carry no interval of their own, so limits applied there would
+ * reach the table-sourced rows and silently miss the rest. A reader's threshold
+ * is a statement about the cohort, not about provenance, so it has to reach
+ * both — and it has to work where nothing resolved at all, which is the case a
+ * fallback resolver cannot be written for.
  */
 export function resolveRange(
     observation: Observation,
     componentCode: string | undefined,
     unit: string | null,
     time: number,
-    fallback?: ReferenceRangeResolver
+    fallback?: ReferenceRangeResolver,
+    override?: RangeOverride
 ): ResolvedRange | null {
     const own = boundsFromObservation(observation, componentCode, unit);
-    if (own) return { ...own, source: "observation" };
+    const base: ResolverBounds | null = own ?? fallback?.({ observation, componentCode, unit, time }) ?? null;
 
-    const table = fallback?.({ observation, componentCode, unit, time });
-    return table ? { ...table, source: "table" } : null;
+    if (!base && !isOverridden(override)) return null;
+
+    // `applyOverride` returns the two numbers alone, which is what keeps a
+    // resolver's own `source` from leaking through and outranking the one
+    // decided here.
+    const applied = applyOverride(base ?? {}, override);
+
+    // Both sides withdrawn is the same answer as having found nothing: there is
+    // no interval to draw against, and reporting an empty one would leave the
+    // tooltip quoting a range with no numbers in it.
+    if (applied.low === undefined && applied.high === undefined) return null;
+
+    return {
+        ...applied,
+        // With nothing resolved underneath, the reader's own figures are the
+        // whole interval, and `manual` is the only honest thing to call it.
+        source    : own ? "observation" : base ? base.source ?? "table" : "manual",
+        overridden: isOverridden(override) ? override : undefined
+    };
 }
 
 /**
@@ -305,7 +607,10 @@ export interface RangeBand {
 
 /** One plotted reading, in screen coordinates, with its interval mapped alongside. */
 export interface BoundedPoint extends RangeBand {
-    x: number
+    x: number,
+
+    /** Whether this reading's interval was inferred from an earlier one. */
+    carried?: boolean
 }
 
 /** A stretch of the curve over which one interval applies. */
@@ -314,7 +619,9 @@ export interface BoundRun extends RangeBand {
     from: number,
 
     /** Screen x the stretch ends at. */
-    to: number
+    to: number,
+
+    carried?: boolean
 }
 
 /** The band's boundaries, in the order they appear down the plot. */
@@ -341,7 +648,12 @@ const BAND_KEYS = ["highRedY", "highY", "highGreenY", "lowGreenY", "lowY", "lowR
 export function boundRuns(points: BoundedPoint[], left: number, right: number): BoundRun[] {
     if (points.length === 0) return [];
 
-    const key = (point: BoundedPoint) => BAND_KEYS.map(name => point[name]).join("|");
+    // Provenance joins the boundaries in the key. A carried interval usually has
+    // numbers identical to the one it came from — that is what carrying means —
+    // so without this the two would merge into a single run and the inferred
+    // stretch would become indistinguishable from the reported one.
+    const key = (point: BoundedPoint) =>
+        [...BAND_KEYS.map(name => point[name]), point.carried ? "carried" : ""].join("|");
 
     const spans: { start: number, end: number }[] = [];
     let start = 0;
@@ -364,6 +676,7 @@ export function boundRuns(points: BoundedPoint[], left: number, right: number): 
             to: index === spans.length - 1
                 ? right
                 : (points[span.end].x + points[spans[index + 1].start].x) / 2,
+            carried: points[span.start].carried,
             ...band
         };
     });

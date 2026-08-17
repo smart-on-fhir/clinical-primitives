@@ -55,8 +55,13 @@
 // Sharing an outer scale means readings outside the visible window map beyond
 // the box. They must be clipped, or a stacked layer would draw over its
 // neighbors instead of showing that its line continues off-screen.
+// An SVG root clips to its viewport by default, which cut the ring around a
+// selected reading in half wherever that reading sat near the top or bottom of
+// its row — and rows are short. The marks are allowed out instead; the plot's
+// own content is clipped horizontally by a clip path inside, which is the
+// direction that actually needed it.
 .cp-observation-chart-svg--embedded {
-    overflow: hidden;
+    overflow: visible;
 }
 
 .cp-observation-chart-grid {
@@ -86,10 +91,32 @@
     filter: drop-shadow(0 2px 1px #0002);
 }
 
+// A stretch graded against an interval carried from an earlier specimen. Dashed
+// rather than faded: the grading is the correct answer for the interval it was
+// given, so the tones stay at full strength and it is the line's continuity —
+// the claim that this reading was assessed at all — that is broken up.
+//
+// `stroke-linecap: round` from the base rule would fatten each dash into a
+// lozenge and close the gaps at this width, so the cap is squared off here.
+// The pattern is a variable because it is drawn twice: here, and as the sample
+// in the legend `ObservationsTimeline` shows while `carryRange` is on. A legend
+// whose specimen does not match the line it describes is worse than none, and
+// two literals in two stylesheets drift the first time either is touched.
+:root {
+    --cp-chart-carried-dash: 4 1;
+}
+
+.cp-observation-chart-line-carried {
+    stroke-dasharray: var(--cp-chart-carried-dash);
+    stroke-linecap  : butt;
+}
+
 .cp-observation-chart-edge-label {
-    fill       : rgb(from var(--cp-color-txt-3) r g b / 0.7);
+    fill       : rgb(from var(--cp-color-txt) r g b / 0.6);
     font-size  : 10px;
     font-family: inherit;
+    font-weight: 300;
+
     // The label sits over the plot, so it needs a backdrop to stay legible where
     // it crosses the line. `paint-order` puts the stroke behind the fill, making
     // it an outline rather than a smear across the glyphs.
@@ -97,18 +124,35 @@
     // Held at 80% rather than opaque so a line panned underneath still shows
     // through: the label stops competing with the data without hiding that
     // something is passing behind it.
+    //
+    // Drawn in whatever is actually behind the chart, not in the window color
+    // outright: a container that paints its own background — a hovered timeline
+    // row — sets `--cp-chart-backdrop` to it, and the halo follows. Where the
+    // two match, this stroke composites to exactly the backdrop and the label
+    // reads as sitting on it rather than on a patch of some other color.
+    // Deliberately not declared on the chart's own root: a local declaration
+    // would shadow the container's and there would be nothing to follow.
     paint-order    : stroke;
-    stroke         : rgba(from var(--cp-color-win) r g b / 0.5);
+    stroke         : rgba(from var(--cp-chart-backdrop, var(--cp-color-win)) r g b / 0.6);
     stroke-width   : 6px;
     stroke-linejoin: round;
     pointer-events : none;
+
+    // The right margin SVG text has no way to ask for. These are anchored at
+    // the end, so the glyphs finish exactly on their x — and with a 6px halo
+    // around them, finishing flush against the plot edge reads as crowded.
+    // Safe as a plain pixel translation because the SVG's viewBox matches its
+    // width and height, so one user unit is one CSS pixel.
+    transform      : translateX(-2px);
 }
 
 // A series with one reading. Always visible, unlike the hover marker, because
 // nothing else in the row would show that the reading exists.
 .cp-observation-chart-lone-point {
     pointer-events: none;
-    stroke        : var(--cp-color-win);
+    // The ring separating the dot from what is behind it, so it follows the
+    // backdrop for the same reason the edge labels do.
+    stroke        : var(--cp-chart-backdrop, var(--cp-color-win));
     stroke-width  : 1.5;
     filter: drop-shadow(0 2px 1px #0002);
 }
@@ -118,7 +162,37 @@
     // hiding rules. Kept out of hit-testing: the SVG owns pointer tracking, and
     // a marker under the cursor would otherwise be a second, conflicting target.
     pointer-events: none;
-    stroke        : var(--cp-color-win);
+    // Always drawn on a hovered row — it appears only while the pointer is on
+    // the chart — so this is the ring most exposed to a backdrop that is not
+    // the plain window color.
+    stroke        : var(--cp-chart-backdrop, var(--cp-color-win));
+    stroke-width  : 1.5;
+}
+
+// The selected reading. Drawn whether or not the pointer is anywhere near it —
+// that is the whole point of a selection — so unlike the hover marker it has to
+// hold its own against the curve without help from a hovered row.
+.cp-observation-chart-selected-point {
+    pointer-events: none;
+    stroke        : var(--cp-chart-backdrop, var(--cp-color-win));
+    stroke-width  : 2;
+}
+
+// The ring around it, a separate circle rather than a second stroke so its
+// width does not eat into the dot.
+//
+// Filled rather than hollow: the curve passes under the mark, and through a
+// hollow ring it showed in the gap around the dot as a line struck through it.
+// The fill follows the backdrop for the same reason the marks' own outlines do.
+//
+// Drawn in the text color rather than in any of the status colors: selection
+// says what the reader is looking at, not what the reading means, and borrowing
+// red or amber for it would make a clinical claim this mark has no business
+// making.
+.cp-observation-chart-selection-ring {
+    pointer-events: none;
+    fill          : var(--cp-chart-backdrop, var(--cp-color-win));
+    stroke        : var(--cp-color-txt-4);
     stroke-width  : 1.5;
 }
 
@@ -130,6 +204,12 @@
 // <text> nodes — hand back a text caret.
 .cp-observation-chart-svg {
     cursor: default;
+}
+
+// A chart whose readings can be selected. Every part of the plot picks the
+// nearest one, so the whole surface is a target and says so.
+.cp-observation-chart-svg--selectable {
+    cursor: pointer;
 }
 
 .cp-observation-chart-crosshair {

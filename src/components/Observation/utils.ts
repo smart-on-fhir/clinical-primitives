@@ -292,10 +292,55 @@ export const UNIT_EXACT: Record<string, string> = {
     'U/L':              'U/L',
     'mIU/mL':           'mIU/mL',
     // Cell counts
-    '10*3/uL':          '×10³/µL',
-    '10*6/uL':          '×10⁶/µL',
+    //
+    // `10*3/uL` and `10*9/L` are the same quantity — a litre is 10⁶ µL, so
+    // 10⁹/L is 10³/µL exactly — and they are normalized to one string rather
+    // than two. Which spelling a record uses is a matter of which analyzer wrote
+    // it, and while the two normalized apart, a reference band quoted in one and
+    // a reading reported in the other compared unequal and the band was declined:
+    // a platelet count silently ungraded because of a synonym. `10*6/uL` is
+    // likewise 10¹²/L.
+    //
+    // Anything added here must be an identity, never a conversion. Two units
+    // that merely measure the same property — mg/L and mg/dL — differ by a
+    // factor, and collapsing them is how a chart states a finding that is off by
+    // one.
+    '10*3/uL':          '×10⁹/L',
     '10*9/L':           '×10⁹/L',
+    '10*6/uL':          '×10¹²/L',
+    '10*12/L':          '×10¹²/L',
     '/uL':              '/µL',
+    // The same two counts as US laboratories print them. `K` and `M` are the
+    // decimal prefixes — thousands and millions per microlitre — so a WBC of
+    // "7.2 K cells/uL" and one of "7.2 ×10⁹/L" are the same result, and a row
+    // gathering both used to plot one and discard the other as unconvertible.
+    //
+    // Spellings rather than arithmetic, so they belong here and not in
+    // UNIT_GROUPS: every entry below is exactly the string on its right.
+    'K cells/uL':       '×10⁹/L',
+    'K cells/µL':       '×10⁹/L',
+    'K/uL':             '×10⁹/L',
+    'K/µL':             '×10⁹/L',
+    'K/mcL':            '×10⁹/L',
+    'thou/uL':          '×10⁹/L',
+    '10E3/uL':          '×10⁹/L',
+    '10^3/uL':          '×10⁹/L',
+    'M cells/uL':       '×10¹²/L',
+    'M cells/µL':       '×10¹²/L',
+    'M/uL':             '×10¹²/L',
+    'M/µL':             '×10¹²/L',
+    'M/mcL':            '×10¹²/L',
+    'mil/uL':           '×10¹²/L',
+    '10E6/uL':          '×10¹²/L',
+    '10^6/uL':          '×10¹²/L',
+    // Rates. ESR is reported as `mm/h` by UCUM and as `mm/hr` by most
+    // laboratories, and until both landed on one string a table quoted in either
+    // one declined against data reported in the other — the reference band
+    // simply never appeared, with nothing to say why.
+    'mm/h':             'mm/h',
+    'mm/hr':            'mm/h',
+    'mm/hour':          'mm/h',
+    'mm/(1.h)':         'mm/h',
     // Volume / flow
     'mL':               'mL',
     'L':                'L',
@@ -326,6 +371,70 @@ export const UNIT_EXACT: Record<string, string> = {
 
 /** Scored / self-reported annotation patterns. */
 export const SELF_REPORTED_PATTERN = /^\{.*(score|scale|index|rating|survey|questionnaire|reported|VAS|NRS|CDAI|HBI|SCCAI|PRO).*\}$/i;
+
+/**
+ * Units that measure the same thing, with the factor converting each to the
+ * group's first entry.
+ *
+ * Keyed by the strings {@link cleanUnit} produces, not by raw UCUM — the whole
+ * point is that this runs after normalization, so `ug/mL` is looked up as
+ * `µg/mL`.
+ *
+ * The rule for adding to this table, and it is not negotiable: an entry must be
+ * exact arithmetic between two spellings of the same physical dimension. A
+ * decimal prefix, a per-litre against a per-decilitre. Never a clinical
+ * equivalence, and never anything analyte-specific — mass and substance
+ * concentration are related only through a molar mass, which is a property of
+ * the analyte and is nowhere in this file. A wrong factor here rescales a whole
+ * series into a plausible-looking range and nothing on the chart would show it.
+ *
+ * Groups deliberately do not cross dimensions. `%` is absent because a volume
+ * fraction against a percentage is a factor of 100 in one convention and 1 in
+ * another, and no record says which. `U/L` and `IU/L` are absent because the
+ * international unit is defined per substance.
+ */
+const UNIT_GROUPS: Record<string, number>[] = [
+    // Mass concentration, relative to g/L. Note the identities this produces:
+    // ug/L ≡ ng/mL, ng/L ≡ pg/mL, mg/L ≡ µg/mL — all exact, all common in the
+    // wild, and all previously read as different units.
+    {
+        'g/L'  : 1,     'mg/L' : 1e-3,  'ug/L' : 1e-6,  'ng/L' : 1e-9,
+        'g/dL' : 10,    'mg/dL': 1e-2,  'ug/dL': 1e-5,  'ng/dL': 1e-8,
+        'mg/mL': 1,     'µg/mL': 1e-3,  'ng/mL': 1e-6,  'pg/mL': 1e-9
+    },
+    // Substance concentration, relative to mol/L.
+    { 'mol/L': 1, 'mmol/L': 1e-3, 'µmol/L': 1e-6, 'nmol/L': 1e-9, 'pmol/L': 1e-12 },
+    // Cell counts, relative to ×10⁹/L. `cleanUnit` has already folded the
+    // per-µL spellings into these, so only the genuine thousand-fold steps
+    // remain.
+    { '×10⁹/L': 1, '×10¹²/L': 1e3, '/µL': 1e-3 },
+    // Mass ratio, relative to ug/g. mg/kg is the same ratio written differently.
+    { 'ug/g': 1, 'mg/kg': 1, 'mg/g': 1e3, 'g/kg': 1e3 },
+    // Body weight. The imperial spellings are here because LOINC's own body
+    // weight codes list `[lb_av]` alongside `kg`, so one code can arrive either
+    // way with nothing to distinguish them but the unit string.
+    { 'kg': 1, 'g': 1e-3, '[lb_av]': 0.45359237, 'lb': 0.45359237 },
+    // Body height, likewise: `[in_us]` sits beside `cm` and `m` on one code.
+    { 'cm': 1, 'm': 100, 'mm': 0.1, '[in_us]': 2.54, 'in': 2.54 }
+];
+
+/**
+ * What to multiply a value in `from` by to express it in `to`.
+ *
+ * Null where the two are not the same dimension, or where either is unknown to
+ * {@link UNIT_GROUPS} — which is the answer that matters, because a caller that
+ * cannot convert must drop the reading rather than plot it against a scale it
+ * does not belong on. Returns 1 for a unit against itself.
+ *
+ * Both arguments are expected to have been through {@link cleanUnit}.
+ */
+export function unitScale(from: string, to: string): number | null {
+    if (from === to) return 1;
+
+    const group = UNIT_GROUPS.find(g => from in g && to in g);
+
+    return group ? group[from] / group[to] : null;
+}
 
 export function cleanUnit(raw: string): string {
     const trimmed = raw.trim();
