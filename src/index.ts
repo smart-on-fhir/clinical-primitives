@@ -51,7 +51,7 @@ export type {
 	MedicationLegendEntry,
 	TimelineMedication
 } from './components/TimelineChart/sections/MedicationsTimeline';
-
+export type { TimelineAnalyte } from './components/TimelineChart/sections/ObservationsTimeline';
 
 
 // Utils -----------------------------------------------------------------------
