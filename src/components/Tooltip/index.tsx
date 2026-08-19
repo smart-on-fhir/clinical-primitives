@@ -63,8 +63,37 @@ interface ActiveTooltip {
     latched: boolean;
 }
 
-const ARROW_SIZE   = 6;
-const ARROW_INSET  = 10;
+// 8 rather than a prettier 6 so the rendered box — 1.5x this, see the
+// stylesheet — is 12px and its `translate(-50%)` is a whole 6px. A 9px box
+// translated by 4.5px puts the arrow's own center half a pixel off the grid
+// before any of the placement math has run.
+const ARROW_SIZE   = 8;
+
+/**
+ * How far the arrow's corners reach from its own center: it is drawn 1.5×
+ * {@link ARROW_SIZE} (see the stylesheet) and rotated 45°, so the corners sit
+ * half a diagonal out.
+ */
+const ARROW_REACH  = ARROW_SIZE * 1.5 * Math.SQRT2 / 2;
+
+/**
+ * The bubble's corner radius, `--cp-radius-md` in `styles/library.scss`.
+ *
+ * Duplicated from CSS, which is a wart — but the clamp that uses it runs in JS,
+ * and a wrong value here is visible rather than silent: the arrow overlaps the
+ * curve, which is exactly the bug this constant was added to fix.
+ */
+const BUBBLE_RADIUS = 6;
+
+/**
+ * Minimum clearance between the arrow's center and the bubble's corners.
+ *
+ * Has to clear the rounded corner *and* the arrow's own half-diagonal, or the
+ * arrow's near corner lands on the curve and its bordered face meets the
+ * bubble's border where that border is already turning — which no amount of
+ * alignment can make read as one line. The previous flat 10 was 4.5px short.
+ */
+const ARROW_INSET  = Math.ceil(ARROW_REACH + BUBBLE_RADIUS);
 const TOOLTIP_ID   = 'cp-tooltip';
 // Referenced both in the render and imperatively in `update`, which must agree.
 const GLIDE_CLASS  = 'cp-tooltip--glide';
@@ -194,13 +223,28 @@ function resolveAnchor(
     };
 }
 
+/**
+ * Rounds a CSS pixel value onto the device's pixel grid.
+ *
+ * The bubble's border box is pixel-snapped when it is painted, while the arrow
+ * carries a `transform` and so is rasterized with subpixel precision. Left
+ * fractional, the two are displaced from each other by whatever the snapping
+ * moved — an error that varies with the bubble's content and its scroll
+ * position, which is why no constant nudge in the stylesheet could cancel it.
+ * Landing the bubble on the grid in the first place leaves the snapping nothing
+ * to do, and the arrow's offsets then mean what they say.
+ */
+function snapToPixel(value: number): number {
+    const ratio = window.devicePixelRatio || 1;
+    return Math.round(value * ratio) / ratio;
+}
+
 function samePlacement(a: Placement | null, b: Placement): boolean {
     return !!a
         && Math.abs(a.left - b.left) < 0.5
         && Math.abs(a.top - b.top) < 0.5
         && a.side === b.side
-        && Math.abs((a.arrow?.left ?? 0) - (b.arrow?.left ?? 0)) < 0.5
-        && Math.abs((a.arrow?.top ?? 0) - (b.arrow?.top ?? 0)) < 0.5;
+        && Math.abs((a.arrow?.offset ?? 0) - (b.arrow?.offset ?? 0)) < 0.5;
 }
 
 /**
@@ -213,7 +257,7 @@ function samePlacement(a: Placement | null, b: Placement): boolean {
  */
 export function Tooltip({
     delay           = 100,
-    offset          = 8,
+    offset          = 10,
     viewportPadding = 8,
     maxWidth        = '20rem'
 }: TooltipProps = {}) {
@@ -337,7 +381,7 @@ export function Tooltip({
         // on one page look fine or misaligned depending on their content.
         const rect = bubble.getBoundingClientRect();
 
-        const next = computePlacement({
+        const placed = computePlacement({
             anchor,
             x,
             y,
@@ -347,6 +391,17 @@ export function Tooltip({
             offset    : current.options.offset,
             arrowInset: ARROW_INSET
         });
+
+        // Snapped here rather than inside computePlacement, which is a pure
+        // geometry function and has no business knowing about a display. Both
+        // the imperative write below and the React render read these, so they
+        // have to agree on the rounded values, not just the raw ones.
+        const next: Placement = {
+            ...placed,
+            left : snapToPixel(placed.left),
+            top  : snapToPixel(placed.top),
+            arrow: placed.arrow && { offset: snapToPixel(placed.arrow.offset) }
+        };
 
         // Never while tracking the cursor: there the bubble is already moving
         // with the pointer, and easing only turns that into lag.
@@ -381,8 +436,7 @@ export function Tooltip({
             bubble.style.top  = `${next.top}px`;
 
             if (next.arrow) {
-                bubble.style.setProperty('--cp-tooltip-arrow-left', `${next.arrow.left}px`);
-                bubble.style.setProperty('--cp-tooltip-arrow-top', `${next.arrow.top}px`);
+                bubble.style.setProperty('--cp-tooltip-arrow-offset', `${next.arrow.offset}px`);
             }
         }
 
@@ -681,9 +735,8 @@ export function Tooltip({
                 left            : placement?.left ?? 0,
                 top             : placement?.top ?? 0,
                 maxWidth        : active.options.maxWidth,
-                '--cp-tooltip-arrow-left': `${placement?.arrow?.left ?? 0}px`,
-                '--cp-tooltip-arrow-top' : `${placement?.arrow?.top ?? 0}px`,
-                '--cp-tooltip-arrow-size': `${ARROW_SIZE}px`
+                '--cp-tooltip-arrow-offset': `${placement?.arrow?.offset ?? 0}px`,
+                '--cp-tooltip-arrow-size'  : `${ARROW_SIZE}px`
             } as React.CSSProperties}
         >
             <div className="cp-tooltip-content">{content}</div>

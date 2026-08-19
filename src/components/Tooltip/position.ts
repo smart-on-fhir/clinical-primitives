@@ -38,8 +38,19 @@ export interface Placement {
     /** `null` when the tooltip is drawn inside the anchor (no arrow then). */
     side : TooltipSide | null;
     align: TooltipAlign;
-    /** Arrow offset relative to the tooltip's own top-left corner. */
-    arrow: { left: number; top: number } | null;
+    /**
+     * How far along the bubble's edge the arrow sits, measured from the
+     * bubble's top-left corner on whichever axis that edge runs: x for a
+     * top/bottom side, y for left/right.
+     *
+     * One axis only, because the other one is not a measurement — it is "the
+     * bubble's edge", which CSS can place exactly from the border box itself.
+     * Computing it here meant feeding a fractional measured height back in as a
+     * coordinate, where it landed half a pixel off the edge it named.
+     *
+     * `null` when the tooltip is drawn inside the anchor (no arrow then).
+     */
+    arrow: { offset: number } | null;
 }
 
 const OPPOSITE: Record<TooltipSide, TooltipSide> = {
@@ -213,15 +224,9 @@ export function computePlacement(input: PlacementInput): Placement {
     // Aim at the anchor's center, measured against the bubble's final position
     // rather than its intended one — `left`/`top` above are already clamped, and
     // the whole point of the arrow is to bridge the gap that clamping opened.
-    const arrow = side === 'top' || side === 'bottom'
-        ? {
-            left: arrowOffset(anchor.left + anchor.width / 2 - left, tooltip.width, arrowInset),
-            top : side === 'top' ? tooltip.height : 0
-        }
-        : {
-            left: side === 'left' ? tooltip.width : 0,
-            top : arrowOffset(anchor.top + anchor.height / 2 - top, tooltip.height, arrowInset)
-        };
+    const arrow = { offset: side === 'top' || side === 'bottom'
+        ? arrowOffset(anchor.left + anchor.width / 2 - left, tooltip.width,  arrowInset)
+        : arrowOffset(anchor.top  + anchor.height / 2 - top, tooltip.height, arrowInset) };
 
     return { left, top, side, align: effectiveAlign, arrow };
 }

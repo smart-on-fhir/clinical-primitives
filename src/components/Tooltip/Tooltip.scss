@@ -1,7 +1,23 @@
 .cp-tooltip {
     // Shared with the arrow, which has to subtract it — see .cp-tooltip-arrow.
-    --cp-tooltip-border-width: 1.75px;
+    // Whole pixels: a fractional border is antialiased across two pixel rows,
+    // and the arrow's rotated copy of it smears differently again, so the two
+    // never read as one continuous line however well they are aligned.
+    --cp-tooltip-border-width: 2px;
     --cp-tooltip-border-color: var(--cp-color-txt-7);
+
+    // How far the arrow is pulled back INTO the bubble, so the two borders
+    // overlap slightly instead of butting against each other.
+    //
+    // Sitting the arrow's corner exactly on the bubble's outer edge lines the
+    // two OUTER edges up perfectly and leaves the two INNER ones apart: the
+    // bubble's border is `w` thick measured straight down, while the arrow's
+    // runs at 45°, so its `w` covers only w/√2 of that same vertical span. The
+    // leftover w·(1 − 1/√2) is the step — a real miter is what would close it,
+    // and two separately rasterized elements have no way to miter with each
+    // other. Pulling the arrow back by exactly that much brings the inner edges
+    // level and turns the butt joint into a small overlap.
+    --cp-tooltip-arrow-seam: calc(var(--cp-tooltip-border-width) * 0.2929);
 
     position      : fixed;
     z-index       : 2000; // above .cp-dialog-backdrop (1000)
@@ -94,52 +110,68 @@
 .cp-tooltip-arrow {
     position  : absolute;
 
-    // The offsets arrive measured from the bubble's BORDER box, but an
-    // absolutely positioned child is placed against its ancestor's PADDING box
-    // — which starts one border-width in on each axis. Without subtracting it
-    // the arrow sits exactly one border-width past the edge it should straddle,
-    // on every side. That is the constant 1px misalignment; any residual
-    // sub-pixel drift is a separate matter, handled by measuring the bubble
-    // with getBoundingClientRect instead of the rounded offsetWidth/Height.
-    left      : calc(var(--cp-tooltip-arrow-left) - var(--cp-tooltip-border-width));
-    top       : calc(var(--cp-tooltip-arrow-top)  - var(--cp-tooltip-border-width));
     // A square rotated 45°, so its tip protrudes half its diagonal — about
-    // 0.707 × the width set here — past the bubble edge.
-    width     : calc(var(--cp-tooltip-arrow-size) * 1.2);
-    height    : calc(var(--cp-tooltip-arrow-size) * 1.2);
+    // 0.707 × the width set here — past the bubble edge. Sized so this comes
+    // out a whole number of pixels; see ARROW_SIZE in index.tsx.
+    width     : calc(var(--cp-tooltip-arrow-size) * 1.5);
+    height    : calc(var(--cp-tooltip-arrow-size) * 1.5);
     background: var(--cp-color-win);
-    // Centers the square exactly on the bubble's outer edge, so its two upper
-    // corners land on that edge and the bordered lower faces continue the
-    // bubble's border from precisely where the notch cuts it. Exact only
-    // because the placement now measures the bubble with getBoundingClientRect
-    // instead of the pixel-rounded offsetHeight — hence no per-side nudges.
+
+    // Centers the square on the bubble's outer edge, so its two outward corners
+    // land on that edge and the bordered outward faces continue the bubble's
+    // border from precisely where the notch cuts it.
     transform : translate(-50%, -50%) rotate(45deg);
     border    : 0 solid var(--cp-tooltip-border-color);
     margin    : 0;
 }
 
+// Where the arrow sits ALONG the edge is a real measurement, and arrives from
+// the placement code as a single offset on whichever axis that edge runs.
+//
+// Where it sits ACROSS the edge is not: it is the bubble's own border box edge,
+// and is written here instead. An absolutely positioned child resolves
+// percentages against its ancestor's PADDING box, which starts one border-width
+// in on each side — so 100% plus one border-width is exactly the outer edge, and
+// `-1 × border-width` is exactly the opposite one. Both are exact for any bubble
+// size, which is what the per-side nudges here were failing to approximate: they
+// were constants standing in for an error that varied with the bubble's
+// fractional height.
+.cp-tooltip--top .cp-tooltip-arrow,
+.cp-tooltip--bottom .cp-tooltip-arrow {
+    left: calc(var(--cp-tooltip-arrow-offset) - var(--cp-tooltip-border-width));
+}
+
+.cp-tooltip--left .cp-tooltip-arrow,
+.cp-tooltip--right .cp-tooltip-arrow {
+    top: calc(var(--cp-tooltip-arrow-offset) - var(--cp-tooltip-border-width));
+}
+
 // Only the two faces pointing away from the bubble get a border, so the seam
 // with the bubble edge stays invisible.
 .cp-tooltip--top .cp-tooltip-arrow {
+    top                : calc(100% + var(--cp-tooltip-border-width) - var(--cp-tooltip-arrow-seam));
     border-right-width : var(--cp-tooltip-border-width);
     border-bottom-width: var(--cp-tooltip-border-width);
-    border-bottom-right-radius: 1px;
+    border-bottom-right-radius: 3px;
 }
 
 .cp-tooltip--bottom .cp-tooltip-arrow {
+    top              : calc(var(--cp-tooltip-arrow-seam) - var(--cp-tooltip-border-width));
     border-left-width: var(--cp-tooltip-border-width);
     border-top-width : var(--cp-tooltip-border-width);
-    border-top-left-radius: 1px;
+    border-top-left-radius: 3px;
 }
 
 .cp-tooltip--left .cp-tooltip-arrow {
+    left              : calc(100% + var(--cp-tooltip-border-width) - var(--cp-tooltip-arrow-seam));
     border-top-width  : var(--cp-tooltip-border-width);
     border-right-width: var(--cp-tooltip-border-width);
-    border-top-right-radius: 1px;
+    border-top-right-radius: 3px;
 }
 
 .cp-tooltip--right .cp-tooltip-arrow {
+    left               : calc(var(--cp-tooltip-arrow-seam) - var(--cp-tooltip-border-width));
     border-left-width  : var(--cp-tooltip-border-width);
     border-bottom-width: var(--cp-tooltip-border-width);
-    border-bottom-left-radius: 1px;
+    border-bottom-left-radius: 3px;
 }
