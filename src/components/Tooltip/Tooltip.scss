@@ -3,7 +3,7 @@
     // Whole pixels: a fractional border is antialiased across two pixel rows,
     // and the arrow's rotated copy of it smears differently again, so the two
     // never read as one continuous line however well they are aligned.
-    --cp-tooltip-border-width: 2px;
+    --cp-tooltip-border-width: 1px;
     --cp-tooltip-border-color: var(--cp-color-txt-7);
 
     // How far the arrow is pulled back INTO the bubble, so the two borders
@@ -28,7 +28,7 @@
     border-radius : var(--cp-radius-md);
     box-shadow    : 0 2px 8px #0002;
     padding       : 0.5em 0.75em;
-    font-size     : var(--cp-text-sm);
+    font-size     : var(--cp-text-xs);
     line-height   : 1.4;
     text-align    : left;
     pointer-events: none;

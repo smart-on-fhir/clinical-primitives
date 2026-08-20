@@ -5,8 +5,8 @@ import {
 import { createPortal } from "react-dom";
 import { TimelineContextProvider, useSection, useTimelineChartContext } from "./TimelineChartContext";
 import { usePan }              from "./usePan";
+import { useSidebarResize }    from "./useSidebarResize";
 import { zoomedRange }         from "./zoom";
-import { Button, RadioButton } from "../..";
 import { Collapse }            from "../Collapse";
 import {
     ChevronDown, Cog, PanelRightClose, PanelRightOpen, SquareDashedMousePointer,
@@ -16,6 +16,7 @@ import "./TimelineChart.scss";
 
 import { MedicationsTimeline }  from "./sections/MedicationsTimeline"
 import { ObservationsTimeline } from "./sections/ObservationsTimeline"
+import { BarChartTimeline } from "./sections/BarChartTimeline";
 
 
 /**
@@ -137,27 +138,14 @@ function TimelineChartRanges({ ranges }: { ranges: TimelineChartRange[] })
 
     return (
         <div className="cp-timeline-chart-ranges" role="group" aria-label="Visible range">
-            <RadioButton
-                radius="pill"
-                variant="muted"
-                value={selected}
-                // Kept teal rather than left to the variant's pressed grey: this
-                // group can sit unselected, so the selected pill has to read as
-                // chosen rather than merely as the one under the pointer.
-                activeClassName="cp-timeline-chart-range-active"
-                onChange={value => {
-                    const bounds = presets[value as number]?.bounds;
-                    if (bounds) setVisibleRange(bounds[0], bounds[1]);
-                }}
-                options={presets.map(({ range, bounds }, index) => ({
-                    value: index,
-                    label: range.label,
-                    title: range.title,
-                    // Nothing to select: "all" before any section has said what
-                    // it holds.
-                    disabled: !bounds
-                }))}
-            />
+            { presets.map(({ range, bounds }, index) => (
+                <button
+                    disabled={!bounds}
+                    data-tooltip={range.title}
+                    className={"cp-timeline-chart-ranges-btn" + (selected === index ? ' active' : '')}
+                    onClick={() => { if (bounds) setVisibleRange(bounds[0], bounds[1]); }}
+                >{range.label}</button>
+            )) }
         </div>
     );
 }
@@ -199,30 +187,22 @@ function TimelineChartZoom()
 
     return (
         <div className="cp-timeline-chart-zoom" role="group" aria-label="Zoom">
-            <RadioButton
-                radius="pill"
-                variant="muted"
-                value=""
-                className="cp-fill-win-1"
-                onChange={value => {
-                    const next = value === "in" ? tighter : wider;
-                    if (next) setVisibleRange(next[0], next[1]);
+            <button
+                disabled={!canWiden}
+                data-tooltip={"**Zoom out**\nShow a longer span"}
+                className="cp-timeline-chart-ranges-btn"
+                onClick={() => {
+                    if (wider) setVisibleRange(wider[0], wider[1])
                 }}
-                options={[
-                    {
-                        value   : "out",
-                        label   : <ZoomOut size={14} />,
-                        title   : "Zoom out — show a longer span",
-                        disabled: !canWiden
-                    },
-                    {
-                        value   : "in",
-                        label   : <ZoomIn size={14} />,
-                        title   : "Zoom in — show a shorter span",
-                        disabled: !canTighten
-                    }
-                ]}
-            />
+            ><ZoomOut /></button>
+            <button
+                disabled={!canTighten}
+                data-tooltip={"**Zoom in**\nShow a shorter span"}
+                className="cp-timeline-chart-ranges-btn"
+                onClick={() => {
+                    if (tighter) setVisibleRange(tighter[0], tighter[1])
+                }}
+            ><ZoomIn /></button>
         </div>
     );
 }
@@ -291,10 +271,17 @@ export function TimelineChart({ children, minX, maxX, title, ranges, ruler, limi
 
 TimelineChart.MedicationsTimeline  = MedicationsTimeline;
 TimelineChart.ObservationsTimeline = ObservationsTimeline;
+TimelineChart.BarChartTimeline     = BarChartTimeline;
 
 function TimelineChartImplementation({ children, minX, maxX, title, ranges = DEFAULT_RANGES, ruler = true }: TimelineChartProps)
 {
     const { setVisibleRangeStart, setVisibleRangeEnd, sidebarOpen, setRulerPercent, sections } = useTimelineChartContext();
+
+    // The grid whose second track the sidebar occupies, so the resize can write
+    // the new width to the element that owns the track.
+    const rootRef = useRef<HTMLDivElement>(null);
+
+    const { width: sidebarWidth, handleProps } = useSidebarResize(rootRef);
 
     // With every section folded up to its header there is no plot left, and an
     // axis under nothing is a row of dates measuring empty space. Sections that
@@ -364,9 +351,13 @@ function TimelineChartImplementation({ children, minX, maxX, title, ranges = DEF
         // gives the whole chart one name in the accessibility tree instead of
         // a loose pile of sections.
         <div
+            ref={rootRef}
             className={`cp-timeline-chart${sidebarOpen ? " cp-timeline-chart-with-sidebar" : ""}`}
             role="group"
             aria-label="Timeline"
+            // Re-stated on every render so React's value wins after a drag,
+            // which wrote the same property straight to the node.
+            style={{ "--cp-timeline-sidebar-width": `${sidebarWidth}px` } as React.CSSProperties}
             onPointerMove={ruler ? onPointerMove : undefined}
             onPointerLeave={ruler ? () => setRulerPercent(undefined) : undefined}
         >
@@ -374,11 +365,12 @@ function TimelineChartImplementation({ children, minX, maxX, title, ranges = DEF
                 <div className="cp-timeline-chart-toolbar">
                     <div className="cp-timeline-chart-toolbar-left">
                         { title && <div className="cp-timeline-chart-title">{title}</div> }
-                        { ranges.length > 0 && <TimelineChartRanges ranges={ranges} /> }
-                        {/* Not conditional on the presets: zooming is always
-                            available, and a chart given `ranges={[]}` has only
-                            the wheel without this. */}
+                        { ranges.length > 0 && <>
+                            <TimelineChartRanges ranges={ranges} />
+                            <div className="cp-fill-win-2" style={{ height: '1em', width: 1, margin: '0 var(--cp-space-3)' }} />
+                        </> }
                         <TimelineChartZoom />
+                        <div className="cp-fill-win-2" style={{ height: '1em', width: 1, margin: '0 var(--cp-space-3)' }} />
                     </div>
                     <div className="cp-timeline-chart-toolbar-right">
                         <TimelineChartSidebarToggle />
@@ -391,7 +383,7 @@ function TimelineChartImplementation({ children, minX, maxX, title, ranges = DEF
             </div>
             {/* Always mounted, so opening and closing can be animated. It is the
                 grid column that collapses, not the element. */}
-            <TimelineChartSidebar />
+            <TimelineChartSidebar handleProps={handleProps} />
         </div>
     )
 }
@@ -401,16 +393,15 @@ function TimelineChartSidebarToggle()
     const { sidebarOpen, setSidebarPanel } = useTimelineChartContext();
 
     return (
-        <Button
+        <button
             onClick={() => setSidebarPanel(sidebarOpen ? null : "overview")}
             title={sidebarOpen ? "Hide details" : "Show details"}
             aria-expanded={sidebarOpen}
-            virtual
         >
             { sidebarOpen ?
                 <PanelRightClose style={{ display: 'block' }} /> :
                 <PanelRightOpen style={{ display: 'block' }} /> }
-        </Button>
+        </button>
     )
 }
 
@@ -471,7 +462,7 @@ export function TimelineChartRowLabel({ children, detail, title, className, ...r
  * the section that owns it, so the sidebar never needs to know what a section
  * contains.
  */
-function TimelineChartSidebar()
+function TimelineChartSidebar({ handleProps }: { handleProps: React.HTMLAttributes<HTMLDivElement> })
 {
     const { sidebarPanel, sidebarOpen, sections } = useTimelineChartContext();
 
@@ -490,6 +481,10 @@ function TimelineChartSidebar()
         // Hidden from assistive tech and from tabbing while collapsed — it is
         // still in the DOM, just animated down to nothing.
         <aside className="cp-timeline-chart-sidebar" aria-hidden={!sidebarOpen}>
+            {/* Sits on the sidebar's own left border. Inside the aside rather
+                than beside it so the collapsed state takes it out of reach and
+                out of the tab order along with everything else in here. */}
+            <div {...handleProps} />
             {/* The scroller is taken out of flow so its content cannot size the
                 grid row. Without that, expanding a resource tree grows the row
                 and the chart with it, and `overflow` never engages. */}
@@ -800,29 +795,27 @@ export function TimelineChartLayer({
 
     return [
         <div className="cp-timeline-chart-layer-header" key="header">
-            <Button
+            <button
                 className="cp-timeline-chart-layer-toggle"
-                virtual
                 onClick={() => setCollapsed(value => !value)}
                 aria-expanded={!collapsed}
                 title={collapsed ? "Expand section" : "Collapse section"}
             >
                 <ChevronDown size={14} style={{ display: "block" }} />
-            </Button>
+            </button>
             {typeof label === "string" ? <div className="cp-timeline-chart-layer-header-label">{label}</div> : label}
             <div style={{ flex: 1 }}>
                 <div style={{ borderTop: "2px solid var(--cp-color-win-2)", borderBottom: "2px solid var(--cp-color-win-2)", height: 5 }}></div>
             </div>
             { settings && (
-                <Button
+                <button
                     // Opens the sidebar and expands this section's entry in it.
                     onClick={() => setSidebarPanel(id)}
                     title="Section settings"
-                    virtual
                     className="cp-p-1 cp-px-1"
                 >
                     <Cog size={14} style={{ display: "block" }} />
-                </Button>
+                </button>
             )}
         </div>,
 

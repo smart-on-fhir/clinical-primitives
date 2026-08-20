@@ -5,7 +5,6 @@ import { useClinicalData } from "../../../../fhir/context";
 import { FhirResourceJsonViewer } from "../../../JsonViewer/FhirJsonViewer";
 import { Collapse } from "../../../Collapse";
 import { SourceDialog } from "../../../Dialog/SourceDialog";
-import { Button } from "../../../Button/Button";
 import {
     cleanUnit,
     getObservationDate,
@@ -163,8 +162,7 @@ export function ObservationDetail({ observation }: { observation: Observation })
                 label={
                     <span className="cp-timeline-source-label">
                         Source
-                        <Button
-                            virtual
+                        <button
                             title="Open the full resource"
                             onClick={event => {
                                 // The whole header toggles the collapse, so the
@@ -175,7 +173,7 @@ export function ObservationDetail({ observation }: { observation: Observation })
                             }}
                         >
                             <ExternalLink size={13} style={{ display: "block" }} />
-                        </Button>
+                        </button>
                     </span>
                 }
             >

@@ -20,15 +20,30 @@ import { Patient } from 'fhir/r4';
 
 // --- Singleton file input (one per page regardless of how many providers) ---
 
+/** Marks the input as ours, so a stale one can be found and cleared. */
+const FILE_INPUT_ATTR = 'data-cp-file-input';
+
 let _sharedInput: HTMLInputElement | null = null;
 let _pendingCallback: ((file: File) => void) | null = null;
 
 function getSharedInput(): HTMLInputElement {
     if (!_sharedInput) {
+        // The module variable is only half the guard: it resets whenever this
+        // module is re-evaluated, which a dev server does on every hot update
+        // of a linked package. The input it created is still in the body
+        // though, so without this sweep each reload leaves another one behind.
+        //
+        // Swept rather than adopted. A stale input's `change` listener closes
+        // over the previous module instance's `_pendingCallback`, so reusing
+        // the element would give us a picker whose file never reaches the
+        // caller waiting on it.
+        document.querySelectorAll(`input[${FILE_INPUT_ATTR}]`).forEach(stale => stale.remove());
+
         _sharedInput = document.createElement('input');
         _sharedInput.type = 'file';
         _sharedInput.accept = '.json,.ndjson';
         _sharedInput.style.display = 'none';
+        _sharedInput.setAttribute(FILE_INPUT_ATTR, '');
         _sharedInput.addEventListener('change', () => {
             const file = _sharedInput?.files?.[0];
             if (file) _pendingCallback?.(file);

@@ -12,10 +12,17 @@
     display: grid;
     align-items: start;
 
+    // Set by the resize drag; see useSidebarResize.ts. Also the fallback for a
+    // chart rendered outside that hook's reach.
+    --cp-timeline-sidebar-width: 20em;
+
     // The sidebar column is always present, collapsed to nothing when closed.
     // Keeping the track count the same in both states is what makes the columns
-    // interpolable — going from one track to two would snap instead.
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
+    // interpolable — going from one track to two would snap instead. Both
+    // states give the sidebar track a definite LENGTH for the same reason: a
+    // `0fr` and a width are different types, and the transition between them
+    // would snap even though the track count matches.
+    grid-template-columns: minmax(0, 1fr) 0px;
     column-gap: 0;
     row-gap: var(--cp-space-4);
 
@@ -29,8 +36,21 @@
         column-gap var(--cp-timeline-sidebar-duration, 400ms) ease;
 
     &.cp-timeline-chart-with-sidebar {
-        grid-template-columns: minmax(0, 4fr) minmax(18em, 1fr);
+        // A fixed width rather than the `4fr / minmax(18em, 1fr)` ratio this
+        // used to be: a dragged width is an absolute number, and the ratio only
+        // ever reached its 1fr share on a wide viewport anyway — below that the
+        // 18em minimum was doing all the work.
+        grid-template-columns: minmax(0, 1fr) var(--cp-timeline-sidebar-width);
         column-gap: var(--cp-space-4);
+    }
+
+    // Held only for the length of a drag. Without it the transition above eases
+    // toward the pointer on every frame, so the column arrives 400ms after the
+    // handle it is supposed to be attached to.
+    &.cp-timeline-chart--resizing {
+        transition: none;
+        user-select: none;
+        cursor: col-resize;
     }
 
     // Animation here is decorative — the layout is legible without it.
@@ -42,29 +62,50 @@
         overflow: hidden;
     }
 
-    button.cp-button {
-        padding: 0.5rem 1rem;
+    button, button.cp-button {
+        padding: 0.5em 1em;
+        color: var(--cp-color-txt-7);
+        border-radius: 0.5em;
+        border: 1px solid transparent;
+        cursor: pointer;
+        user-select: none;
+        line-height: 1;
+        min-height: 2.3em;
+        transition: all 0.1s;
 
         &:has(> .lucide) {
-            padding: 0.25rem 0.5rem;
+            // align-self: center;
+            padding: 0.5em;
             // padding: var(--cp-space-1) var(--cp-space-3);
             // line-height: var(--cp-space-5);
+            
             .lucide {
-                height: 1.2rem;
-                width: 1.2rem;
+                width: 1.8em;
+                height: 1.8em;
                 stroke-width: 1px;
+
             }
+        }
+
+        &:hover {
+            background-color: var(--cp-color-win-1);
+            border-color    : var(--cp-color-win-2);
+            color           : var(--cp-color-txt-5);
+        }
+
+        &.active, &:active {
+            background  : rgba(from var(--cp-color-teal) r g b / 0.2);
+            border-color: rgba(from var(--cp-color-teal) r g b / 0.2);
+            color       : var(--cp-color-teal);
         }
     }
 
     .cp-timeline-chart-toolbar {
         display: flex;
-        align-items: center;
-        gap: var(--cp-space-3);
+        align-items: flex-start;
+        // gap: var(--cp-space-3);
         justify-content: space-between;
-        margin-bottom: var(--cp-space-4);
-
-        
+        margin-bottom: var(--cp-space-4);  
 
         .radio-button {
             min-height: 1.84rem;
@@ -74,19 +115,20 @@
     .cp-timeline-chart-toolbar-left {
         display: flex;
         align-items: center;
-        gap: var(--cp-space-2) var(--cp-space-4);
+        gap: var(--cp-space-2) 0;
         flex-wrap: wrap;
         flex: 1 1 auto;
     }
     .cp-timeline-chart-toolbar-right {
+        font-size: var(--cp-text-xs);
         color: var(--cp-color-txt-7);
 
         // The sidebar toggle carries an icon and no text, so it wants the same
         // padding on all four sides — the base button's wider sides are for
         // holding a word.
-        .cp-button {
-            padding: var(--cp-space-1) var(--cp-space-3);
-        }
+        // .cp-button {
+        //     padding: var(--cp-space-1) var(--cp-space-3);
+        // }
     }
 
     // Pushed left rather than the row being switched to `space-between`, so a
@@ -106,33 +148,71 @@
         }
     }
 
-    .cp-timeline-chart-ranges {
+    .cp-timeline-chart-ranges, .cp-timeline-chart-zoom {
         display: flex;
-        gap: var(--cp-space-3);
+        gap: var(--cp-space-1);
         font-size: var(--cp-text-xs);
+        // align-self: stretch;
 
-        // Tighter than the base button: these are pills in a dense toolbar
-        // rather than form buttons.
-        .cp-button {
-            padding: var(--cp-space-2) var(--cp-space-4);
+        .cp-timeline-chart-ranges-btn {
+            // padding: 0.5em;
+            // border-radius: 0.5em;
+            // border: 1px solid transparent;
+            // cursor: pointer;
+            // user-select: none;
+            // color: var(--cp-color-txt-7);
+            // line-height: 1;
+            // min-height: 2.3em;
+            // transition: all 0.1s;
+
+            svg.lucide {
+                stroke-width: 1px;
+                width: 1.8em;
+                height: 1.8em;
+            }
+
+            // &:hover {
+            //     background-color: var(--cp-color-win-1);
+            //     border-color    : var(--cp-color-win-2);
+            //     color           : var(--cp-color-txt-5);
+            // }
+
+            // &.active, &:active {
+            //     background  : rgba(from var(--cp-color-teal) r g b / 0.2);
+            //     border-color: rgba(from var(--cp-color-teal) r g b / 0.2);
+            //     color       : var(--cp-color-teal);
+            // }
         }
 
-        // The pill for the window the chart is showing.
-        //
-        // The group's own variant supplies a pressed grey, which is enough where
-        // something is always selected. Here nothing need be — any pan or zoom
-        // releases every pill — so the selected one has to look chosen rather
-        // than merely pressed, and it carries the accent the old active pill had.
-        //
-        // The variant sets these same properties, so this has to outrank it:
-        // hence the nesting rather than a class on its own.
-        .cp-timeline-chart-range-active {
-            --border-color      : rgba(from var(--cp-color-teal) r g b / 0.4);
-            --bg-color          : rgba(from var(--cp-color-teal) r g b / 0.3);
-            --fg-color          : color-mix(in srgb, var(--cp-color-teal) 50%, var(--cp-color-txt));
-            --border-color-hover: rgba(from var(--cp-color-teal) r g b / 0.5);
-            --bg-color-hover    : rgba(from var(--cp-color-teal) r g b / 0.4);
-            --fg-color-hover    : color-mix(in srgb, var(--cp-color-teal) 40%, var(--cp-color-txt));
+        // // Tighter than the base button: these are pills in a dense toolbar
+        // // rather than form buttons.
+        // .cp-button {
+        //     padding: var(--cp-space-2) var(--cp-space-4);
+        // }
+
+        // // The pill for the window the chart is showing.
+        // //
+        // // The group's own variant supplies a pressed grey, which is enough where
+        // // something is always selected. Here nothing need be — any pan or zoom
+        // // releases every pill — so the selected one has to look chosen rather
+        // // than merely pressed, and it carries the accent the old active pill had.
+        // //
+        // // The variant sets these same properties, so this has to outrank it:
+        // // hence the nesting rather than a class on its own.
+        // .cp-timeline-chart-range-active {
+        //     --border-color      : rgba(from var(--cp-color-teal) r g b / 0.4);
+        //     --bg-color          : rgba(from var(--cp-color-teal) r g b / 0.3);
+        //     --fg-color          : color-mix(in srgb, var(--cp-color-teal) 50%, var(--cp-color-txt));
+        //     --border-color-hover: rgba(from var(--cp-color-teal) r g b / 0.5);
+        //     --bg-color-hover    : rgba(from var(--cp-color-teal) r g b / 0.4);
+        //     --fg-color-hover    : color-mix(in srgb, var(--cp-color-teal) 40%, var(--cp-color-txt));
+        // }
+    }
+
+    .cp-timeline-chart-ranges {
+        // gap: 2px;
+        .cp-timeline-chart-ranges-btn {
+            padding: 0.5em 1em;
         }
     }
 
@@ -141,13 +221,13 @@
     // Its buttons carry an icon and no text, so the sides come in — the presets'
     // wider padding is for holding a word, and applied here it would leave two
     // small glyphs adrift in a wide pill.
-    .cp-timeline-chart-zoom {
-        font-size: var(--cp-text-xs);
+    // .cp-timeline-chart-zoom {
+    //     font-size: var(--cp-text-xs);
 
-        .cp-button {
-            padding: var(--cp-space-2) var(--cp-space-3);
-        }
-    }
+    //     .cp-button {
+    //         padding: var(--cp-space-2) var(--cp-space-3);
+    //     }
+    // }
 
     .cp-timeline-chart-sidebar {
         border-left: 1px solid var(--cp-color-win-3);
@@ -186,12 +266,62 @@
         border-left-color: var(--cp-color-win-3);
     }
 
-    .cp-timeline-chart-sidebar-scroll {
+    // Straddles the sidebar's left border, which is the line it appears to move.
+    // Wider than that border so it is not a 1px pointer target, and drawn only
+    // on hover or focus so an idle chart shows a plain rule.
+    .cp-timeline-chart-sidebar-handle {
         position: absolute;
+        top     : 0;
+        bottom  : 0;
+        // A fixed target rather than a spacing token: --cp-space-2 is 0.2rem, so
+        // the strip would come out 6.4px wide, under the ~9px a pointer target
+        // wants. This is a hit area, not spacing.
+        left    : -4px;
+        width   : 9px;
+        z-index : 5;
+        cursor  : col-resize;
+
+        // The visible grip: a rule the width of the border, centered in the
+        // target area, so the target can be generous without looking it.
+        &::after {
+            content   : "";
+            position  : absolute;
+            top       : 0;
+            bottom    : 0;
+            left      : 50%;
+            width     : 2px;
+            transform : translateX(-50%);
+            background: var(--cp-color-txt-5);
+            opacity   : 0;
+            transition: opacity 150ms ease;
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            opacity: 1;
+        }
+
+        // The default ring would trace the whole invisible target strip.
+        &:focus-visible {
+            outline: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            &::after {
+                transition: none;
+            }
+        }
+    }
+
+    .cp-timeline-chart-sidebar-scroll {
+        // position: absolute;
         inset: 0;
         overflow: auto;
         padding-left: var(--cp-space-4);
         scroll-behavior: smooth;
+        position: sticky;
+        top: 0;
+        max-height: 100vh;
 
         > .cp-collapse > .cp-collapse-header :not(:first-child) {
             color: var(--cp-color-txt-4);
@@ -224,6 +354,11 @@
             display: inline-flex;
             align-items: center;
             gap: var(--cp-space-2);
+
+            .lucide {
+                width: 1.2em;
+                height: 1.2em;
+            }
         }
 
         > h4 {

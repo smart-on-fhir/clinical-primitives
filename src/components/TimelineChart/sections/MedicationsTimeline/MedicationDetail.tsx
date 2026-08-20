@@ -90,8 +90,7 @@ export function MedicationDetail({ medication }: {
                 label={
                     <span className="cp-timeline-source-label">
                         Source
-                        <Button
-                            virtual
+                        <button
                             title="Open the full resource"
                             onClick={event => {
                                 // The whole header toggles the collapse, so the
@@ -102,7 +101,7 @@ export function MedicationDetail({ medication }: {
                             }}
                         >
                             <ExternalLink size={13} style={{ display: "block" }} />
-                        </Button>
+                        </button>
                     </span>
                 }
             >
