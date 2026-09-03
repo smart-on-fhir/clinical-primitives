@@ -223,8 +223,67 @@ function BarRow({ bars, idPrefix, className = "", ...rest }: {
     );
 }
 
+/**
+ * The smallest a bar may be drawn, in px. Below this it is neither visible nor
+ * worth aiming at.
+ */
+export const MIN_BAR_PX = 8;
+
+/**
+ * Where to draw a bar, given its true span as percentages of the plot.
+ *
+ * A span narrower than {@link MIN_BAR_PX} has to be widened to stay on screen,
+ * and the widening is a lie about duration however it is done. The question is
+ * only which lie reads correctly, and that comes down to two rules:
+ *
+ * - **Widen around the middle, not the left edge.** Growing rightward from the
+ *   true start puts the bar's center half the minimum past the instant it
+ *   describes, so selecting it draws the highlight — which uses the true
+ *   coordinates — against the bar's left edge rather than through it. That gap
+ *   is the whole width of the inflation, and it is why a one-hour course on a
+ *   ten-year view looks misplaced until it is zoomed in far enough to have a
+ *   real width. Centering makes the drawn bar disagree with the truth
+ *   symmetrically, which is to say it goes on pointing at the right instant.
+ *
+ * - **Keep the inflation inside the plot.** The row clips its overflow so that
+ *   a bar genuinely running off-screen loses its rounded cap and reads as
+ *   continuing. An inflated bar at the very first or last instant of the range
+ *   has no such continuation — half its width is padding — so clipping it just
+ *   crops it to a sliver. It is nudged back inside instead.
+ *
+ * Both rules apply only to inflation. A bar with a real width is returned
+ * untouched, including one that genuinely overhangs the range, so nothing here
+ * can move a bar the reader could otherwise measure.
+ */
+export function drawnBar(leftPercent: number, widthPercent: number, plotWidth: number) {
+    // Nothing measured yet, or a plot with no width: there is no px floor to
+    // compare against, so the true geometry is all there is to draw.
+    if (!plotWidth) {
+        return { left: leftPercent, width: widthPercent, inflated: false };
+    }
+
+    const minPercent = MIN_BAR_PX / plotWidth * 100;
+
+    if (widthPercent >= minPercent) {
+        return { left: leftPercent, width: widthPercent, inflated: false };
+    }
+
+    const center = leftPercent + widthPercent / 2;
+
+    let left = center - minPercent / 2;
+
+    // Only a bar whose true span lies inside the range is pulled back in. One
+    // that really does start before or end after the window keeps its overhang,
+    // because there the clipping is the point.
+    if (leftPercent >= 0 && leftPercent + widthPercent <= 100) {
+        left = Math.min(Math.max(left, 0), 100 - minPercent);
+    }
+
+    return { left, width: minPercent, inflated: true };
+}
+
 function Bar({ x1, x2, color, className = "", id, zIndex, tooltip, onSelect }: TimelineBar & { zIndex?: number }) {
-    const { setHighlightRange, toPercent, selectedId } = useTimelineChartContext();
+    const { setHighlightRange, toPercent, selectedId, plotWidth } = useTimelineChartContext();
 
     // Matched by identity, not by interval: two medications can cover exactly
     // the same dates, and comparing dates would select both at once. Still
@@ -238,15 +297,17 @@ function Bar({ x1, x2, color, className = "", id, zIndex, tooltip, onSelect }: T
     const leftPercent  = toPercent(x1);
     const widthPercent = toPercent(x2) - leftPercent;
 
-    // An interval with no duration is a point in time, not a span, and needs its
-    // own treatment to stay visible and hittable.
-    const instant = x1 === x2;
+    // What the bar is actually drawn at, which is not always its true span: a
+    // bar too short to see is widened to MIN_BAR_PX so it stays visible and
+    // hittable. See `drawnBar` for why that widening is centered and clamped
+    // rather than simply growing rightward.
+    const { left, width, inflated } = drawnBar(leftPercent, widthPercent, plotWidth);
 
     return (
         <div
             className={[
                 "cp-timeline-bar",
-                instant && "cp-timeline-bar-instant",
+                inflated && "cp-timeline-bar-inflated",
                 selected && "cp-timeline-bar-selected",
                 className
             ].filter(Boolean).join(" ")}
@@ -267,7 +328,7 @@ function Bar({ x1, x2, color, className = "", id, zIndex, tooltip, onSelect }: T
             }}
             // An inline background beats the class's, which is what makes `color`
             // take precedence when both are supplied.
-            style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, backgroundColor: color, zIndex }}
+            style={{ left: `${left}%`, width: `${width}%`, backgroundColor: color, zIndex }}
         />
     );
 }

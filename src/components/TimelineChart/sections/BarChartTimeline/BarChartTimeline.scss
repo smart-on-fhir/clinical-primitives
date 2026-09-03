@@ -29,18 +29,20 @@
 
         min-height: 1em;
 
-        // A bar zoomed out far enough to round to nothing still has to be
-        // visible and clickable. It grows rightward from its true start, which
-        // is correct for a span.
-        min-width: 5px;
+        // No `min-width` floor here, and no per-case margin to undo one.
+        //
+        // A CSS minimum can only grow a box to one side, and it cannot know
+        // whether the growth has pushed the box off the end of the plot — so
+        // the same rule that kept a short bar visible also shifted it right of
+        // the instant it marks and let it be cropped at the edges of the range.
+        // Both are decided in `drawnBar` instead, which has the numbers: the
+        // true span, and the plot's width in px.
+        //
+        // A zero-length bar needs no special case any more. It is simply the
+        // narrowest span there is, and comes out centered on its instant like
+        // every other bar too short to draw at its true width.
 
         filter: saturate(.6) opacity(0.8);
-
-        // A zero-length bar is a point rather than a span, so it is centered on
-        // its instant instead of growing to one side of it.
-        &.cp-timeline-bar-instant {
-            margin-left: -2px;
-        }
 
         // The selected bar keeps its fill color — the outline is what changes,
         // so the row still reads as the same drug.
@@ -48,8 +50,10 @@
             // Earlier shadows paint on top, so the thin window-colored ring has
             // to come first to show as a gap between the fill and the outline.
             box-shadow:
-                0 0 0 1px var(--cp-color-txt) inset,
-                0 0 0 1px var(--cp-color-win);
+                0 0 0 1px rgba(from var(--cp-color-txt) r g b / 0.5) inset,
+                // 0 0 3px 0px var(--cp-color-win),
+                0 0 0 2px var(--cp-color-win),
+                0 0 0 3px var(--cp-color-txt);
             z-index: 2;
             filter: saturate(.8);
         }

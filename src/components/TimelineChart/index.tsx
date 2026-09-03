@@ -3,7 +3,7 @@ import {
     useRef, useState, type ReactElement, type ReactNode
 } from "react";
 import { createPortal } from "react-dom";
-import { TimelineContextProvider, useSection, useTimelineChartContext } from "./TimelineChartContext";
+import { TimelineContextProvider, paddedDataRange, useSection, useTimelineChartContext } from "./TimelineChartContext";
 import { usePan }              from "./usePan";
 import { useSidebarResize }    from "./useSidebarResize";
 import { zoomedRange }         from "./zoom";
@@ -71,8 +71,11 @@ function rangeBounds(
     dataRangeEnd?: number
 ): [number, number] | null {
     if (range.years === undefined && range.months === undefined) {
+        // Padded, so "all" fits the record rather than butting it against both
+        // edges of the plot — where the first and last marks are half outside
+        // the row and clipped by it.
         return dataRangeStart !== undefined && dataRangeEnd !== undefined && dataRangeEnd > dataRangeStart
-            ? [dataRangeStart, dataRangeEnd]
+            ? paddedDataRange(dataRangeStart, dataRangeEnd)
             : null;
     }
 
@@ -140,6 +143,7 @@ function TimelineChartRanges({ ranges }: { ranges: TimelineChartRange[] })
         <div className="cp-timeline-chart-ranges" role="group" aria-label="Visible range">
             { presets.map(({ range, bounds }, index) => (
                 <button
+                    key={index}
                     disabled={!bounds}
                     data-tooltip={range.title}
                     className={"cp-timeline-chart-ranges-btn" + (selected === index ? ' active' : '')}
@@ -1192,7 +1196,7 @@ function labelWidth(sample: string, element: HTMLElement): number {
 }
 
 export function TimelineChartAxis() {
-    const { visibleRangeStart, visibleRangeEnd, setPlotElement } = useTimelineChartContext();
+    const { visibleRangeStart, visibleRangeEnd, setPlotElement, plotWidth: width, setPlotWidth: setWidth } = useTimelineChartContext();
 
     const scale = axisScale(visibleRangeEnd - visibleRangeStart);
 
@@ -1201,10 +1205,13 @@ export function TimelineChartAxis() {
     const format = useMemo(() => new Intl.DateTimeFormat(undefined, AXIS_FORMATS[scale]), [scale]);
 
     const element = useRef<HTMLDivElement | null>(null);
-    const [width, setWidth] = useState(0);
 
-    // One node, two jobs: the context needs it as the plot reference, and the
-    // label count needs its width.
+    // One node, three jobs: the context needs it as the plot reference, the
+    // label count needs its width, and the bars need that same width to tell a
+    // span that rounds to nothing from one that merely looks short. The width
+    // is therefore published to the context rather than kept here — the axis is
+    // the one element the chart always renders exactly once across the full
+    // plot width, so it is the only place that can measure it.
     //
     // Stable by way of `useCallback`, and that matters more than it looks: React
     // re-runs a ref callback whose identity changed, detaching with null before
@@ -1227,7 +1234,7 @@ export function TimelineChartAxis() {
         observer.observe(node);
 
         return () => observer.disconnect();
-    }, []);
+    }, [setWidth]);
 
     /**
      * The dates the axis names, on calendar boundaries like the ticks.

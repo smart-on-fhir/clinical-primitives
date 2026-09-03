@@ -129,6 +129,16 @@ export type TimelineChartContextValue = {
      */
     plotElement: HTMLElement | null,
 
+    /**
+     * The plot column's width in px, or 0 before it has been measured.
+     *
+     * Published because percentages alone cannot answer "is this bar about to
+     * be clamped to its minimum width" — that question is asked in px, and both
+     * the axis (how many labels fit) and the bars (whether their true span
+     * rounds to nothing) need the same answer.
+     */
+    plotWidth: number,
+
     setHighlightRangeStart: (value: number) => void,
     setHighlightRangeEnd  : (value: number) => void,
     setVisibleRangeStart  : (value: number) => void,
@@ -156,6 +166,7 @@ export type TimelineChartContextValue = {
     setSidebarPanel       : (panel: TimelineChartSidebarPanel) => void,
     setSidebarElement     : (sectionId: string, element: HTMLElement | null) => void,
     setPlotElement        : (element: HTMLElement | null) => void,
+    setPlotWidth          : (width: number) => void,
 
     /**
      * Announces a section to the chart. Sections call this through
@@ -179,6 +190,31 @@ const DEFAULT_LIMIT_FUTURE_YEARS  = 10;
  * wider than the limits allow loses width, and then it becomes exactly the
  * limits.
  */
+/**
+ * How much breathing room "all" leaves either side of the record, as a fraction
+ * of its span.
+ *
+ * Fitting the data range exactly puts the first and last events *on* the edges
+ * of the plot, where half of each is outside the row and gets clipped — so the
+ * one preset that promises to show everything is the one that visibly cuts the
+ * oldest and newest entries in half. Proportional rather than a fixed duration,
+ * so it means the same thing to a record spanning six weeks and one spanning
+ * forty years.
+ */
+const DATA_RANGE_PADDING = 0.02;
+
+/**
+ * The record's extent plus {@link DATA_RANGE_PADDING} either side.
+ *
+ * Shared by the "all" preset and by the pan/zoom limits, which have to agree:
+ * the limits clamp any range wider than themselves back to their own edges, so
+ * padding the preset alone would be undone the moment it was applied.
+ */
+export function paddedDataRange(start: number, end: number): [number, number] {
+    const pad = (end - start) * DATA_RANGE_PADDING;
+    return [start - pad, end + pad];
+}
+
 function clampVisibleRange(
     start: number,
     end: number,
@@ -236,6 +272,7 @@ export function TimelineContextProvider({ children, limitStart, limitEnd }: {
         setSidebarElements(prev => prev[sectionId] === element ? prev : { ...prev, [sectionId]: element });
     }, []);
     const [plotElement        , setPlotElement        ] = useState<HTMLElement | null>(null);
+    const [plotWidth          , setPlotWidth          ] = useState(0);
     const [selectedId         , setSelectedId         ] = useState<string|undefined>(undefined);
     const [selectedPointId    , setSelectedPointId    ] = useState<string|undefined>(undefined);
 
@@ -297,9 +334,18 @@ export function TimelineContextProvider({ children, limitStart, limitEnd }: {
         // put permanently out of reach — and the "all" preset, which spans
         // exactly this data, would be unable to show what it claims to. The
         // limits exist to stop aimless drift, not to hide readings.
+        // Padded to match the "all" preset. Without it the limits stop exactly
+        // at the outermost event, and "all" — which asks for that span plus its
+        // margins — is wider than the limits allow and gets clamped back to the
+        // unpadded range it was trying to escape.
+        const [dataStart, dataEnd] =
+            dataRangeStart !== undefined && dataRangeEnd !== undefined && dataRangeEnd > dataRangeStart
+                ? paddedDataRange(dataRangeStart, dataRangeEnd)
+                : [dataRangeStart, dataRangeEnd];
+
         return [
-            dataRangeStart !== undefined ? Math.min(start, dataRangeStart) : start,
-            dataRangeEnd   !== undefined ? Math.max(end,   dataRangeEnd)   : end
+            dataStart !== undefined ? Math.min(start, dataStart) : start,
+            dataEnd   !== undefined ? Math.max(end,   dataEnd)   : end
         ];
     }, [limitStart, limitEnd, mountedAt, dataRangeStart, dataRangeEnd]);
 
@@ -335,6 +381,7 @@ export function TimelineContextProvider({ children, limitStart, limitEnd }: {
         sidebarOpen: sidebarPanel !== null,
         sidebarElements,
         plotElement,
+        plotWidth,
 
         setHighlightRangeStart,
         setHighlightRangeEnd,
@@ -349,6 +396,7 @@ export function TimelineContextProvider({ children, limitStart, limitEnd }: {
         setSidebarPanel,
         setSidebarElement,
         setPlotElement,
+        setPlotWidth,
         registerSection,
         unregisterSection,
         // The one place every range change passes through — dragging, zooming,
