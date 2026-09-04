@@ -1,0 +1,76 @@
+.cp-menu {
+    display       : flex;
+    flex-direction: column;
+    padding       : 0.25em;
+    background    : var(--cp-color-win);
+    border        : 1px solid var(--cp-color-win-4);
+    border-radius : 0.5em;
+    box-shadow    : 0 3px 8px #00000018;
+    z-index       : 100;
+    user-select   : none;
+    font-size     : inherit;
+    font-size     : 1rem;
+
+    .cp-menu-item-group-header {
+        display        : flex;
+        align-items    : center;
+        justify-content: space-between;
+        gap            : 0.5em;
+        padding        : 0.5em 0.5em 0.5em 0.5em;
+        margin-bottom  : 0.25em;
+        border-bottom  : 2px solid var(--cp-color-win-1);
+        color          : var(--cp-color-win-7);
+        text-transform : uppercase;
+        letter-spacing : 0.05em;
+        font-size      : 0.75em;
+        font-weight    : 500;
+    }
+
+    .cp-menu-item {
+        display      : flex;
+        align-items  : center;
+        gap          : 0.5em;
+        padding      : 0.3em 0.5em;
+        border-radius: 0.25em;
+        cursor       : pointer;
+        border       : 1px solid transparent;
+        color        : var(--cp-color-txt-4);
+        font-size    : 1em;
+
+        .cp-menu-item-content {
+            flex-grow : 1;
+            text-align: start;
+            color     : var(--cp-color-txt-4);
+        }
+
+        .cp-menu-item-suffix {
+            color      : var(--cp-color-win-7);
+            fill       : var(--cp-color-win-7);
+            display    : flex;
+            align-items: center;
+        }
+
+        .cp-menu-item-icon {
+            svg.lucide {
+                width : 1.1em;
+                height: 1.1em;
+            }
+        }
+
+        input[type="checkbox"] {
+            width : 1em;
+            height: 1em;
+        }
+
+        &:hover {
+            background-color: var(--cp-color-win-2);
+            border-color    : var(--cp-color-win-3);
+        }
+
+        &.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+    }
+}

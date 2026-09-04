@@ -14,6 +14,7 @@ import { FindingCardPage }        from './pages/FindingCardPage';
 import { ChartPage }              from './pages/ChartPage';
 import { TimelineChartPage }      from './pages/TimelineChartPage';
 import { TooltipPage }            from './pages/TooltipPage';
+import { MenuPage }               from './pages/MenuPage';
 import { ObservationChartPage }   from './pages/ObservationChartPage';
 import { Playground }             from './pages/StaticComponentPlayground';
 import { ClinicalDataProvider, Tooltip } from '../index';
@@ -99,6 +100,7 @@ export function DocsApp() {
     'chart':               <ChartPage />,
     'timeline-chart':      <TimelineChartPage />,
     'tooltip':             <TooltipPage />,
+    'menu':                <MenuPage />,
     'observation-chart':   <ObservationChartPage />,
     'playground':          <Playground />,
   }[activeSection];

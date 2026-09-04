@@ -24,6 +24,7 @@ export type { TooltipPosition, TooltipX, TooltipY, TooltipAxisX, TooltipAxisY } 
 export { Loader }                 from './components/Loader';
 export { CheckBox }               from './components/CheckBox';
 export { RadioButton }            from './components/RadioButton';
+export { Menu, MenuItem, MenuItemGroupHeader, MenuSeparator } from './components/Menu';
 
 // Clinical components ---------------------------------------------------------
 export { ConditionList }           from './components/Condition/ConditionList';

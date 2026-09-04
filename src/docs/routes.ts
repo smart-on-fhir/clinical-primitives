@@ -13,6 +13,7 @@ export const sections = [
   { id: 'chart',               label: 'Chart',                  path: '/chart'                 },
   { id: 'timeline-chart',      label: 'TimelineChart',          path: '/timeline-chart'        },
   { id: 'tooltip',             label: 'Tooltip',                path: '/tooltip'               },
+  { id: 'menu',                label: 'Menu',                   path: '/menu'                  },
   { id: 'observation-chart',   label: 'ObservationChart',       path: '/observation-chart'     },
   { id: 'playground',          label: 'Playground',             path: '/playground'            },
 ] as const;
