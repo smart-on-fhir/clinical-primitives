@@ -25,6 +25,7 @@ export { Loader }                 from './components/Loader';
 export { CheckBox }               from './components/CheckBox';
 export { RadioButton }            from './components/RadioButton';
 export { Menu, MenuItem, MenuItemGroupHeader, MenuSeparator } from './components/Menu';
+export { MenuButton }             from './components/MenuButton';
 
 // Clinical components ---------------------------------------------------------
 export { ConditionList }           from './components/Condition/ConditionList';

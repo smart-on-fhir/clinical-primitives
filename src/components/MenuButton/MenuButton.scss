@@ -1,0 +1,43 @@
+.cp-menu-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    overflow: visible;
+    width: auto;
+    max-width: min-content;
+    border-radius: 0.5em !important;
+    justify-self: center;
+
+    .lucide {
+        flex-shrink: 0;
+        margin: 0.25em 0;
+        font-size: 0.75em;
+    }
+
+    // .cp-button {
+        // width: 100%;
+        // display: flex;
+        // align-items: center;
+        // justify-content: center;
+        // flex-wrap: nowrap;
+        // flex-direction: row;
+    // }
+    
+    .cp-menu-button-menu {
+        display: none;
+        // display: block;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 1000;
+    }
+    
+    &:focus, &:focus-within {
+        .cp-menu-button-menu {
+            display: block;
+        }
+    }
+}

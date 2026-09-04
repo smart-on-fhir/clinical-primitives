@@ -15,6 +15,7 @@ import { ChartPage }              from './pages/ChartPage';
 import { TimelineChartPage }      from './pages/TimelineChartPage';
 import { TooltipPage }            from './pages/TooltipPage';
 import { MenuPage }               from './pages/MenuPage';
+import { MenuButtonPage }         from './pages/MenuButtonPage';
 import { ObservationChartPage }   from './pages/ObservationChartPage';
 import { Playground }             from './pages/StaticComponentPlayground';
 import { ClinicalDataProvider, Tooltip } from '../index';
@@ -101,6 +102,7 @@ export function DocsApp() {
     'timeline-chart':      <TimelineChartPage />,
     'tooltip':             <TooltipPage />,
     'menu':                <MenuPage />,
+    'menu-button':         <MenuButtonPage />,
     'observation-chart':   <ObservationChartPage />,
     'playground':          <Playground />,
   }[activeSection];
