@@ -157,15 +157,65 @@ export function DocsApp() {
             <br />
             <br />
 
-            <nav>
-              {sections.map((section) => (
+            <h6 className='cp-pb-2 cp-text-win-6'>Generic Components</h6>
+            <hr className='cp-border-b-1 cp-border-win-3 cp-mb-2'/>
+            <nav className='cp-mb-6'>
+              {sections.filter(s => s.group === "Generic Components").map((section) => (
                 <a
                   key={section.id}
                   className={
-                    'block py-1 px-2 cp-text-txt-5 rounded' + (
+                    'block py-1 px-2 rounded' + (
                       section.id === activeSection ?
-                      ' cp-fill-win-2' :
-                      '  '
+                      ' cp-fill-win-3 cp-text-txt-3' :
+                      ' cp-text-txt-5'
+                    )
+                  }
+                  href={section.path}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateTo(section.id);
+                  }}
+                >
+                  {section.label}
+                </a>
+              ))}
+            </nav>
+
+            <h6 className='cp-pb-2 cp-text-win-6'>FHIR Components</h6>
+            <hr className='cp-border-b-1 cp-border-win-3 cp-mb-2'/>
+            <nav className='cp-mb-6'>
+              {sections.filter(s => s.group === "FHIR Components").map((section) => (
+                <a
+                  key={section.id}
+                  className={
+                    'block py-1 px-2 rounded' + (
+                      section.id === activeSection ?
+                      ' cp-fill-win-3 cp-text-txt-3' :
+                      ' cp-text-txt-5'
+                    )
+                  }
+                  href={section.path}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateTo(section.id);
+                  }}
+                >
+                  {section.label}
+                </a>
+              ))}
+            </nav>
+
+            <h6 className='cp-pb-2 cp-text-win-6'>Other</h6>
+            <hr className='cp-border-b-1 cp-border-win-3 cp-mb-2'/>
+            <nav className='cp-mb-6'>
+              {sections.filter(s => s.group !== "FHIR Components" && s.group !== "Generic Components").map((section) => (
+                <a
+                  key={section.id}
+                  className={
+                    'block py-1 px-2 rounded' + (
+                      section.id === activeSection ?
+                      ' cp-fill-win-3 cp-text-txt-3' :
+                      ' cp-text-txt-5'
                     )
                   }
                   href={section.path}
