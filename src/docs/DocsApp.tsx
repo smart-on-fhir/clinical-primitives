@@ -16,6 +16,7 @@ import { TimelineChartPage }      from './pages/TimelineChartPage';
 import { TooltipPage }            from './pages/TooltipPage';
 import { MenuPage }               from './pages/MenuPage';
 import { MenuButtonPage }         from './pages/MenuButtonPage';
+import { PaginationPage }         from './pages/PaginationPage';
 import { ObservationChartPage }   from './pages/ObservationChartPage';
 import { Playground }             from './pages/StaticComponentPlayground';
 import { ClinicalDataProvider, Tooltip } from '../index';
@@ -103,6 +104,7 @@ export function DocsApp() {
     'tooltip':             <TooltipPage />,
     'menu':                <MenuPage />,
     'menu-button':         <MenuButtonPage />,
+    'pagination':          <PaginationPage />,
     'observation-chart':   <ObservationChartPage />,
     'playground':          <Playground />,
   }[activeSection];
@@ -160,7 +162,7 @@ export function DocsApp() {
                 <a
                   key={section.id}
                   className={
-                    'block py-2 px-4 cp-text-txt-5' + (
+                    'block py-1 px-2 cp-text-txt-5 rounded' + (
                       section.id === activeSection ?
                       ' cp-fill-win-2' :
                       '  '

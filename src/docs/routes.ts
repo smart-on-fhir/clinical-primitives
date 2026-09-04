@@ -15,6 +15,7 @@ export const sections = [
   { id: 'tooltip',             label: 'Tooltip',                path: '/tooltip'               },
   { id: 'menu',                label: 'Menu',                   path: '/menu'                  },
   { id: 'menu-button',         label: 'MenuButton',             path: '/menu-button'           },
+  { id: 'pagination',          label: 'Pagination',             path: '/pagination'            },
   { id: 'observation-chart',   label: 'ObservationChart',       path: '/observation-chart'     },
   { id: 'playground',          label: 'Playground',             path: '/playground'            },
 ] as const;
