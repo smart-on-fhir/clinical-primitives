@@ -1,7 +1,7 @@
 import { DatabaseIcon }           from "lucide-react";
 import { Dialog }                 from ".";
 import { FhirResourceJsonViewer } from "../../components/JsonViewer/FhirJsonViewer";
-import { useClinicalData }        from "../../library";
+import { useClinicalData }        from "../../fhir/context";
 import { Tab, TabBar, TabContents, Tabs, TabsBody } from "../Tabs";
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';

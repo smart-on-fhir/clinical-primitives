@@ -18,7 +18,7 @@ import {
 import './EventFeed.scss';
 import { Badge } from '../Badge/Badge';
 import { FunnelIcon } from 'lucide-react';
-import { useClinicalData } from '../../library';
+import { useClinicalData } from '../../fhir/context';
 
 // ---------------------------------------------------------------------------
 // Types

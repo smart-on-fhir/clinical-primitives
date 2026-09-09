@@ -1,5 +1,5 @@
 import { ReactNode }   from "react"
-import { Button }      from "../.."
+import { Button }      from "../Button/Button"
 import { ButtonProps } from "../Button/Button"
 import "./RadioButton.scss"
 

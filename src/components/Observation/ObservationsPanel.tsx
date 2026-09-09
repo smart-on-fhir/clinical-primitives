@@ -10,7 +10,7 @@ import {
     getObservationDate,
     getObservationStatus
 } from './utils';
-import { useClinicalData }  from '../../library';
+import { useClinicalData }  from '../../fhir/context';
 import './ObservationsPanel.scss';
 import { FILTERS, type ObservationFilter } from './ObservationFilters';
 

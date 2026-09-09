@@ -13,7 +13,7 @@ import {
 import './LabTrendPanel.scss';
 import { Panel, PanelBody, PanelHeader } from '../Panel/Panel';
 import { LABS } from './ObservationFilters';
-import { useClinicalData } from '../../library';
+import { useClinicalData } from '../../fhir/context';
 
 // ---------------------------------------------------------------------------
 // Types

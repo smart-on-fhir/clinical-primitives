@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button }                    from "../.."
+import { Button }                    from "../Button/Button"
 import "./Pagination.scss"
 
 

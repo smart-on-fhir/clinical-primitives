@@ -4,7 +4,8 @@ import ConditionStatus            from "./ConditionStatus";
 import ConditionListItem          from "./ConditionListItem";
 import { Button }                 from "../Button/Button";
 import { List }                   from "../List/List";
-import { Badge, useClinicalData } from "../../library";
+import { Badge }                  from "../Badge/Badge";
+import { useClinicalData }        from "../../fhir/context";
 import {
     getAbatement,
     getBodySite,

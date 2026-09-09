@@ -1,7 +1,8 @@
 import { ReactNode, useState } from "react";
 import "./FindingCard.scss";
 import { Badge } from "../Badge/Badge";
-import { Button, Row } from "../..";
+import { Button } from "../Button/Button";
+import { Row } from "../Row";
 
 // ---------------------------------------------------------------------------
 // Evidence types

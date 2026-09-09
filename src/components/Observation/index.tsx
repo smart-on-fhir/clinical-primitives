@@ -5,7 +5,8 @@ import { ObservationExplanation }     from "./ObservationExplanation";
 import { ObservationHistoryTable }    from "./ObservationHistoryTable";
 import { computeMultiSparklines }     from "../Sparkline/utils";
 import { SourceDialog }               from "../Dialog/SourceDialog";
-import { Sparkline, useClinicalData } from "../../index";
+import { Sparkline }        from "../Sparkline";
+import { useClinicalData } from "../../fhir/context";
 import { ellipsis }                   from "../../utils";
 import {
     computeDelta,
