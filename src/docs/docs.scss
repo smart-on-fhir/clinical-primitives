@@ -28,3 +28,13 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+code:not(pre code) {
+  background: #8882;
+  box-shadow: 0 0 0 0.5px #8883 inset;
+  padding: 1px 3px;
+  font-family: monospace;
+  font-size: 87%;
+  border-radius: 3px;
+  color: #808;
+}
