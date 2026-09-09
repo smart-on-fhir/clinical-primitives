@@ -1,0 +1,91 @@
+.cp-param-list {
+    // background: rgba(from var(--cp-color-txt) r g b / 0.1);
+    // padding: var(--cp-space-3);
+    .cp-param-list-message {
+        color: rgba(from var(--cp-color-txt) r g b / 0.5);
+        text-align: center;
+        padding: var(--cp-space-3);
+        margin-bottom: var(--cp-space-3);
+        border-bottom: 1px solid rgba(from var(--cp-color-txt) r g b / 0.1);
+    }
+
+    .cp-param-list-row {
+        display      : flex;
+        align-items  : center;
+        gap          : var(--cp-space-3);
+        padding      : 2px 0;
+        border-bottom: 1px solid rgba(from var(--cp-color-txt) r g b / 0.075);
+
+        .cp-param-list-col {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 0;
+            min-width: 0;
+
+            &.col-0 {
+                flex: 0 0 auto;
+            }
+        }
+
+        input, button {
+            // height: 1.7em;
+            // min-width: 1.7em;
+            padding: 0.25em 0.5em;
+            border-radius: var(--cp-space-2);
+        }
+
+        button {
+            opacity: 0;
+            padding: 0.25em;
+            // borderRadius: "0.25em"
+            // background: rgba(from var(--cp-color-txt) r g b / 0.1);
+            cursor: pointer;
+            border: 1px solid transparent;
+            &:hover {
+                opacity: 1;
+                color: var(--cp-color-red);
+            }
+        }
+
+        &:hover button {
+            opacity: 1;
+            // color: var(--cp-color-red);
+            // background: rgba(from var(--cp-color-txt) r g b / 0.05);
+            // border-color: rgba(from var(--cp-color-txt) r g b / 0.05);
+        }
+
+        input {
+            border: 1px solid transparent;
+            // &:hover {
+            //     background: var(--cp-color-win);
+            //     border-color: var(--cp-color-win-5)
+            // }
+
+            &:focus {
+                background: var(--cp-color-win);
+                border-color: var(--cp-color-blue);
+                outline: 0;
+            }
+        }
+    }
+
+    .cp-param-list-footer {
+        text-align: center;
+        padding-top: var(--cp-space-4);
+        button {
+            padding: 0.25em 0.75em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25em;
+            // background: rgba(from var(--cp-color-txt) r g b / 0.1);
+            border-radius: var(--cp-space-3);
+            color: var(--cp-color-txt-6);
+            border: 1px solid rgba(from var(--cp-color-txt) r g b / 0.1);
+            cursor: pointer;
+
+            &:hover {
+                background: rgba(from var(--cp-color-txt) r g b / 0.1);
+            }
+        }
+    }
+}

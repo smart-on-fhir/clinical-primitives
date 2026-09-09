@@ -17,6 +17,7 @@ import { TooltipPage }            from './pages/TooltipPage';
 import { MenuPage }               from './pages/MenuPage';
 import { MenuButtonPage }         from './pages/MenuButtonPage';
 import { PaginationPage }         from './pages/PaginationPage';
+import { ItemListPage }           from './pages/ItemListPage';
 import { ObservationChartPage }   from './pages/ObservationChartPage';
 import { Playground }             from './pages/StaticComponentPlayground';
 import { ClinicalDataProvider, Tooltip } from '../index';
@@ -105,6 +106,7 @@ export function DocsApp() {
     'menu':                <MenuPage />,
     'menu-button':         <MenuButtonPage />,
     'pagination':          <PaginationPage />,
+    'item-list':           <ItemListPage />,
     'observation-chart':   <ObservationChartPage />,
     'playground':          <Playground />,
   }[activeSection];
