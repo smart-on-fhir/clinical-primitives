@@ -11,7 +11,7 @@ export const sections = [
   { id: 'lab-trend-panel',    label: 'LabTrendPanel',          path: '/lab-trend-panel'   , group: 'FHIR Components'    },
   { id: 'finding-card',       label: 'FindingCard',            path: '/finding-card'      , group: 'FHIR Components'    },
   { id: 'chart',              label: 'Chart',                  path: '/chart'             , group: 'Generic Components' },
-  { id: 'static-data-grid',   label: 'StaticDataGrid',         path: '/static-data-grid'  , group: 'Generic Components' },
+  { id: 'data-grid',          label: 'DataGrid',               path: '/data-grid'         , group: 'Generic Components' },
   { id: 'timeline-chart',     label: 'TimelineChart',          path: '/timeline-chart'    , group: 'FHIR Components'    },
   { id: 'tooltip',            label: 'Tooltip',                path: '/tooltip'           , group: 'Generic Components' },
   { id: 'menu',               label: 'Menu',                   path: '/menu'              , group: 'Generic Components' },

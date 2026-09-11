@@ -1,0 +1,276 @@
+.data-grid {
+    position: relative;
+    display : grid;
+
+    ::selection {
+        background: var(--cp-color-txt-4);
+        color: var(--cp-color-win);
+    }
+
+    input[type="search"] {
+        padding: 0.35em 0.75em;
+        border: 1px solid var(--cp-color-win-3);
+        border-radius: 5em;
+        background: var(--cp-color-win);
+        color: var(--cp-color-txt);
+        font-size: var(--cp-text-sm);
+
+        &:focus {
+            outline: none;
+            border-color: var(--cp-color-amber);
+            box-shadow: none;
+        }
+    }
+
+    .data-grid-wrapper {
+        max-width : 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin-top: 1em;
+        position  : relative;
+        &::after {
+            content   : '';
+            display   : block;
+            position  : absolute;
+            z-index   : 200;
+            bottom    : 0;
+            top       : 0;
+            right     : 0;
+            width     : 1px;
+            background: var(--cp-color-win-2);
+            isolation : isolate;
+        }
+    }
+     
+    .data-grid-loader {
+        position       : absolute;
+        width          : 100%;
+        height         : 100%;
+        display        : flex;
+        align-content  : center;
+        justify-content: center;
+        align-items    : center;
+        background     : rgb(from var(--cp-color-win) r g b / 0.7);
+        z-index        : 10;
+    }
+
+    .data-grid-table {
+        border-collapse: separate;
+        border-spacing: 1px;
+        background-color: #8883;//var(--cp-color-win-2);
+        background-color: var(--cp-color-win-3);
+
+        // Before widths are locked in (see DataGrid.tsx), the table is
+        // still using natural (auto) sizing and should fill the wrapper like
+        // before.
+        &:not(.widths-locked) {
+            min-width: 100%;
+        }
+
+        // Once locked, every column - including the last - gets an explicit
+        // pixel width computed in JS (the last one is sized to fill whatever
+        // space remains in the wrapper, or its min-width if the other columns
+        // already overflow it). The table's own width is the exact sum of
+        // those columns, so `table-layout: fixed` here never has to guess how
+        // to distribute space itself.
+        &.widths-locked {
+            table-layout: fixed;
+        }
+
+        td, th {
+            text-align: left;
+        }
+
+        tbody {
+            td, th {
+                background-color: var(--cp-color-win);
+            }
+        }
+
+        thead th {
+            position   : relative;
+            font-weight: 600;
+            padding    : 0.25em 0.5em;
+            background : var(--cp-color-win-1);
+
+            .column-resize-handle {
+                position    : absolute;
+                top         : 0;
+                right       : -3px;
+                width       : 6px;
+                height      : 100%;
+                cursor      : col-resize;
+                z-index     : 6;
+                touch-action: none;
+
+                &:hover {
+                    background-color: var(--cp-color-blue);
+                    opacity: 0.5;
+                }
+            }
+
+            .header-line {
+                white-space: nowrap;
+                overflow   : hidden;
+                flex-wrap  : nowrap;
+                display    : flex;
+                align-items: center;
+
+                .header-label {
+                    flex         : 1;
+                    text-overflow: ellipsis;
+                    overflow     : hidden;
+                }
+            }
+
+            &.sorted {
+                background-color: var(--cp-color-win-1) !important;
+                box-shadow:
+                    0 -1px 0 0 var(--cp-color-amber) inset,
+                    0 1px 0 0 var(--cp-color-amber);
+                z-index: 5;
+                position: relative;
+            }
+
+            .sort-icon {
+                opacity: 0.5;
+            }
+        }
+    }
+
+    .data-grid-table td {
+        padding: 0.4em 0.5em;
+        font-size: 85%;
+        color: var(--cp-color-txt-5);
+        * {
+            font-size: inherit;
+            word-break        : break-all;
+        }
+    }
+
+    .data-grid-table tbody tr:hover {
+        background-color: var(--cp-color-win-1);
+    }
+
+    .data-grid-table tbody tr:focus-within {
+        background-color: color-mix(var(--cp-color-win-1), var(--cp-color-blue) 5%);
+    }
+
+    .data-grid-table tbody td > .clamp {
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow          : hidden;
+        display           : -webkit-box;
+        word-break        : break-all;
+        &:focus {
+            display           : block;
+            -webkit-line-clamp: unset;
+            -webkit-box-orient: unset;
+            white-space       : normal;
+            background        : var(--cp-color-win);
+            padding           : 0.25em 0.5em;
+            margin            : -0.25em -0.5em;
+            overflow          : auto;
+            outline           : 0;
+            user-select       : contain;
+            height            : 100% !important;
+        }
+    }
+
+    .data-grid-table tbody td:focus-within {
+        background-color: var(--cp-color-win);
+        position        : relative;
+        z-index         : 40;
+        isolation       : isolate;
+        box-shadow      : 0 0 0 1px var(--cp-color-blue);
+    }
+
+    .data-grid-table td.selected {
+        background-color: var(--color-highlight);
+    }
+
+    .cp-selection-checkbox {
+        margin  : auto;
+        width   : 1em;
+        height  : 1em;
+        position: relative;
+        vertical-align: middle;
+    }
+
+    code {
+        background: none;
+        box-shadow: none;
+    }
+
+    .data-grid-footer-section {
+        display        : flex;
+        justify-content: space-between;
+        align-items    : center;
+        color          : var(--cp-color-txt-7);
+        font-size      : var(--cp-text-sm);
+    }
+
+    .cell--id {
+        color: color-mix(var(--cp-color-blue), var(--cp-color-txt) 20%);
+    }
+    .cell--number {
+        color: color-mix(var(--cp-color-red), var(--cp-color-txt) 20%);
+    }
+    .cell--date {
+        color: color-mix(var(--cp-color-green), var(--cp-color-txt) 20%);
+    }
+
+    .cp-search-highlight {
+        background: #ffeb3b;
+        color: #000;
+        border-radius: 0.2em;
+        padding: 0 0.1em;
+    }
+
+    .cp-data-grid-segments {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25em;
+
+        > div {
+            display: flex;
+            flex-direction: row;
+            gap: 0.25em;
+        }
+
+        .cp-data-grid-segment-name {
+            color: var(--cp-color-win-7);
+        }
+    }
+
+    .cp-data-grid-array-item + .cp-data-grid-array-item {
+        margin-top : 0.4em;
+        padding-top: 0.4em;
+        border-top : 1px dashed rgb(from var(--cp-color-txt) r g b / 0.1);
+    }
+
+    .cp-tree {
+        max-width: fit-content;
+    }
+
+    td.navigate-icon-cell {
+        cursor    : pointer;
+        text-align: center;
+        color     : var(--cp-color-teal);
+        text-align: center;
+
+        svg {
+            margin: auto;
+        }
+
+        &:hover {
+            background-color: rgba(from var(--cp-color-teal) r g b / 0.1);
+            box-shadow: 0 0 0 1px rgba(from var(--cp-color-teal) r g b / 0.2);
+        }
+
+        &:active {
+            background-color: rgba(from var(--cp-color-teal) r g b / 0.2);
+            box-shadow: 0 0 0 1px rgba(from var(--cp-color-teal) r g b / 0.4);
+        }
+    }
+}

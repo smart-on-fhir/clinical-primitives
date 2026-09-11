@@ -102,7 +102,7 @@ export function MenuButtonPage() {
             <article className="mb-12">
                 <h3 className="mb-2">A settings menu</h3>
                 <p className="mb-4 cp-text-txt-5">
-                    The pattern <code>StaticDataGrid</code> uses for its column picker: an icon
+                    The pattern <code>DataGrid</code> uses for its column picker: an icon
                     trigger anchored to the right, and rows written as <code>&lt;label&gt;</code>{' '}
                     elements so a click anywhere on the row reaches the checkbox. Because the
                     panel closes on blur, controls inside it have to be focusable — which
@@ -147,7 +147,7 @@ export function MenuButtonPage() {
                         <code>tabIndex={0}</code> is on every trigger here because the CSS opens
                         the panel on focus. A <code>&lt;button&gt;</code> is focusable already, so
                         this is belt and braces — but it is what the existing call site in{' '}
-                        <code>StaticDataGrid</code> does.
+                        <code>DataGrid</code> does.
                     </li>
                     <li className="mb-2">
                         The panel is rendered inside the button rather than portalled, so it is

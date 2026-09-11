@@ -28,6 +28,7 @@ export { Menu, MenuItem, MenuItemGroupHeader, MenuSeparator } from './components
 export { MenuButton }             from './components/MenuButton';
 export { Pagination }             from './components/Pagination';
 export { ItemList }               from './components/ItemList'
+export { DataGrid }               from './components/DataGrid/DataGrid';
 
 // Clinical components ---------------------------------------------------------
 export { ConditionList }           from './components/Condition/ConditionList';

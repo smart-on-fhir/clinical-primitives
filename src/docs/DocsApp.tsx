@@ -12,6 +12,7 @@ import { ObservationsPanelPage }  from './pages/ObservationsPanelPage';
 import { LabTrendPanelPage }      from './pages/LabTrendPanelPage';
 import { FindingCardPage }        from './pages/FindingCardPage';
 import { ChartPage }              from './pages/ChartPage';
+import { DataGridPage }           from './pages/DataGridPage';
 import { TimelineChartPage }      from './pages/TimelineChartPage';
 import { TooltipPage }            from './pages/TooltipPage';
 import { MenuPage }               from './pages/MenuPage';
@@ -101,6 +102,7 @@ export function DocsApp() {
     'lab-trend-panel':     <LabTrendPanelPage />,
     'finding-card':        <FindingCardPage />,
     'chart':               <ChartPage />,
+    'data-grid':           <DataGridPage />,
     'timeline-chart':      <TimelineChartPage />,
     'tooltip':             <TooltipPage />,
     'menu':                <MenuPage />,

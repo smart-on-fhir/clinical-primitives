@@ -145,12 +145,12 @@ export function PaginationPage() {
                 <p className="mb-4 cp-text-txt-5">
                     The component shows page <em>buttons</em> only — no &quot;showing 1–10 of
                     47&quot;. Callers supply that themselves, either side of the control:{' '}
-                    <code>StaticDataGrid</code> does exactly this in its footer. Reproduced here,
+                    <code>DataGrid</code> does exactly this in its footer. Reproduced here,
                     since a paginated list usually wants it:
                 </p>
                 <p className="mb-4 cp-text-txt-5">
                     The noun is the caller&apos;s to pick. <code>Items</code> suits most lists;{' '}
-                    <code>StaticDataGrid</code> says <code>Rows</code> because it really is a
+                    <code>DataGrid</code> says <code>Rows</code> because it really is a
                     table, and a report might say <code>Results</code> or{' '}
                     <code>Observations</code>.
                 </p>

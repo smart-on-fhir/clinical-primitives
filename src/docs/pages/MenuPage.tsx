@@ -98,7 +98,7 @@ export function MenuPage() {
                     <code>MenuItem</code> takes no <code>onClick</code>, <code>className</code> or{' '}
                     <code>disabled</code> prop, so a row that has to do something is written
                     directly against the <code>cp-menu-item</code> class instead. That is what{' '}
-                    <code>StaticDataGrid</code>&apos;s column picker does — its rows are{' '}
+                    <code>DataGrid</code>&apos;s column picker does — its rows are{' '}
                     <code>&lt;label&gt;</code> elements, so clicking anywhere on one toggles its
                     checkbox.
                 </p>

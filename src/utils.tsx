@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 
 export function groupBy(data: Record<string, any>[], prop: string) {
     return data.reduce((acc, item) => {
@@ -61,4 +62,33 @@ export function getPath(obj: Record<string, any>, path = ""): any {
 
 export function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+/**
+ * Wraps every case-insensitive occurrence of `search` in `text` with a
+ * `<mark>` so it can be styled (e.g. highlighted yellow). Returns `text`
+ * unchanged if there's nothing to search for or no match.
+ */
+export function highlightText(text: string, search?: string): ReactNode {
+    if (!search) return text;
+
+    const lower = text.toLowerCase();
+    const term  = search.toLowerCase();
+
+    let start = 0;
+    let index = lower.indexOf(term, start);
+    if (index === -1) return text;
+
+    const parts: ReactNode[] = [];
+    let key = 0;
+
+    while (index !== -1) {
+        if (index > start) parts.push(text.slice(start, index));
+        parts.push(<mark key={key++} className="cp-search-highlight">{text.slice(index, index + term.length)}</mark>);
+        start = index + term.length;
+        index = lower.indexOf(term, start);
+    }
+    if (start < text.length) parts.push(text.slice(start));
+
+    return <>{parts}</>;
 }
