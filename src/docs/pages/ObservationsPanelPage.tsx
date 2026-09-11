@@ -137,11 +137,10 @@ export function ObservationsPanelPage() {
             <p className="text-sm cp-text-txt-4 mb-3">
                 Live panel from the sample bundle. Use the sort buttons and tabs to explore.
             </p>
-            <div className="mb-8 " style={{
-                maxWidth: '800px',
-                border: '1px solid #CCC',
+            <div className="mb-8 cp-border-1 cp-border-win-3" style={{
+                maxWidth    : '800px',
                 borderRadius: '8px',
-                overflow: 'hidden',
+                overflow    : 'hidden',
             }}>
                 <ObservationsPanel />
             </div>
