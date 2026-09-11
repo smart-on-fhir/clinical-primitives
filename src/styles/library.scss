@@ -169,11 +169,11 @@ $colorsDark: (
     .cp-mt-#{$num} { margin-top: var(--cp-space-#{$num}); }
     .cp-mb-#{$num} { margin-bottom: var(--cp-space-#{$num}); }
 
-    .cp-border-#{$num} { border-width: var(--cp-space-#{$num}); }
-    .cp-border-top-#{$num} { border-top-width: var(--cp-space-#{$num}); }
-    .cp-border-bottom-#{$num} { border-bottom-width: var(--cp-space-#{$num}); }
-    .cp-border-left-#{$num} { border-left-width: var(--cp-space-#{$num}); }
-    .cp-border-right-#{$num} { border-right-width: var(--cp-space-#{$num}); }
+    .cp-border-#{$num} { border-width: #{$num}px; }
+    .cp-border-top-#{$num} { border-top-width: #{$num}px; }
+    .cp-border-bottom-#{$num} { border-bottom-width: #{$num}px; }
+    .cp-border-left-#{$num} { border-left-width: #{$num}px; }
+    .cp-border-right-#{$num} { border-right-width: #{$num}px; }
 
     .cp-gap-#{$num} { gap: var(--cp-space-#{$num}); }
 }
