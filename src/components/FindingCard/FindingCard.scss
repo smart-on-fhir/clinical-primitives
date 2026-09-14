@@ -10,6 +10,8 @@
     background-color: var(--color-weak-2);
     overflow: hidden;
     overflow: clip;
+    display: flex;
+    flex-direction: column;
     
     .cp-finding-card-header {
         // border-bottom: 1px solid var(--color-weak);
@@ -79,6 +81,7 @@
         background: var(--cp-color-win-1);
         border-radius: var(--cp-radius-md);
         padding: 10px 12px;
+        overflow: hidden;
     }
 
     .cp-ev-row {
@@ -96,13 +99,24 @@
         &--doc { align-items: flex-start; flex-direction: column; }
     }
 
-    .cp-ev-name { font-size: var(--cp-text-sm); color: var(--cp-color-txt-6); margin-bottom: 4px; font-weight: 600; }
+    .cp-ev-name {
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-6);
+        margin-bottom: 4px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
 
     .cp-ev-val {
         font-size: 200%;
         font-weight: 200;
         color: var(--cp-color-txt);
         line-height: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
 
         &--flag     { color: var(--color); }
         &--critical { color: var(--color-strong); }
