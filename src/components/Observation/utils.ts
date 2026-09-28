@@ -214,7 +214,8 @@ export function getObservationValue(obs: Observation, { precision = 2 }: { preci
     }
 
     if (valueQuantity) {
-        const value = String(valueQuantity.value || '');
+        // `??`, not `||`: a reading of 0 is a value, not a missing one.
+        const value = String(valueQuantity.value ?? '');
         const unit  = valueQuantity.unit || '';
         return { value: `${isNaN(+value) ? value : roundToPrecision(Number(value), precision)}`.trim(), unit: unit ? cleanUnit(unit) : null };
     }
