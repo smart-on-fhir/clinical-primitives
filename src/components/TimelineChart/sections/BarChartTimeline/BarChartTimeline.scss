@@ -12,6 +12,7 @@
     .cp-timeline-bar-lane {
         position: relative;
         min-height: var(--cp-timeline-chart-row-height, 1.4em);
+        z-index: 1;
     }
 
     .cp-timeline-bar {
