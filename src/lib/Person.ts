@@ -3,10 +3,10 @@ import { capitalize } from "../utils";
 
 export function displayName(name: HumanName): string {
     const parts = [];
-    if (name.prefix) parts.push(name.prefix.join(' ').trim());
-    if (name.given ) parts.push(name.given.join(' ').trim());
-    if (name.family) parts.push(name.family.trim());
-    if (name.suffix) parts.push(name.suffix.join(' ').trim());
+    if (name.prefix) parts.push(name.prefix.map(x => x.replace(/\d+$/, '')).join(' ').trim());
+    if (name.given ) parts.push(name.given.map(x => x.replace(/\d+$/, '')).join(' ').trim());
+    if (name.family) parts.push(name.family.trim().replace(/\d+$/, ''));
+    if (name.suffix) parts.push(name.suffix.map(x => x.replace(/\d+$/, '')).join(' ').trim());
     return parts.filter(Boolean).join(' ');
 }
 
