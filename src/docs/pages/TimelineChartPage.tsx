@@ -415,7 +415,7 @@ export function TimelineChartPage() {
                 were. Both panels can be open at once, which is the point of stacking the sections.
                 Clicking empty chart drops everything.
             </p>
-            <div className="mb-4">
+            <div className="mb-4" style={{ "--cp-timeline-selection-color": "#D80" } as React.CSSProperties}>
                 <TimelineChart title={<h4>Medications &amp; Vitals</h4>}>
                     <TimelineChart.MedicationsTimeline />
                     <TimelineChart.ObservationsTimeline analytes={VITALS} label="Vitals" title="Vitals" />
