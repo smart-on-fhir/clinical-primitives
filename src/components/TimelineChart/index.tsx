@@ -3,7 +3,7 @@ import {
     useRef, useState, type ReactElement, type ReactNode
 } from "react";
 import { createPortal } from "react-dom";
-import { TimelineContextProvider, paddedDataRange, useSection, useTimelineChartContext } from "./TimelineChartContext";
+import { TimelineContextProvider, paddedDataRange, useSection, useTimelineChartContext, useTimelineChartRuler } from "./TimelineChartContext";
 import { usePan }              from "./usePan";
 import { useSidebarResize }    from "./useSidebarResize";
 import { zoomedRange }         from "./zoom";
@@ -279,7 +279,8 @@ TimelineChart.BarChartTimeline     = BarChartTimeline;
 
 function TimelineChartImplementation({ children, minX, maxX, title, ranges = DEFAULT_RANGES, ruler = true }: TimelineChartProps)
 {
-    const { setVisibleRangeStart, setVisibleRangeEnd, sidebarOpen, setRulerPercent, sections } = useTimelineChartContext();
+    const { setVisibleRangeStart, setVisibleRangeEnd, sidebarOpen, sections } = useTimelineChartContext();
+    const { setRulerPercent } = useTimelineChartRuler();
 
     // The grid whose second track the sidebar occupies, so the resize can write
     // the new width to the element that owns the track.
@@ -544,7 +545,7 @@ function TimelineChartSidebarSlot({ sectionId }: { sectionId: string })
  */
 export function TimelineChartRuler()
 {
-    const { rulerPercent } = useTimelineChartContext();
+    const { rulerPercent } = useTimelineChartRuler();
 
     if (rulerPercent === undefined) {
         return null;
@@ -691,7 +692,7 @@ export function TimelineChartLayer({
 }: TimelineChartLayerProps)
 {
     const { panning, panProps } = usePan();
-    const { sidebarElements, setSidebarPanel, clearHighlight } = useTimelineChartContext();
+    const { sidebarElements, setSidebarPanel, clearHighlight, selectedId, selectedPointId } = useTimelineChartContext();
 
     // Sections open expanded: a chart that hid its own contents until asked
     // would not read as a chart. The section stays registered while collapsed,
@@ -709,6 +710,22 @@ export function TimelineChartLayer({
         // against. Nothing else outside this layer reads it.
         collapsed
     });
+
+    // Picking a mark opens the sidebar on what it means to this section. Keyed
+    // on the chart's selected mark, not on `selection` — that is a new element
+    // every render — so it fires once per pick: a reader who then closes the
+    // sidebar keeps it closed until they pick something else. Only the section
+    // with something to say about the pick claims the panel.
+    const hasSelection = !!selection;
+
+    useEffect(() => {
+        // A cleared selection is not a pick, even where the section's own
+        // `selection` outlives it.
+        if (hasSelection && (selectedId || selectedPointId)) {
+            setSidebarPanel(id);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedId, selectedPointId, hasSelection]);
 
     // A row's label and its content are in two different subgrid containers,
     // with no shared element and no way for CSS to correlate them by position.

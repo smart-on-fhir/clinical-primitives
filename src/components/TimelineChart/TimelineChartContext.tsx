@@ -32,7 +32,15 @@ export type TimelineChartSection = {
 /** Which sidebar panel is showing. `null` means the sidebar is collapsed. */
 export type TimelineChartSidebarPanel = "overview" | (string & {}) | null;
 
-export type TimelineChartContextValue = {
+/**
+ * The pointer ruler's position, isolated into its own context because it
+ * changes on every pointer move over the plot. Bundling it into
+ * {@link TimelineChartContextValue} would mean every consumer of that
+ * context — every bar, every mark, across every section — re-rendered on
+ * every mouse move, whether or not it reads the ruler. Only the handful of
+ * things that actually draw the ruler line should subscribe to this.
+ */
+export type TimelineChartRulerContextValue = {
     /**
      * Where the pointer ruler sits, as a percentage of the plotting width, or
      * undefined while the pointer is away from the plot.
@@ -46,7 +54,9 @@ export type TimelineChartContextValue = {
 
     /** Set by the chart's own pointer tracking; sections only read it. */
     setRulerPercent: (percent: number | undefined) => void,
+};
 
+export type TimelineChartContextValue = {
     highlightRangeStart?: number,
     highlightRangeEnd  ?: number,
 
@@ -177,6 +187,8 @@ export type TimelineChartContextValue = {
 };
 
 export const TimelineChartContext = createContext<TimelineChartContextValue>({} as TimelineChartContextValue);
+
+export const TimelineChartRulerContext = createContext<TimelineChartRulerContextValue>({} as TimelineChartRulerContextValue);
 
 /** How far back and forward a chart can be taken when the caller does not say. */
 const DEFAULT_LIMIT_HISTORY_YEARS = 100;
@@ -363,9 +375,52 @@ export function TimelineContextProvider({ children, limitStart, limitEnd }: {
         [visibleRangeStart, visibleRange]
     );
 
-    const value = {
-        rulerPercent,
-        setRulerPercent,
+    // Clamped setters and the compound actions below are wrapped in
+    // useCallback so the memoized `value` below only changes when the state it
+    // actually reports changes — not on every render of this provider.
+    const setClampedVisibleRangeStart = useCallback(
+        (value: number) => setVisibleRangeStart(clampEdge(value)),
+        [boundStart, boundEnd]
+    );
+
+    const setClampedVisibleRangeEnd = useCallback(
+        (value: number) => setVisibleRangeEnd(clampEdge(value)),
+        [boundStart, boundEnd]
+    );
+
+    // The one place every range change passes through — dragging, zooming,
+    // arrow keys and the toolbar presets all end up here — so the limits are
+    // applied once rather than restated at each call site.
+    const setVisibleRange = useCallback((start: number, end: number) => {
+        const [clampedStart, clampedEnd] = clampVisibleRange(start, end, boundStart, boundEnd);
+
+        setVisibleRangeStart(clampedStart);
+        setVisibleRangeEnd(clampedEnd);
+    }, [boundStart, boundEnd]);
+
+    const setHighlightRange = useCallback((start: number, end: number, id?: string) => {
+        setHighlightRangeStart(start);
+        setHighlightRangeEnd(end);
+        setSelectedId(id);
+    }, []);
+
+    const clearHighlight = useCallback(() => {
+        setHighlightRangeStart(undefined);
+        setHighlightRangeEnd(undefined);
+        setSelectedId(undefined);
+
+        // Both kinds, so a click on empty chart is the one gesture that
+        // clears everything. Without it a selected reading could only be
+        // dropped by selecting a different one.
+        setSelectedPointId(undefined);
+    }, []);
+
+    // Memoized so a pointer move over the plot — which only ever changes
+    // rulerPercent, held in its own context below — does not also hand every
+    // consumer of this context a new object and force it to re-render. With a
+    // section holding hundreds or thousands of bars/marks, that re-render was
+    // the actual cost of hovering the chart.
+    const value = useMemo<TimelineChartContextValue>(() => ({
         highlightRangeStart,
         highlightRangeEnd,
         selectedId,
@@ -386,48 +441,36 @@ export function TimelineContextProvider({ children, limitStart, limitEnd }: {
         setHighlightRangeStart,
         setHighlightRangeEnd,
         setSelectedPointId,
-
-        // Both edges are clamped as well as `setVisibleRange` below, so a
-        // `minX`/`maxX` outside the limits cannot seed a range that panning
-        // could never have reached.
-        setVisibleRangeStart: (value: number) => setVisibleRangeStart(clampEdge(value)),
-        setVisibleRangeEnd  : (value: number) => setVisibleRangeEnd(clampEdge(value)),
-
+        setVisibleRangeStart: setClampedVisibleRangeStart,
+        setVisibleRangeEnd  : setClampedVisibleRangeEnd,
         setSidebarPanel,
         setSidebarElement,
         setPlotElement,
         setPlotWidth,
         registerSection,
         unregisterSection,
-        // The one place every range change passes through — dragging, zooming,
-        // arrow keys and the toolbar presets all end up here — so the limits
-        // are applied once rather than restated at each call site.
-        setVisibleRange: (start: number, end: number) => {
-            const [clampedStart, clampedEnd] = clampVisibleRange(start, end, boundStart, boundEnd);
+        setVisibleRange,
+        setHighlightRange,
+        clearHighlight
+    }), [
+        highlightRangeStart, highlightRangeEnd, selectedId, selectedPointId,
+        dataRangeStart, dataRangeEnd, visibleRangeStart, visibleRangeEnd,
+        toPercent, fromPercent, sections, sidebarPanel, sidebarElements,
+        plotElement, plotWidth, setClampedVisibleRangeStart, setClampedVisibleRangeEnd,
+        setSidebarElement, registerSection, unregisterSection, setVisibleRange,
+        setHighlightRange, clearHighlight
+    ]);
 
-            setVisibleRangeStart(clampedStart);
-            setVisibleRangeEnd(clampedEnd);
-        },
-        setHighlightRange: (start: number, end: number, id?: string) => {
-            setHighlightRangeStart(start);
-            setHighlightRangeEnd(end);
-            setSelectedId(id);
-        },
-        clearHighlight: () => {
-            setHighlightRangeStart(undefined);
-            setHighlightRangeEnd(undefined);
-            setSelectedId(undefined);
-
-            // Both kinds, so a click on empty chart is the one gesture that
-            // clears everything. Without it a selected reading could only be
-            // dropped by selecting a different one.
-            setSelectedPointId(undefined);
-        }
-    };
+    const rulerValue = useMemo<TimelineChartRulerContextValue>(
+        () => ({ rulerPercent, setRulerPercent }),
+        [rulerPercent]
+    );
 
     return (
         <TimelineChartContext.Provider value={value}>
-            {children}
+            <TimelineChartRulerContext.Provider value={rulerValue}>
+                {children}
+            </TimelineChartRulerContext.Provider>
         </TimelineChartContext.Provider>
     );
 }
@@ -476,6 +519,20 @@ export function useTimelineChartContext() {
     const context = useContext(TimelineChartContext);
     if (!context) {
         throw new Error("useTimelineChartContext must be used within a TimelineChartProvider");
+    }
+    return context;
+}
+
+/**
+ * Only for whatever actually draws the pointer ruler, or sets its position.
+ * Everything else should use {@link useTimelineChartContext} — reading the
+ * ruler from there would re-subscribe to a value that changes on every
+ * pointer move over the plot.
+ */
+export function useTimelineChartRuler() {
+    const context = useContext(TimelineChartRulerContext);
+    if (!context) {
+        throw new Error("useTimelineChartRuler must be used within a TimelineChartProvider");
     }
     return context;
 }

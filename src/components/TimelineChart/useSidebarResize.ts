@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 /**
  * Narrowest the sidebar can be dragged, in px.
@@ -11,7 +11,7 @@ import { useCallback, useRef, useState, type RefObject } from "react";
 const MIN_WIDTH = 288;
 
 /** Starting width, and the one a double-click on the handle returns to. */
-const DEFAULT_WIDTH = 320;
+const DEFAULT_WIDTH = 360;
 
 /**
  * The most of the chart the sidebar may take. Past half, the thing the sidebar
@@ -38,18 +38,51 @@ type Drag = {
     startWidth: number
 };
 
+export type SidebarResizeOptions = {
+    /** Starting width in px, and the one a double-click on the handle returns to. */
+    defaultWidth?  : number,
+    /**
+     * Starting width as a share of the root's width, measured on mount. Takes
+     * precedence over `defaultWidth`, which then only covers the first render
+     * before the root can be measured.
+     */
+    defaultFraction?: number,
+    /** Narrowest the sidebar can be dragged, in px. */
+    minWidth?      : number,
+    /** The most of the root's width the sidebar may take. */
+    maxFraction?   : number,
+    /** Custom property on the root that carries the width. */
+    widthProperty? : string,
+    /**
+     * Class held on the root for the length of a drag. Empty for none — the
+     * root also carries a `data-resizing` attribute for that time either way.
+     */
+    resizingClass? : string,
+    /** Class given to the handle. */
+    handleClass?   : string
+};
+
 /**
- * Drag-to-resize for the sidebar column.
+ * Drag-to-resize for a right-hand sidebar column.
  *
- * Returns the current width — which the chart root renders as a custom property
- * — and the props for the handle that changes it.
+ * Returns the current width — which the root renders as a custom property —
+ * and the props for the handle that changes it. The defaults are the timeline
+ * chart's; `SidebarLayout` passes its own class and property names.
  *
  * The width is held in memory only. It is deliberately not persisted: doing so
  * needs a stable key, and the chart has no identity of its own to build one
  * from.
  */
-export function useSidebarResize(rootRef: RefObject<HTMLElement | null>) {
-    const [width, setWidth] = useState(DEFAULT_WIDTH);
+export function useSidebarResize(rootRef: RefObject<HTMLElement | null>, {
+    defaultWidth  = DEFAULT_WIDTH,
+    defaultFraction,
+    minWidth      = MIN_WIDTH,
+    maxFraction   = MAX_FRACTION,
+    widthProperty = WIDTH_PROPERTY,
+    resizingClass = RESIZING_CLASS,
+    handleClass   = "cp-timeline-chart-sidebar-handle"
+}: SidebarResizeOptions = {}) {
+    const [width, setWidth] = useState(defaultWidth);
 
     const drag = useRef<Drag | null>(null);
 
@@ -61,18 +94,18 @@ export function useSidebarResize(rootRef: RefObject<HTMLElement | null>) {
 
     const clamp = useCallback((value: number) => {
         const root = rootRef.current;
-        const max  = root ? root.getBoundingClientRect().width * MAX_FRACTION : Infinity;
+        const max  = root ? root.getBoundingClientRect().width * maxFraction : Infinity;
 
         // A chart narrower than twice the minimum has no room to honor both
         // bounds; the minimum is the one that keeps the sidebar usable.
-        return Math.max(MIN_WIDTH, Math.min(value, Math.max(MIN_WIDTH, max)));
-    }, [rootRef]);
+        return Math.max(minWidth, Math.min(value, Math.max(minWidth, max)));
+    }, [rootRef, minWidth, maxFraction]);
 
     /** Writes a width without re-rendering. Used for every frame of a drag. */
     const paint = useCallback((value: number) => {
         live.current = value;
-        rootRef.current?.style.setProperty(WIDTH_PROPERTY, `${value}px`);
-    }, [rootRef]);
+        rootRef.current?.style.setProperty(widthProperty, `${value}px`);
+    }, [rootRef, widthProperty]);
 
     const onPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
         if (event.button !== 0) {
@@ -86,12 +119,17 @@ export function useSidebarResize(rootRef: RefObject<HTMLElement | null>) {
         drag.current = {
             pointerId : event.pointerId,
             startX    : event.clientX,
-            startWidth: live.current
+            // Clamped, so a drag starts from the width on screen. The stored
+            // one can be wider than the root now allows if it was set before
+            // the window shrank, and the handle would not move until the
+            // pointer had covered the difference.
+            startWidth: clamp(live.current)
         };
 
         event.currentTarget.setPointerCapture(event.pointerId);
-        rootRef.current?.classList.add(RESIZING_CLASS);
-    }, [rootRef]);
+        if (resizingClass) rootRef.current?.classList.add(resizingClass);
+        rootRef.current?.setAttribute("data-resizing", "");
+    }, [rootRef, resizingClass, clamp]);
 
     const onPointerMove = useCallback((event: React.PointerEvent<HTMLElement>) => {
         const current = drag.current;
@@ -116,12 +154,13 @@ export function useSidebarResize(rootRef: RefObject<HTMLElement | null>) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
 
-        rootRef.current?.classList.remove(RESIZING_CLASS);
+        if (resizingClass) rootRef.current?.classList.remove(resizingClass);
+        rootRef.current?.removeAttribute("data-resizing");
 
         // Now that the frames are over, let React catch up to where the DOM
         // already is, so the next render does not put the old width back.
         setWidth(live.current);
-    }, [rootRef]);
+    }, [rootRef, resizingClass]);
 
     // A drag-only affordance cannot be reached without a pointer, and the
     // sidebar is a real layout control rather than decoration.
@@ -136,28 +175,53 @@ export function useSidebarResize(rootRef: RefObject<HTMLElement | null>) {
 
         event.preventDefault();
 
-        const next = clamp(live.current + step);
+        // Clamped first for the same reason as the drag start.
+        const next = clamp(clamp(live.current) + step);
 
         paint(next);
         setWidth(next);
     }, [clamp, paint]);
+
+    /** The starting width, resolved against the root as it is laid out now. */
+    const resolveDefault = useCallback(() => {
+        const root = rootRef.current;
+
+        return clamp(defaultFraction && root
+            ? root.getBoundingClientRect().width * defaultFraction
+            : defaultWidth);
+    }, [rootRef, clamp, defaultFraction, defaultWidth]);
+
+    // A fractional default can only be resolved once the root is laid out.
+    // Before paint, so the sidebar never shows at the px fallback first. Only
+    // on mount: after that the width is the reader's, not the default's.
+    useLayoutEffect(() => {
+        if (!defaultFraction) {
+            return;
+        }
+
+        const next = resolveDefault();
+
+        paint(next);
+        setWidth(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const onDoubleClick = useCallback(() => {
-        const next = clamp(DEFAULT_WIDTH);
+        const next = resolveDefault();
 
         paint(next);
         setWidth(next);
-    }, [clamp, paint]);
+    }, [resolveDefault, paint]);
 
     return {
         width,
         handleProps: {
-            className        : "cp-timeline-chart-sidebar-handle",
+            className        : handleClass,
             role             : "separator",
             "aria-orientation": "vertical" as const,
             "aria-label"     : "Resize sidebar",
             "aria-valuenow"  : Math.round(width),
-            "aria-valuemin"  : MIN_WIDTH,
+            "aria-valuemin"  : minWidth,
             tabIndex         : 0,
             onPointerDown,
             onPointerMove,
