@@ -1,10 +1,6 @@
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import type { Observation, ObservationComponent } from "fhir/r4";
-import { ExternalLink } from "lucide-react";
-import { useClinicalData } from "../../../../fhir/context";
-import { FhirResourceJsonViewer } from "../../../JsonViewer/FhirJsonViewer";
-import { Collapse } from "../../../Collapse";
-import { SourceDialog } from "../../../Dialog/SourceDialog";
+import { ResourceSource } from "../../../ResourceDetail/ResourceSource";
 import {
     cleanUnit,
     getObservationDate,
@@ -85,9 +81,6 @@ function referenceRanges(observation: Observation): string[] {
  * record.
  */
 export function ObservationDetail({ observation }: { observation: Observation }) {
-    const { resources } = useClinicalData();
-
-    const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
 
     const date       = getObservationDate(observation);
     const value      = getObservationValue(observation);
@@ -96,7 +89,7 @@ export function ObservationDetail({ observation }: { observation: Observation })
     const ranges     = referenceRanges(observation);
 
     return (
-        <div className="cp-timeline-selection-detail">
+        <div className="cp-resource-detail">
             <dl>
                 <dt>Observation</dt>
                 <dd><b>{getObservationDisplayName(observation)}</b></dd>
@@ -120,7 +113,7 @@ export function ObservationDetail({ observation }: { observation: Observation })
                     ))
                     : <>
                         <dt>Value</dt>
-                        <dd>{value.value}{value.unit ? ` ${value.unit}` : ""}</dd>
+                        <dd style={{ whiteSpace: "pre-wrap" }}>{value.value.replace(/(\r?\n){2,}/g, "\n\n")}{value.unit ? ` ${value.unit}` : ""}</dd>
                     </> }
 
                 {/* Only where the record gave one. An absent flag is not a
@@ -158,33 +151,7 @@ export function ObservationDetail({ observation }: { observation: Observation })
                     </> }
             </dl>
 
-            <Collapse
-                label={
-                    <span className="cp-timeline-source-label">
-                        Source
-                        <button
-                            title="Open the full resource"
-                            onClick={event => {
-                                // The whole header toggles the collapse, so the
-                                // click has to stop here or opening the dialog
-                                // would collapse the tree behind it.
-                                event.stopPropagation();
-                                setSourceDialogOpen(true);
-                            }}
-                        >
-                            <ExternalLink size={13} style={{ display: "block" }} />
-                        </button>
-                    </span>
-                }
-            >
-                <FhirResourceJsonViewer resource={observation} allResources={resources} />
-            </Collapse>
-
-            <SourceDialog
-                open={sourceDialogOpen}
-                onClose={() => setSourceDialogOpen(false)}
-                resource={observation}
-            />
+            <ResourceSource resource={observation} />
         </div>
     );
 }

@@ -79,6 +79,9 @@ root too — see [Tooltip](#tooltip).
 | Show a chronological feed of clinical events (labs, meds, notes, procedures, alerts) | `EventFeed` |
 | Show medication courses / lab trends / arbitrary intervals on a shared, pannable/zoomable time axis | `TimelineChart` (+ its section components) |
 | Render a "view source" / raw-JSON affordance for a FHIR resource | `SourceDialog` |
+| The "Source" entry at the foot of a resource details panel (collapsed tree + pop-out `SourceDialog`) | `ResourceSource`, inside a `.cp-resource-detail` element |
+| Details panel for one medication / one observation, as the timeline shows them | `MedicationDetail` / `ObservationDetail` |
+| Main content with a resizable, closable details sidebar on the right | `SidebarLayout` (its main column is outside the library reset, so host utility classes keep working) |
 | Render arbitrary FHIR JSON with reference resolution | `FhirResourceJsonViewer` |
 | Render an AI-generated finding/insight with evidence tabs | `FindingCard` |
 | Let an LLM emit UI as JSON at runtime | `StaticComponent` |

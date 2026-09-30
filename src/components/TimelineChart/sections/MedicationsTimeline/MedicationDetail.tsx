@@ -1,21 +1,16 @@
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import type { MedicationAdministration, MedicationRequest } from "fhir/r4";
-import { ExternalLink } from "lucide-react";
-import { getMedicationDosages, getMedicationName, getMedicationPeriod, getShortMedicationName } from "../../../../lib/Medication";
-import { useClinicalData } from "../../../../fhir/context";
-import { FhirResourceJsonViewer } from "../../../JsonViewer/FhirJsonViewer";
-import { Collapse } from "../../../Collapse";
-import { SourceDialog } from "../../../Dialog/SourceDialog";
-import { Button } from "../../../Button/Button";
+import { ResourceSource } from "../../../ResourceDetail/ResourceSource";
 import { formatMedicationPeriod } from "./formatPeriod";
+import {
+    getMedicationDosages, getMedicationName, getMedicationPeriod,
+    getShortMedicationName
+} from "../../../../lib/Medication";
 
 /** Shown in the timeline sidebar when a medication bar is clicked. */
 export function MedicationDetail({ medication }: {
     medication: MedicationRequest | MedicationAdministration
 }) {
-    const { resources } = useClinicalData();
-
-    const [sourceDialogOpen, setSourceDialogOpen] = useState(false);
 
     const period  = getMedicationPeriod(medication);
     const dates   = period ? formatMedicationPeriod(period) : null;
@@ -24,7 +19,7 @@ export function MedicationDetail({ medication }: {
     const dosages = getMedicationDosages(medication);
 
     return (
-        <div className="cp-timeline-selection-detail">
+        <div className="cp-resource-detail">
             <dl>
                 <dt>Medication</dt>
                 <dd>
@@ -86,33 +81,7 @@ export function MedicationDetail({ medication }: {
                 )) }
             </dl>
 
-            <Collapse
-                label={
-                    <span className="cp-timeline-source-label">
-                        Source
-                        <button
-                            title="Open the full resource"
-                            onClick={event => {
-                                // The whole header toggles the collapse, so the
-                                // click has to stop here or opening the dialog
-                                // would collapse the tree behind it.
-                                event.stopPropagation();
-                                setSourceDialogOpen(true);
-                            }}
-                        >
-                            <ExternalLink size={13} style={{ display: "block" }} />
-                        </button>
-                    </span>
-                }
-            >
-                <FhirResourceJsonViewer resource={medication} allResources={resources} />
-            </Collapse>
-
-            <SourceDialog
-                open={sourceDialogOpen}
-                onClose={() => setSourceDialogOpen(false)}
-                resource={medication}
-            />
+            <ResourceSource resource={medication} />
         </div>
     );
 }

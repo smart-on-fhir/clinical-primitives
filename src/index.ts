@@ -47,9 +47,12 @@ export { FindingCard }             from './components/FindingCard';
 export { StaticComponent }         from './components/StaticComponent';
 export { FhirResourceJsonViewer, FhirJsonDecorator }  from './components/JsonViewer/FhirJsonViewer';
 export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
+export { ResourceSource }          from './components/ResourceDetail/ResourceSource';
 
 // TimelineChart
 export { TimelineChart } from './components/TimelineChart';
+export { MedicationDetail } from './components/TimelineChart/sections/MedicationsTimeline/MedicationDetail';
+export { ObservationDetail } from './components/TimelineChart/sections/ObservationsTimeline/ObservationDetail';
 export type {
 	// MedicationClassification,
 	MedicationClassifier,
@@ -64,10 +67,12 @@ export * as lib          from './lib';
 import * as _utils       from './utils'; 
 import * as Immunization from './components/Immunization/utils';
 import * as Condition    from './components/Condition/utils';
+import * as Observation  from './components/Observation/utils';
 export const utils = {
   ..._utils,
   Immunization,
-  Condition
+  Condition,
+  Observation
 };
 
 // React context and data parsing ----------------------------------------------
