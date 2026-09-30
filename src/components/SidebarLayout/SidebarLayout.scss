@@ -1,0 +1,155 @@
+// Same mechanics as the timeline chart's sidebar — see TimelineChart.scss for
+// why each of these is the way it is. Kept separate rather than shared so the
+// chart's layout can keep evolving without dragging every page along with it.
+//
+// The root and main column are attribute selectors, not `cp-` classes, so the
+// library reset stays out of the app content they wrap — see SidebarLayout.tsx.
+[data-cp-sidebar-layout] {
+    display: grid;
+    align-items: start;
+
+    // Set by the resize drag; see useSidebarResize.ts.
+    --cp-sidebar-layout-width: 400px;
+
+    // Both states have two tracks of definite length, so the transition between
+    // them interpolates instead of snapping.
+    grid-template-columns: minmax(0, 1fr) 0px;
+    column-gap: 0;
+
+    transition:
+        grid-template-columns var(--cp-sidebar-layout-duration, 300ms) ease,
+        column-gap var(--cp-sidebar-layout-duration, 300ms) ease;
+
+    &[data-open] {
+        // Capped here as well as in the drag: the width is a px value from
+        // the last drag, and only CSS can keep it in bounds as the window
+        // shrinks. A percentage resolves against the layout's own width.
+        grid-template-columns: minmax(0, 1fr) min(
+            var(--cp-sidebar-layout-width),
+            var(--cp-sidebar-layout-max-width, 100%)
+        );
+        column-gap: var(--cp-space-4);
+    }
+
+    &[data-resizing] {
+        transition: none;
+        user-select: none;
+        cursor: col-resize;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+    }
+
+    [data-cp-sidebar-layout-main] {
+        min-width: 0;
+    }
+
+    .cp-sidebar-layout-sidebar {
+        align-self: stretch;
+        position: relative;
+        min-width: 0;
+
+        font-size: var(--cp-text-sm);
+        color: var(--cp-color-txt-5);
+
+        border-left: 1px solid transparent;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity var(--cp-sidebar-layout-duration, 300ms) ease,
+            visibility var(--cp-sidebar-layout-duration, 300ms);
+
+        @media (prefers-reduced-motion: reduce) {
+            transition: none;
+        }
+    }
+
+    &[data-open] .cp-sidebar-layout-sidebar {
+        opacity: 1;
+        visibility: visible;
+        border-left-color: var(--cp-color-win-3);
+    }
+
+    // Straddles the sidebar's left border, which is the line it appears to move.
+    .cp-sidebar-layout-handle {
+        position: absolute;
+        top     : 0;
+        bottom  : 0;
+        left    : -4px;
+        width   : 9px;
+        z-index : 5;
+        cursor  : col-resize;
+
+        &::after {
+            content   : "";
+            position  : absolute;
+            top       : 0;
+            bottom    : 0;
+            left      : 50%;
+            width     : 2px;
+            transform : translateX(-50%);
+            background: var(--cp-color-txt-5);
+            opacity   : 0;
+            transition: opacity 150ms ease;
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            opacity: 1;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            &::after {
+                transition: none;
+            }
+        }
+    }
+
+    // Sticky, so the details stay in view while a long list beside them scrolls.
+    .cp-sidebar-layout-scroll {
+        position: sticky;
+        top: var(--cp-sidebar-layout-top, 0);
+        max-height: var(--cp-sidebar-layout-max-height, 100vh);
+        overflow: auto;
+        padding-left: var(--cp-space-4);
+        // Spacing above the content belongs here, not in `top`: an offset
+        // larger than the sidebar's resting position also pushes it down at
+        // rest, but only when the column is taller than the sidebar — so the
+        // gap would come and go with the length of the main content.
+        padding-top: var(--cp-sidebar-layout-padding-top, 0);
+    }
+
+    .cp-sidebar-layout-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--cp-space-3);
+        padding-bottom: var(--cp-space-3);
+        margin-bottom: var(--cp-space-4);
+        border-bottom: 1px solid var(--cp-color-win-3);
+    }
+
+    .cp-sidebar-layout-title {
+        min-width: 0;
+        font-weight: 600;
+        color: var(--cp-color-txt-2);
+    }
+
+    .cp-sidebar-layout-close {
+        flex-shrink: 0;
+        padding: var(--cp-space-2);
+        border-radius: var(--cp-radius-md);
+        color: var(--cp-color-txt-6);
+        cursor: pointer;
+
+        &:hover {
+            color: var(--cp-color-txt-2);
+            background: var(--cp-color-win-2);
+        }
+    }
+}

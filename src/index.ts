@@ -48,6 +48,7 @@ export { StaticComponent }         from './components/StaticComponent';
 export { FhirResourceJsonViewer, FhirJsonDecorator }  from './components/JsonViewer/FhirJsonViewer';
 export { AttachmentPreview } 	   from './components/JsonViewer/Attachment';
 export { ResourceSource }          from './components/ResourceDetail/ResourceSource';
+export { SidebarLayout }           from './components/SidebarLayout/SidebarLayout';
 
 // TimelineChart
 export { TimelineChart } from './components/TimelineChart';
