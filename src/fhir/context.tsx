@@ -5,6 +5,7 @@ import {
     useCallback,
     useContext,
     useMemo,
+    useRef,
     useState,
     type PropsWithChildren
 } from 'react';
@@ -68,6 +69,11 @@ export type ClinicalDataContextValue = {
     loadFromNdjson       : (ndjson: string) => Promise<PatientDataSet>;
     loadFromNdjsonFile   : (file: File) => Promise<PatientDataSet>;
     loadFromFHIRServer   : (baseUrl: string, patientId: string, options?: FetchEverythingOptions) => Promise<PatientDataSet>;
+    // Constrained to { resourceType } rather than FhirResource: strictly-typed
+    // resources (e.g. fhir/r4's Observation) have no index signature, so they
+    // don't structurally satisfy FhirObject even though they're valid FHIR.
+    lazy                 : <T extends { resourceType: string }>(resourceType: string, fetcher: () => Promise<T[]>, options?: { force?: boolean }) => Promise<T[]>;
+    getPatient           : (id: string, fetcher: () => Promise<Patient>) => Promise<Patient>;
     selectFile           : () => Promise<Patient | null>;
     clear                : () => void;
 };
@@ -128,11 +134,68 @@ function useClinicalDataState() {
         }
     }
 
+    // In-flight lazy() fetches, keyed by resourceType, so overlapping callers
+    // (e.g. two components mounting in the same render pass) share one fetch
+    // instead of each triggering their own.
+    const pendingLazyLoads = useRef<Record<string, Promise<unknown[]>>>({});
+
+    async function lazy<T extends { resourceType: string }>(
+        resourceType: string,
+        fetcher: () => Promise<T[]>,
+        options?: { force?: boolean }
+    ): Promise<T[]> {
+        // An in-flight fetch is shared regardless of `force`: a second forced
+        // call while one is already running should ride along, not start a
+        // redundant fetch of its own.
+        const pending = pendingLazyLoads.current[resourceType];
+        if (pending) return pending as Promise<T[]>;
+
+        if (!options?.force) {
+            const cached = resources[resourceType];
+            if (cached) return cached as unknown as T[];
+        }
+
+        const promise = fetcher()
+            .then(fetched => {
+                setResources(prev => ({ ...prev, [resourceType]: fetched as unknown as FhirResource[] }));
+                return fetched;
+            })
+            .finally(() => {
+                delete pendingLazyLoads.current[resourceType];
+            });
+
+        pendingLazyLoads.current[resourceType] = promise;
+        return promise;
+    }
+
+    // In-flight getPatient() fetch, so overlapping callers share one request.
+    const pendingPatientLoad = useRef<Promise<Patient> | null>(null);
+
+    async function getPatient(id: string, fetcher: () => Promise<Patient>): Promise<Patient> {
+        if (patient && patient.id === id) return patient;
+
+        if (pendingPatientLoad.current) return pendingPatientLoad.current;
+
+        const promise = fetcher()
+            .then(fetched => {
+                setPatient(fetched);
+                return fetched;
+            })
+            .finally(() => {
+                pendingPatientLoad.current = null;
+            });
+
+        pendingPatientLoad.current = promise;
+        return promise;
+    }
+
     function clear() {
         setPatient(null);
         setResources({});
         setError(null);
         setIsLoading(false);
+        pendingLazyLoads.current = {};
+        pendingPatientLoad.current = null;
     }
 
     return {
@@ -142,12 +205,14 @@ function useClinicalDataState() {
         error,
         load,
         loadFromFHIRServer,
+        lazy,
+        getPatient,
         clear
     };
 }
 
 export function ClinicalDataProvider({ children }: PropsWithChildren) {
-    const { patient, resources, isLoading, error, load, loadFromFHIRServer, clear } = useClinicalDataState();
+    const { patient, resources, isLoading, error, load, loadFromFHIRServer, lazy, getPatient, clear } = useClinicalDataState();
 
     const selectFile = useCallback(() => {
         return new Promise<Patient | null>((resolve) => {
@@ -173,6 +238,8 @@ export function ClinicalDataProvider({ children }: PropsWithChildren) {
             loadFromNdjson    : (ndjson)        => load({ type: 'ndjson'     , ndjson }),
             loadFromNdjsonFile: (file)          => load({ type: 'ndjson-file', file }),
             loadFromFHIRServer,
+            lazy,
+            getPatient,
             selectFile,
             clear
         }),
