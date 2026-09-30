@@ -886,8 +886,8 @@ export function TimelineChartLayer({
                     )}
                     { selection && (
                         <section>
-                            <h5 className="cp-text-teal cp-pb-3" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                <SquareDashedMousePointer size={15} style={{ display: "block" }} className="cp-text-teal" />
+                            <h5 className="cp-text-selection cp-pb-3" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <SquareDashedMousePointer size={15} style={{ display: "block" }} className="cp-text-selection" />
                                 Selection
                             </h5>
                             {selection}
@@ -895,8 +895,8 @@ export function TimelineChartLayer({
                     )}
                     { settings && (
                         <section>
-                            <h5 className="cp-text-teal cp-pb-3" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                <Cog size={15} style={{ display: "block" }} className="cp-text-teal" />
+                            <h5 className="cp-text-selection cp-pb-3" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <Cog size={15} style={{ display: "block" }} className="cp-text-selection" />
                                 Settings
                             </h5>
                             {settings}

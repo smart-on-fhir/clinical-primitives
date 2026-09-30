@@ -1,5 +1,7 @@
 .cp-timeline-chart {
 
+    --selection-color: var(--cp-timeline-selection-color, #6AF);
+
     // The rule between rows within a section. Exposed as a variable so a layer
     // whose rows are meant to run together — a single band split only for
     // stacking, say — can set `--cp-timeline-chart-row-rule: none` on itself
@@ -94,9 +96,9 @@
         }
 
         &.active, &:active {
-            background  : rgba(from var(--cp-color-teal) r g b / 0.2);
-            border-color: rgba(from var(--cp-color-teal) r g b / 0.2);
-            color       : var(--cp-color-teal);
+            background  : rgba(from var(--selection-color) r g b / 0.2);
+            border-color: rgba(from var(--selection-color) r g b / 0.2);
+            color       : color-mix(var(--selection-color), var(--cp-color-txt) 30%);
         }
     }
 
@@ -129,6 +131,10 @@
         // .cp-button {
         //     padding: var(--cp-space-1) var(--cp-space-3);
         // }
+    }
+
+    .cp-text-selection {
+        color: var(--selection-color);
     }
 
     // Pushed left rather than the row being switched to `space-between`, so a
@@ -379,20 +385,19 @@
     }
 
     .cp-timeline-chart-highlight {
-        $color: #6AF;
         // grid-column: 2 / -1;
         position: absolute;
         // top: 0;
         bottom: 0;
         height: 100%;
-        background: rgb(from $color r g b / 0.2) repeating-linear-gradient(
+        background: rgb(from var(--selection-color) r g b / 0.1) repeating-linear-gradient(
                 -45deg,
-                rgb(from $color r g b / 0.075),
-                rgb(from $color r g b / 0.075) 5px,
+                rgb(from var(--selection-color) r g b / 0.05),
+                rgb(from var(--selection-color) r g b / 0.05) 5px,
                 transparent 5px,
                 transparent 7px
             );
-        box-shadow: 0 0 0 1px rgb(from $color r g b / 0.4);
+        box-shadow: 0 0 0 1px rgb(from var(--selection-color) r g b / 0.3);
         border-radius: var(--cp-space-1);
         pointer-events: none;
 
@@ -400,7 +405,7 @@
         // hatch, so it renders as a single line instead of a band.
         &.cp-timeline-chart-highlight-instant {
             min-width: 1px;
-            background: rgb(from $color r g b / 0.4);
+            background: rgb(from var(--selection-color) r g b / 0.4);
             box-shadow: none;
             border-radius: 0;
         }
@@ -445,7 +450,7 @@
         justify-content: space-between;
         color: var(--cp-color-txt-7);
         font-size: var(--cp-text-xs);
-        margin-top: var(--cp-space-4);
+        // margin-top: var(--cp-space-4);
         margin-bottom: var(--cp-space-2);
         &:first-of-type {
             margin-top: 0;
@@ -585,7 +590,7 @@
         //
         // `color-mix` of the same 5% over the window color, so the row looks
         // exactly as it did when this was `rgb(from … / 0.05)`.
-        --cp-chart-backdrop: color-mix(in srgb, var(--cp-color-txt) 5%, var(--cp-color-win));
+        --cp-chart-backdrop: color-mix(in srgb, var(--cp-color-txt) 3%, var(--cp-color-win));
 
         background: var(--cp-chart-backdrop);
         box-shadow: 0 0.5px 0 rgb(from var(--cp-color-txt) r g b / 0.1) inset,
