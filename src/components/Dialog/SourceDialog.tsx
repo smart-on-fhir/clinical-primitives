@@ -44,7 +44,7 @@ export function SourceDialog({
     const { resources } = useClinicalData();
     
     return (
-        <Dialog open={open} onClose={onClose} title={title} style={{ minWidth: 300, maxWidth: '90vw', width: 600, ...style }}>
+        <Dialog open={open} onClose={onClose} title={title} style={{ minWidth: 300, maxWidth: '90vw', width: 780, ...style }}>
             <Tabs style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: '1 1 auto' }}>
                 <TabBar className="cp-fill-win-1">
                     {prependTabs.map((tab, idx) => (
