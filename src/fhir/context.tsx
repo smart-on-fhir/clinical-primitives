@@ -189,14 +189,17 @@ function useClinicalDataState() {
         return promise;
     }
 
-    function clear() {
+    // Stable, so a consumer can list it as an effect dependency: it touches
+    // only setters and refs, and a fresh function every render would re-run
+    // any effect that calls it — which, since it sets state, would loop.
+    const clear = useCallback(() => {
         setPatient(null);
         setResources({});
         setError(null);
         setIsLoading(false);
         pendingLazyLoads.current = {};
         pendingPatientLoad.current = null;
-    }
+    }, []);
 
     return {
         patient,
