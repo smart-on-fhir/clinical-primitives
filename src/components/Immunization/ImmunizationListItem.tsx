@@ -46,7 +46,7 @@ export default function ImmunizationListItem({
                 <Dot color={dotColor(status)} title={status ?? undefined} />
                 <div style={{ flex: 1 }}>
                     <div className='cp-fw-500 cp-text-txt-3'>{name}</div>
-                    <div className='cp-text-txt-6 cp-text-sm cp-mt-1 cp-fw-300'>
+                    <div className='cp-text-txt-6 cp-text-sm cp-fw-300'>
                         <div style={{ display: 'flex', gap: '2ch', alignItems: 'center', flexWrap: 'wrap' }}>
                             {occurrenceDate   && <span><DateDisplay  date={occurrenceDate} /></span>}
                             {!occurrenceDate && occurrenceString && <span>{occurrenceString}</span>}
