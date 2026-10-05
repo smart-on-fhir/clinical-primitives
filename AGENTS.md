@@ -1,10 +1,11 @@
 # clinical-primitives — Agent Guide
 
 This file is written for an AI coding agent building an app with this
-library, not for a human skimming a README. It tells you **which
-component to reach for, when, and how** — with the constraints that
-aren't obvious from types alone (context requirements, controlled vs.
-uncontrolled state, dead/reserved props, provisional logic).
+library, or working on the library itself, not for a human skimming a
+README. It tells you **which component to reach for, when, and how** —
+with the constraints that aren't obvious from types alone (context
+requirements, controlled vs. uncontrolled state, dead/reserved props,
+provisional logic). Paths are relative to the repo root.
 
 If something here conflicts with the code, the code wins — this library
 is pre-1.0 and APIs move. Grep the referenced file before depending on
@@ -31,6 +32,48 @@ so an LLM can describe a UI as a JSON instruction tree instead of writing
 JSX. If you're generating UI dynamically at runtime (not just using this
 library to hand-write an app), read that section first.
 
+## Working in this repo
+
+| Path | What's there |
+|---|---|
+| `src/index.ts` | Every public export. `src/library.ts` re-exports it and imports the styles; it is the library build's entry. |
+| `src/components/<Name>/` | One directory per component: `index.tsx` or `<Name>.tsx`, plus a sibling `.scss` |
+| `src/fhir/` | `ClinicalDataProvider` (`context.tsx`), parsers (`parse.ts`), `$everything` paging (`server.ts`), types |
+| `src/lib/`, `src/utils.tsx` | The `lib` and `utils` namespaces (see [Utilities](#utilities)) |
+| `src/styles/` | `library.scss` (tokens, utility classes) and `reset.scss` (the scoped reset) |
+| `src/docs/` | The docs/demo site: one page per component in `pages/`, sample data in `samplePatientBundle.json` |
+| `dist/` | Library build output (gitignored). `docs-dist/` is the docs build. |
+| `.github/workflows/deploy-docs.yml` | Builds the docs site and deploys it to GitHub Pages on push to `main` |
+| `.claude/skills/clinical-primitives/` | The agent skill for app builders (see [Skills](#skills)) |
+
+Commands, from the repo root. Node 20.19+ or 22.12+ (Vite 7's
+requirement); CI uses Node 22.
+
+```bash
+npm ci                              # install; `prepare` also runs build:lib
+npm run build:lib                   # tsc declarations + Vite library bundle -> dist/
+npm run build                       # build:lib, then the docs site -> docs-dist/
+npx tsc -p tsconfig.json --noEmit   # typecheck everything, docs included
+npm run dev                         # docs site with HMR
+npm run dev:lib                     # rebuild dist/ on change (pair with a linked app)
+```
+
+There is no test suite and no lint script. `npm run typecheck`
+doesn't exist; use the `tsc` line above. The docs build prints Vite's
+"chunks larger than 500 kB" warning, which is expected.
+
+Conventions:
+- Every CSS class the library emits starts with `cp-` (the reset and
+  the `Row` min-height rule key off that prefix). Component variants
+  are `cp-{component}--{variant}`.
+- A component is public only once it's exported from `src/index.ts`.
+  Keep non-component exports (constants, types) out of `.tsx` files
+  that export components, so React Fast Refresh keeps working — that's
+  why `LABS`/`FILTERS` live in `ObservationFilters.ts`.
+- `tsconfig.lib.json` emits declarations only and excludes `src/docs/`.
+- Components are demoed by a page in `src/docs/pages/`, registered in
+  `src/docs/routes.ts`; follow that when adding one.
+
 ## Install & setup
 
 Not published to npm yet — install straight from GitHub:
@@ -39,7 +82,9 @@ Not published to npm yet — install straight from GitHub:
 npm install github:smart-on-fhir/clinical-primitives
 ```
 
-Peer dependency: React 19 (`react`, `react-dom` ^19.0.0).
+Peer dependency: React 19 (`react`, `react-dom` ^19.0.0). The install
+clones the repo and runs `prepare`, which builds `dist/`. Add
+`@types/fhir` as a dev dependency if your app imports `fhir/r4` types.
 
 ```tsx
 import 'clinical-primitives/styles.css';   // once, at app root
@@ -55,11 +100,19 @@ export function App() {
 ```
 
 Wrap with `ClinicalDataProvider` even if you plan to pass all data as
-explicit props everywhere — many components fall back to context only
-when a data prop is *omitted*, and some (`ObservationsPanel`,
-`LabTrendPanel`, `SourceDialog`, `StaticComponent`, `ObservationCard`)
-require the provider unconditionally. See each component's "context"
-note below.
+explicit props everywhere. These call `useClinicalData()`
+unconditionally and throw outside the provider, **even when you pass
+their data as props**: `ObservationsPanel`, `LabTrendPanel`,
+`ObservationCard`, `SourceDialog`, `ResourceSource`,
+`MedicationDetail`, `ObservationDetail`,
+`TimelineChart.MedicationsTimeline`, `TimelineChart.ObservationsTimeline`,
+and `StaticComponent`'s clinical instruction types. `EventFeed` renders
+without it, but clicking a row opens `SourceDialog`, which throws. See
+each component's "context" note below.
+
+The library sets no page font. Without your own `font-family` on
+`body` (or an ancestor), everything renders in the browser default
+serif.
 
 If your UI shows tooltips anywhere (`data-tooltip-*` attributes, used by
 several components internally), mount `<Tooltip />` once near the app
@@ -122,20 +175,56 @@ const {
   loadFromNdjsonFile,   // (file: File) => Promise<PatientDataSet>
   loadFromFHIRServer,   // (baseUrl, patientId, options?) => Promise<PatientDataSet>
 
+  lazy,                 // (resourceType, fetcher, { force? }?) => Promise<T[]>
+  getPatient,           // (id, fetcher) => Promise<Patient>
+
   selectFile,           // () => Promise<Patient | null> — opens a native file picker
   clear,                // () => void
 } = useClinicalData();
 ```
 
 - Throws if called outside a `ClinicalDataProvider`.
+- **Only `clear` is a stable reference.** Every other function,
+  `selectFile` included, is a new function on each render. Putting a
+  `loadFrom*` in an effect's dependency list re-runs the effect after
+  every load (the load changes state, the provider re-renders, the
+  function changes) and loops. Leave them out of deps, and guard
+  rendering with `patient?.id === wantedId`.
 - Every `load*` method sets `isLoading`/`error`/`patient`/`resources`
   **and** throws the failure — `try/catch` even though state also
   updates, if you need to react to the specific call.
 - `resourcesToPatientDataSet` (used internally by every loader) requires
   **exactly one** `Patient` resource in the input — zero or multiple
   distinct patient ids throws. Don't feed it a multi-patient bundle.
-- `loadFromFHIRServer` streams pages incrementally: `resources` and
-  `patient` update as pages arrive, before the returned promise resolves.
+- `loadFromFHIRServer(baseUrl, patientId, options?)` pages through
+  `GET {baseUrl}/Patient/{id}/$everything?_count={count}`, following
+  `link[rel=next]`, with `Accept: application/fhir+json`. It needs a
+  server that implements `$everything`. `options`:
+  `{ signal?, count = 200, throttleMs = 500, retries = 3, retryDelayMs = 1000 }`.
+  `throttleMs` is the pause between pages; 5xx responses and network
+  errors are retried with exponential backoff from `retryDelayMs`; 4xx
+  fails at once. It clears `patient`/`resources` first, then streams:
+  they update as each page arrives, before the returned promise
+  resolves. Duplicate ids across pages are dropped.
+- **An aborted `loadFromFHIRServer` sets `error`** to the `AbortError`
+  (and rethrows it). Aborting in an effect cleanup therefore puts an
+  error in context on every dev mount under React StrictMode. Ignore
+  `error?.name === 'AbortError'`, or fetch yourself and call
+  `loadFromResources`.
+- `lazy(resourceType, fetcher, { force })` loads one resource type on
+  demand into `resources[resourceType]` (replacing what was there).
+  It returns the cached array without calling `fetcher` when that type
+  is already loaded, unless `force` is set. Concurrent calls for the
+  same type share one fetch. It doesn't touch `isLoading`/`error`.
+- `getPatient(id, fetcher)` returns the current `patient` if its id
+  matches, else calls `fetcher` and sets `patient` (not `resources`).
+  Any call made while a fetch is in flight gets that fetch's result,
+  even for a different id.
+- `clear()` empties everything and forgets in-flight `lazy`/
+  `getPatient` fetches.
+- `selectFile()` opens a picker for `.json`/`.ndjson` and loads the
+  file as a Bundle or NDJSON. Its promise never settles if the user
+  cancels or the load fails (the failure still lands in `error`).
 - `resources.X` is typed as loose `FhirResource[]`, not the real
   `fhir/r4` type. Passing it into a strongly-typed prop (e.g.
   `ConditionList`'s `conditions: Condition[]`) needs a cast:
@@ -147,7 +236,7 @@ const {
 | Function | Signature | Notes |
 |---|---|---|
 | `bundleToResources` | `(bundle: FhirBundle) => FhirResource[]` | Extracts `entry[].resource` |
-| `parseNdjson` | `(ndjson: string) => FhirResource[]` | Throws on a line without a valid `resourceType` |
+| `parseNdjson` | `(ndjson: string) => FhirResource[]` | Throws on a line without a string `resourceType`; accepts rows with no `id` (see [Known issues](#known-issues)) |
 | `resolvePatientDataSource` | `(source: PatientDataSource) => Promise<PatientDataSet>` | Dispatches on `source.type` |
 | `resourcesToPatientDataSet` | `(resources: FhirResource[]) => PatientDataSet` | Throws unless exactly one `Patient` is present |
 
@@ -216,6 +305,12 @@ more) or a custom `{ label, loincs?, keywords? }` object. **Requires
 prop to pass observations explicitly. Unknown preset keys are skipped
 with a `console.warn`. Renders `null` if no row has data.
 
+An observation matches a row if any of its codings is in `loincs`
+**or** its `code.text`/`coding.display` contains any keyword. Every
+preset has keywords, so presets pull in look-alike analytes (see
+[Known issues](#known-issues)). For exact rows, pass
+`{ label, loincs: [...] }` with no `keywords`.
+
 #### ObservationsPanel
 `src/components/Observation/ObservationsPanel.tsx`
 
@@ -268,12 +363,18 @@ immunizations, abnormal-result alerts) with a range filter (7d/30d/
 />
 ```
 
-`resources` is **required and explicit** — `EventFeed` itself is not
-context-connected (there's a separate, non-exported `EventFeedWrapper`
-that reads context, reachable only through `StaticComponent`'s
-`"event_feed"` instruction type). Pass `resources.Observation`/etc.
-straight from `useClinicalData()` — no cast needed here since it takes
-`object[]`.
+`resources` is **required and explicit** — `EventFeed` doesn't read its
+data from context (there's a separate, non-exported `EventFeedWrapper`
+that does, reachable only through `StaticComponent`'s `"event_feed"`
+instruction type). Pass `resources.Observation`/etc. straight from
+`useClinicalData()` — no cast needed here since it takes `object[]`.
+It still **needs `ClinicalDataProvider` once a row is clicked**: the
+click opens `SourceDialog`, which throws outside the provider.
+
+`defaultRange` is `'30d'`. A finite range counts back from now, or from
+the latest event when that is older than the window, so an old record
+still shows its last 30 days. Pass `defaultRange="All"` to show
+everything.
 
 #### TimelineChart
 `src/components/TimelineChart/`
@@ -295,8 +396,19 @@ x-axis — for a single analyte, use `ObservationChart` instead.
   otherwise — it's context-based).
 - `MedicationsTimeline`/`ObservationsTimeline` fall back to
   `useClinicalData()` for `medications`/`observations`/`patient` when
-  those props are omitted (**requires `ClinicalDataProvider`** in that
-  case); pass them explicitly to opt out of context.
+  those props are omitted. They **require `ClinicalDataProvider` even
+  when you pass those props** — both call `useClinicalData()`
+  unconditionally, and their detail panels (`MedicationDetail`,
+  `ObservationDetail`) render `ResourceSource`, which needs it too.
+- **The chart opens on the last 2 years** (counted back from today), so
+  a record that ended earlier looks empty. Pass `minX`/`maxX` (epoch
+  ms) to set the opening window. `limitStart`/`limitEnd` bound panning
+  (default 100 years back, 10 forward); `ranges` sets the preset pills
+  (default 2y/5y/10y/All, `[]` hides them).
+- **`MedicationsTimeline` shows only active medications by default.**
+  Its "only active" toggle starts on; while it is, the default
+  classification passed to `classify` is `null` for non-active meds.
+  Return a classification anyway to include them.
 - `BarChartTimeline` is domain-agnostic — no FHIR knowledge, no context
   dependency, takes plain `rows: {label, bars: {x1,x2,color?,tooltip?}[]}[]`.
   Use it for anything interval-shaped that isn't medications/labs.
@@ -390,11 +502,14 @@ Valid `type` values and their extra fields:
 | `finding_card` | `FindingCard` props minus function props (`title` required) | `FindingCard` |
 | `column` / `row` | `children: Instruction[]`, `className?`, (`row` also `cols?`) | `Column`/`Row` wrapping recursively-rendered children |
 
-Every case except `text`/`chart`/`column`/`row`/`finding_card`
-**requires `ClinicalDataProvider`**. Each rendered instruction is
-wrapped in an error boundary — one bad instruction shows an inline
-error box, not a crash. `sanitizeProps` strips anything that looks like
-an unsafe event-handler string (e.g. an LLM emitting
+`instruction` may also be an array, rendered in sequence. Every case
+except `text`/`chart`/`column`/`row`/`finding_card`
+**requires `ClinicalDataProvider`**. Each rendered instruction except
+`text` is wrapped in an error boundary — one bad instruction (including
+a clinical type outside the provider) shows an inline error box, not a
+crash. That box is unstyled (see [Known issues](#known-issues)).
+`sanitizeProps` strips anything that looks like an unsafe event-handler
+string (e.g. an LLM emitting
 `"onClick": "doStuff()"` as a string instead of omitting it) — so
 malformed instructions degrade rather than execute arbitrary strings as
 handlers. Unrecognized `type` values render `Unhandled type: {type}`
@@ -508,7 +623,7 @@ component's source file.
 | `Button` | `Button/Button.tsx` | Same `variant`/`radius`/`hard`, plus `virtual` (ghost until hover). Underlies `RadioButton`, `MenuButton`, `Pagination`. |
 | `Alert` | `Alert/index.tsx` | Block banner, same variant/radius/hard/virtual surface as `Badge`/`Button`. |
 | `Panel` | `Panel/Panel.tsx` | Card container. `PanelHeader` takes `title`/`icon`/`rightContent`. **Note:** `PanelBody`/`PanelToolbar`/`PanelFooter`/`PanelHeader` are not re-exported from the package root today — only `Panel` is — so you can't currently build a full custom panel layout without reaching into the subpath. |
-| `Row` / `Column` | `Row/`, `Column/` | Flex layout wrappers. `Row` takes `cols?: string` to switch to CSS grid. |
+| `Row` / `Column` | `Row/`, `Column/` | Flex layout wrappers. `Row` takes `cols?: string` to switch to CSS grid. A `Row` containing library components gets `min-height: 500px` unless it sits inside a `cp-*` element (see [Known issues](#known-issues)). |
 | `Dialog` | `Dialog/index.tsx` | Modal, portal-rendered. `open`/`onClose`/`title`/`children` all required. Unmounts (not just hides) when closed. |
 | `Collapse` | `Collapse/index.tsx` | Expand/collapse. `label` (always visible) + `children` (collapsible). Controlled via `open`/`onToggle`, or self-managed if `open` omitted. |
 | `Tabs` | `Tabs/index.tsx` | `Tabs > TabBar > Tab` + `Tabs > TabsBody > TabContents`, matched by **position**, not id. Must be nested inside `<Tabs>` or it throws. |
@@ -572,6 +687,7 @@ import { utils } from 'clinical-primitives';
 | `utils.highlightText` | `(text, search?) => ReactNode` | Wraps matches in `<mark class="cp-search-highlight">` — what `DataGrid` search uses |
 | `utils.Condition.getName/getClinicalStatus/getVerificationStatus/getBodySite/getOnset/getAbatement` | `(condition) => string\|null` | Field extraction with FHIR fallback chains |
 | `utils.Immunization.getName/getOccurrence/getStatusReason/getRoute` | `(immunization) => string\|null` | Same pattern |
+| `utils.Observation.*` | e.g. `getObservationDisplayName`, `getObservationValue`, `getObservationDate`, `extractObservationNumericValue`, `computeDelta` | Observation helpers from `src/components/Observation/utils.ts` |
 
 ### `lib` namespace
 
@@ -615,8 +731,74 @@ Import once: `import 'clinical-primitives/styles.css'`.
   `danger|warning|success|info|neutral|muted|link` used by `Badge`,
   `Button`, `Alert`.
 
-## Known gaps (don't rely on these)
+## Known issues
 
+Current behavior, as of 2026-10-05. Work around these in app code;
+each one is a candidate fix in the library.
+
+**Lab matching** (`LABS` in `src/components/Observation/ObservationFilters.ts`,
+matcher in `LabTrendPanel.tsx`. The `IBD` filter of `ObservationsPanel`
+pools the same lists but requires a code match *and* a keyword match,
+so only the bad `14959-1` code affects it):
+- The `CRP` preset's codes include `14959-1`, which is urine
+  microalbumin/creatinine ratio, not CRP. A Synthea record with that
+  test shows it in the CRP row.
+- The keyword test runs for every observation, even when others
+  already matched the row by LOINC, so substring hits leak in:
+  `RBC` ("erythrocyte") shows ESR (4537-7, "Erythrocyte sedimentation
+  rate"); `Hemoglobin` catches Hemoglobin A1c (4548-4); `Albumin`
+  catches microalbumin (14959-1); `Weight` and `BMI` catch the
+  pediatric percentile codes 77606-2 (weight-for-length) and 59576-9
+  (BMI percentile).
+- Calprotectin `38445-3` (mass/mass in stool) and 25-OH vitamin D
+  `62292-8` are not in `LABS`; data coded that way matches those rows
+  only through their keywords.
+- Flags and status colours come only from each observation's own
+  `referenceRange`/`interpretation`. For data without them,
+  `LabTrendPanel`'s flag column reads `—`, and it has no prop for
+  supplying ranges.
+
+**Data loading:**
+- `parseNdjson` accepts any row with a string `resourceType`, with or
+  without an `id`. `resourcesToPatientDataSet` counts distinct
+  `Patient` ids, and a missing id counts as one. So a non-FHIR NDJSON
+  that reuses `resourceType` (a provenance sidecar whose rows are
+  `{fullUrl, resourceId, resourceType}`, say) concatenated with the
+  real files makes the load throw "multiple distinct patients".
+- Only `clear` is referentially stable; `selectFile`'s `useCallback`
+  depends on a function recreated every render. See
+  [Data layer](#data-layer) for this and the `selectFile`,
+  `getPatient` and abort behaviors.
+
+**Styling:**
+- `.cp-row` gets `min-height: 500px` when it contains any `cp-*`
+  element and has no `cp-*` ancestor (`src/components/Row/Row.scss`).
+  `DataGrid` renders its toolbar in a `Row` inside a plain
+  `div.data-grid`, so a standalone grid has a 500px band above the
+  table. Override with `.data-grid > .cp-row { min-height: auto; }`.
+  Your own `Row`s around library components get the same height.
+- No default font: the stylesheet never sets `font-family` for text, so
+  without app CSS the page renders in the browser's default serif.
+- The scoped reset (`src/styles/reset.scss`) zeroes margin, padding
+  and border on every `cp-*` element and everything inside one. It is
+  unlayered, and unlayered rules beat any `@layer` rule regardless of
+  specificity, so Tailwind v4 utilities (`p-4`, `mt-2`, `border`…) on
+  content you pass into library components (`Panel`, `Dialog`,
+  `Column`, chart titles) lose. `SidebarLayout`'s main column is
+  outside the reset. The comment in `reset.scss` says an app's rules
+  always win; that holds only for unlayered app CSS.
+- `StaticComponent` reports errors with `className="alert alert-danger"`
+  and unknown types with `cp-color-red`. The stylesheet defines neither
+  (the text-color utility is `cp-text-red`), so both render as plain
+  text.
+
+**Build:**
+- `npm run build:lib` copies `public/404.html` (the docs site's GitHub
+  Pages fallback) into `dist/`, so it ships inside the installed
+  package. Vite's library mode copies `publicDir` by default and
+  `vite.lib.config.ts` doesn't turn that off.
+
+**Declared but not wired** (don't rely on these):
 - `DataGridProps.filters`/`onFilterChange` — declared, not implemented.
 - `DataGridColumn.nullable`/`editor` — declared, not read anywhere.
 - `SourceDialog`'s `minWidth`/`maxWidth`/`height` props — declared, not
@@ -627,3 +809,24 @@ Import once: `import 'clinical-primitives/styles.css'`.
   `PanelFooter`) aren't re-exported from the package root.
 - `lib.Medication.getMedicationPeriod` — provisional precedence order,
   validated only against Synthea-generated sample data.
+
+## Skills
+
+`.claude/skills/clinical-primitives/` holds the agent skill for people
+building apps on this library: setup, data loading, short recipe
+excerpts (dashboard, patient picker, treatment timeline, lab trends,
+LLM-driven `StaticComponent` view) that point at the docs pages in
+`src/docs/pages/` for full working usage, and the gotchas above in
+app-builder terms. Copy it into an app repo's `.claude/skills/` (or
+your user skills) so it's available while building there.
+
+Sibling skills for the IHL hackathon data, each in its own repo:
+
+| Skill | Repo | Use it for |
+|---|---|---|
+| `cohort-fhir-api` | https://github.com/smart-on-fhir/fhir-rest-api | Patients and records from the synthetic cohort FHIR API. Fetch a single-patient record with that skill and call `loadFromResources`; `loadFromFHIRServer` needs a server with `Patient/$everything`. |
+| `sds-cache` | https://github.com/smart-on-fhir/smart-data-services | The caching proxy in front of that API |
+| `sds-identity` | https://github.com/smart-on-fhir/smart-data-services | Mapping MRNs to anonymized patient ids within a cohort; no clinical data |
+| `sds-nlp-results` | https://github.com/smart-on-fhir/smart-data-services | NLP extractions from clinical notes, e.g. as `FindingCard` evidence |
+| `sds-study-variables` | https://github.com/smart-on-fhir/smart-data-services | Study variables and population count cubes, e.g. for `Chart` |
+| `sim-ibd-patients` | https://github.com/smart-on-fhir/cumulus-sim-ibd-patients | The same synthetic IBD patients as local files; load a single-patient FHIR Bundle from that skill with `loadFromBundle` |

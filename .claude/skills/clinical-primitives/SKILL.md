@@ -1,0 +1,153 @@
+---
+name: clinical-primitives
+description: Build React apps with the clinical-primitives component library (github.com/smart-on-fhir/clinical-primitives) - FHIR-aware condition, medication, immunization and lab lists, lab trend panels, observation charts, treatment timelines, event feeds, data grids, AI finding cards, and the JSON-driven StaticComponent renderer. Use this whenever the user wants a healthcare, clinical, patient or FHIR app or dashboard in React, mentions clinical-primitives, smart-on-fhir components, ClinicalDataProvider, LabTrendPanel or TimelineChart, wants to show patients, labs, meds, problems or a treatment timeline from FHIR data, or is setting up an IHL hackathon app, even if they never name the library.
+---
+
+# Building apps with clinical-primitives
+
+React 19 components for clinical UI. Two halves: generic primitives (Badge, Button, Panel, Dialog, DataGrid, Chart, Tooltip) and FHIR-aware components that render `fhir/r4` resources. The library is pre-1.0, so props move. When something here disagrees with your app's `node_modules/clinical-primitives/dist/**/*.d.ts`, the `.d.ts` files are right. For implementation detail, read the source at https://github.com/smart-on-fhir/clinical-primitives (paths below such as `src/components/...` are relative to that repo), and its `AGENTS.md`.
+
+- Per-component props, the StaticComponent schema (with a system prompt to paste into an LLM), utils and theming tokens: [reference.md](reference.md)
+- Working usage of every component: the docs site in a clinical-primitives clone. Each page in `src/docs/pages/` renders one component against a real Synthea bundle (`src/docs/samplePatientBundle.json`) and imports from `"clinical-primitives"` the way an app does. Run `npm install && npm run dev` in the clone to see them live. Read the matching page before writing a component from scratch.
+
+Related skills, each in its own repo:
+- **`cohort-fhir-api`** (in [fhir-rest-api](https://github.com/smart-on-fhir/fhir-rest-api)): pulling patients from the IHL synthetic cohort API. Fetch with that skill and load the result with `loadFromResources`/`loadFromBundle`; `loadFromFHIRServer` only talks to servers with `Patient/$everything`.
+- **`sds-cache`** (in [smart-data-services](https://github.com/smart-on-fhir/smart-data-services)): the caching proxy in front of that cohort API. **`sds-nlp-results`** and **`sds-study-variables`** (same repo): NLP extractions from notes, and study variables and population cubes, to show beside the record. **`sds-identity`** (same repo): mapping MRNs to anonymized patient ids, with no clinical data.
+- **`sim-ibd-patients`** (in [cumulus-sim-ibd-patients](https://github.com/smart-on-fhir/cumulus-sim-ibd-patients)): the same synthetic IBD patients as local files, for an offline or static app.
+
+## Setup (Vite + React 19 + TypeScript)
+
+```bash
+npm create vite@latest my-app -- --template react-ts && cd my-app
+npm install github:smart-on-fhir/clinical-primitives   # clones + builds the lib (~1 min)
+npm install -D @types/fhir                             # for `import type { Observation } from 'fhir/r4'`
+```
+
+Requirements: Node 20.19+ or 22.12+ (Vite 7), and `react`/`react-dom` ^19 (a peer dependency, so React 18 won't work). `package-lock.json` pins the library commit, and `npm update clinical-primitives` pulls the latest `main`.
+
+`src/main.tsx` imports the styles once, before your own CSS:
+
+```tsx
+import 'clinical-primitives/styles.css';
+import './app.css';            // your own CSS, after the library's
+```
+
+Wrap the app in **one** `ClinicalDataProvider`, and mount **one** `<Tooltip />` inside it. Without `<Tooltip />`, the timeline bars, chart points and every `data-tooltip` attribute show nothing on hover:
+
+```tsx
+<ClinicalDataProvider>
+  <YourRoutes />
+  <Tooltip />
+</ClinicalDataProvider>
+```
+
+The library sets no page font, so it renders in the browser's default serif unless your CSS sets one. A minimal `app.css`:
+
+```css
+body { font-family: system-ui, sans-serif; margin: 0; }
+.data-grid > .cp-row { min-height: auto; }   /* see the DataGrid gotcha */
+```
+
+## Getting data in
+
+The provider holds **one patient at a time**: `patient`, plus `resources` keyed by resourceType. Load with `useClinicalData()`:
+
+| Source | Call |
+|---|---|
+| FHIR Bundle JSON (file in `public/`, upload) | `loadFromBundle(bundle)` / `selectFile()` (native picker; .json or .ndjson) |
+| Array of resources you fetched yourself | `loadFromResources(resources)` |
+| Standard FHIR R4 server with `Patient/$everything` (e.g. r4.smarthealthit.org) | `loadFromFHIRServer(base, id)`, or fetch and then `loadFromResources` (recipe 2) |
+| IHL synthetic cohort API | a single-patient record from the `cohort-fhir-api` skill, then `loadFromResources` (or `loadFromBundle` for a saved Bundle) |
+| IHL synthetic IBD patients as files | a single-patient FHIR Bundle from the `sim-ibd-patients` skill, with `loadFromBundle` |
+
+Every loader throws unless the input holds **exactly one** `Patient`. A multi-patient bundle or ndjson throws, and so does a record assembled without its Patient. For a cohort, keep the patient list in your own state and load one record into the provider when a patient is opened (recipe 2).
+
+A row with a `resourceType` but no `id` counts as another patient, so concatenating any non-FHIR NDJSON that reuses `resourceType` (a provenance or audit sidecar, say) with the real NDJSON files makes the load throw "multiple distinct patients". Load only real FHIR files.
+
+## I need to… → use
+
+| Need | Use |
+|---|---|
+| Problems / immunizations / meds list with status tabs | `ConditionList`, `ImmunizationList`, `MedicationList` (pass arrays) |
+| Compact table of labs: sparkline, latest value, flag | `LabTrendPanel` |
+| One analyte as a full chart with ref-range shading | `ObservationChart` |
+| One vital/lab as a card with delta + sparkline | `ObservationCard` |
+| Browsable grid of every observation, filter tabs | `ObservationsPanel` |
+| Meds, labs and visits on one zoomable time axis | `TimelineChart` + `.MedicationsTimeline` / `.ObservationsTimeline` / `.BarChartTimeline` |
+| Chronological feed of labs, meds, notes, procedures | `EventFeed` |
+| Patient list / any table: sort, search, page, select | `DataGrid` (controlled) |
+| Generic chart (line/bar/pie/scatter…) | `Chart` |
+| AI finding with confidence + evidence tabs | `FindingCard` |
+| UI described by an LLM as JSON | `StaticComponent` |
+| Raw FHIR viewer for a resource | `SourceDialog` (modal) or `FhirResourceJsonViewer` |
+| Content + resizable details sidebar | `SidebarLayout` |
+| Pills, buttons, banners, spinners, modals, tabs | `Badge`, `Button`, `Alert`, `Loader`, `Dialog`, `Tabs` |
+| Names, ages, dates, med names | `lib.Person.displayPersonName`, `lib.Patient.displayPatientAge`, `lib.formatDate`, `lib.Medication.getMedicationName` |
+
+## Recipes
+
+The docs pages show each component on its own; these excerpts cover what they don't: wiring several components to one loaded patient, and switching patients.
+
+**1. Single-patient dashboard.** Read the provider and lay components out in a plain CSS grid.
+```tsx
+const { patient, resources, isLoading, error } = useClinicalData();
+const conditions = (resources.Condition ?? []) as unknown as Condition[];   // cast: see gotchas
+<ConditionList conditions={conditions} title="Problems" />
+<MedicationList medications={(resources.MedicationRequest ?? []) as unknown as MedicationRequest[]} />
+<LabTrendPanel labs={[{ label: 'CRP', loincs: ['1988-5'] }, { label: 'Hemoglobin', loincs: ['718-7'] }]} />
+<ObservationsPanel filters={['Vitals', 'Labs']} />
+<EventFeed resources={resources} defaultRange="All" />   {/* default '30d' counts back from the latest event */}
+```
+
+**2. Patient picker over a multi-patient source.** Keep the patient list in your own state (a controlled `DataGrid`; see `src/docs/pages/DataGridPage.tsx`), and when a patient is opened, swap the provider's record. `fetchRecord` is yours: it returns one patient's resources, Patient included (for the cohort API, see the `cohort-fhir-api` skill; for local files, fetch that patient's Bundle and call `loadFromBundle` instead). The load effect is the part people get wrong:
+```tsx
+const { patient, error, loadFromResources, clear } = useClinicalData();
+useEffect(() => {
+  const ctrl = new AbortController();
+  clear();                                            // stable; safe to call here
+  fetchRecord(patientId, ctrl.signal)
+    .then(rs => { if (!ctrl.signal.aborted) return loadFromResources(rs); })
+    .catch(e => { if (!ctrl.signal.aborted) console.error(e); });
+  return () => ctrl.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadFromResources is not stable
+}, [patientId]);
+if (patient?.id !== patientId) return <Loader msg="Loading…" centered />;   // never show the previous patient
+```
+
+**3. Treatment timeline.** Full example: `src/docs/pages/TimelineChartPage.tsx`.
+```tsx
+<TimelineChart title={<h3>Treatment history</h3>} minX={start} maxX={end}>
+  <TimelineChart.MedicationsTimeline classify={classify} legend={entries => …} />
+  <TimelineChart.ObservationsTimeline label="Labs" analytes={[{ code: ['718-7'], label: 'Hemoglobin', unit: 'g/dL' }]} showAbsent={false} />
+  <TimelineChart.BarChartTimeline label="Visits" rows={[{ label: 'Encounters', bars: [{ x1: ms, x2: ms, tooltip: '**Visit**' }] }]} />
+</TimelineChart>
+```
+The chart opens on the **last 2 years**, so a record that ended earlier looks empty. Pass `minX`/`maxX` (epoch ms) computed from the data. `MedicationsTimeline` shows only **active** meds by default. Its classifier receives `base === null` for the rest, and returning a classification anyway includes them. Wrap `classify` in `useCallback`.
+
+**4. Lab trends.** A `LabTrendPanel` with LOINC-only entries (see the lab-matching gotcha), plus one `ObservationChart` per lab that has data. Full examples: `src/docs/pages/LabTrendPanelPage.tsx`, `ObservationChartPage.tsx`.
+```tsx
+<LabTrendPanel title="Inflammatory markers" labs={LABS /* {label, loincs}[] at module scope */} />
+<ObservationChart observations={observations} code={lab.loincs} label={lab.label} height={160} />
+```
+
+**5. LLM-driven UI.** Put the system prompt from reference.md (StaticComponent section) in the model's system prompt, then render its reply with `<StaticComponent instruction={jsonStringOrObject} />` inside the provider. Bad JSON or an unknown `type` shows an inline error, not a crash. That error text is unstyled, because it uses `alert alert-danger` and `cp-color-red`, which the stylesheet doesn't define; add your own CSS for those classes if you want it to stand out. Try instructions live in `src/docs/pages/StaticComponentPlayground.tsx`.
+
+## Gotchas (each one has bitten someone)
+
+- **Context requirements.** These throw outside `ClinicalDataProvider`: `ObservationsPanel`, `LabTrendPanel` (no prop for passing observations), `ObservationCard`, `SourceDialog`, `ResourceSource`, `MedicationDetail`, `ObservationDetail`, `StaticComponent`'s clinical types, and **`TimelineChart.MedicationsTimeline`/`.ObservationsTimeline`, even when you pass `medications`/`observations` explicitly** (`BarChartTimeline` alone is context-free). `EventFeed` renders without the provider, but clicking a row opens `SourceDialog` and throws. The simplest rule is to always render inside the provider.
+- **The `as unknown as X[]` cast.** `resources.Condition` is a loose `FhirResource[]`, so typed props need `(resources.Condition ?? []) as unknown as Condition[]`. This is expected. `EventFeed` takes `resources` as-is.
+- **Exactly one Patient** per load (see above). Multi-patient data goes through your own list state.
+- **Load functions are not stable.** Only `clear` keeps its identity across renders. `selectFile`, `lazy`, `getPatient` and every `loadFrom*` are new functions each render. If you list `loadFrom*` in effect deps, the effect re-runs after every load and loops. Guard renders with `patient?.id === wantedId`.
+- **`selectFile()` can hang.** Its promise never settles if the user cancels the picker or the file fails to load (the error lands in `error`). Read `error`/`patient` from the context rather than awaiting it.
+- **`loadFromFHIRServer` + abort.** It accepts `{ signal }`, but an aborted load still sets `error` (AbortError). If you abort in an effect cleanup, StrictMode does that on every dev mount. Ignore `error.name === 'AbortError'`, or use the fetch → `loadFromResources` pattern from recipe 2.
+- **Controlled DataGrid and Pagination.** They never sort, filter or page `rows` themselves. You pass the current page and handle `onSortChange`/`onSearchChange`/`onPaginationChange` (reset `offset` to 0 on sort/search). Only columns with `sortProp` are sortable. Column visibility is fixed **on first mount**, so columns added later start hidden. Pass every column from the first render.
+- **DataGrid toolbar gap.** A standalone grid gets a 500px-tall band above the table because `.cp-row` has `min-height: 500px` when it has no `cp-*` ancestor. Fix it with `.data-grid > .cp-row { min-height: auto; }` (in the `app.css` above). The same rule hits your own `<Row>` around library components, so prefer plain CSS grid/flex for page layout.
+- **Lab matching is keyword-based.** Preset keys (`'CRP'`, `'Hemoglobin'`, …) match an observation whose code is in the preset's LOINC list **or** whose display text contains a keyword, and the keyword test runs even when other observations matched by code. `'Hemoglobin'` picks up Hemoglobin A1c (4548-4), `'Albumin'` picks up urine microalbumin/creatinine, `'RBC'` shows ESR ("**Erythrocyte** sedimentation rate"), and in pediatric data `'Weight'`/`'BMI'` pick up the percentile codes 77606-2 (weight-for-length %) and 59576-9 (BMI percentile). The `'CRP'` preset's codes include `14959-1`, which is microalbumin/creatinine and not CRP. Calprotectin `38445-3` (mass/mass in stool) and 25-OH vitamin D `62292-8` are not in the preset code lists, so data coded that way matches only by keyword. To match safely, pass `{ label, loincs: [...] }` objects with no `keywords`, and match `ObservationChart`/`TimelineAnalyte` by exact codes. The preset `LABS` dictionary isn't exported.
+- **No `referenceRange` means no flags.** Flags and status colours come only from each observation's own `referenceRange`/`interpretation`. For data without them, `LabTrendPanel`'s flag column reads `—` and it has no prop for supplying ranges; `ObservationChart` (`referenceRange`, `rangeOverride`) and `ObservationsTimeline` (analyte `range`/`ranges`, `referenceRange`) take ranges you supply.
+- **Medication courses need a period.** `lib.Medication.getMedicationPeriod` reads `dosageInstruction[].timing.repeat.boundsPeriod`, then `dispenseRequest.validityPeriod`, then `effectivePeriod`. Orders with none of these get only a start instant (`authoredOn`/`effectiveDateTime`/`dateAsserted`), so they have no course duration to draw.
+- **Dead or reserved props, so don't wire them**: `DataGrid` `filters`/`onFilterChange`, column `nullable`/`editor`; `SourceDialog` `minWidth`/`maxWidth`/`height` (use `style`); `FhirJsonDecorator` `type`.
+- **Not exported**: `PanelHeader`/`PanelBody`/`PanelFooter`/`PanelToolbar` (only `Panel`, a bare `div.cp-panel`), the `LABS`/`FILTERS` dictionaries, the context-connected `*ListWrapper`/`EventFeedWrapper` (reachable only through `StaticComponent`), and the TimelineChart selection context.
+- **CSS reset vs Tailwind.** The library resets margin/padding/border inside every element with a `cp-` class. Those rules are unlayered, so they beat Tailwind v4's layered utilities on elements *inside* library components (children you pass to `Panel`, `Dialog`, `Column`…). Style that content with plain CSS, or keep Tailwind markup outside library wrappers.
+- **Stable inputs.** `ObservationChart`'s `code`, `MedicationsTimeline`'s `classify` and `ObservationsTimeline`'s `analytes` are memo dependencies. Define them at module scope or memoize them.
+- **Default time windows hide history.** TimelineChart opens on the last 2 years, and EventFeed shows only the 30 days ending at the latest event. Set `minX`/`maxX` and `defaultRange="All"`.
+- **Bundle size.** The library pulls in Recharts and syntax highlighting, so expect a ~1 MB JS chunk and Vite's "chunk larger than 500 kB" warning. That warning is harmless.
