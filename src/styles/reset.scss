@@ -22,6 +22,8 @@
 // nothing about, and there is no way for an app to opt out of a stylesheet it
 // has to import to get anything at all.
 //
+// The one exception is a default font on `html`; see the rule itself.
+//
 // Content an app passes in as children is inside that scope, and is reset too.
 // That is deliberate — a heading handed to a chart's `title` should look like
 // the chart's own — but it is worth knowing about, and an app's own rules still
@@ -63,6 +65,17 @@ $scope: '[class^="cp-"], [class*=" cp-"]';
 $all: '#{$scope}, :where(#{$scope}) *';
 
 @layer cp-reset {
+
+    // A sans-serif in place of the browser's serif, for a page that names no
+    // font of its own. It has to be on the document root rather than on the
+    // library's elements: font-family reaches components by inheritance, and
+    // a value set on an element, however weak, beats an inherited one. Set on
+    // `cp-*` elements, it would keep an app's `body { font-family }` out of
+    // every component. Set here, any font the app puts on `body`, a wrapper,
+    // or `html` itself wins, and components inherit it.
+    :where(html) {
+        font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    }
 
     :where(#{$all}),
     :where(#{$scope}) *::before,

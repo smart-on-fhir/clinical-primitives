@@ -113,9 +113,9 @@ and `StaticComponent`'s clinical instruction types. `EventFeed` renders
 without it, but clicking a row opens `SourceDialog`, which throws. See
 each component's "context" note below.
 
-The library sets no page font. Without your own `font-family` on
-`body` (or an ancestor), everything renders in the browser default
-serif.
+The library defaults the page to the system sans-serif font. Set
+`font-family` on `body` (or any element above your app) to change it;
+library components inherit it.
 
 Load the library's stylesheet **before** your own CSS. Its scoped reset
 (margin, padding and border zeroed inside `cp-*` elements) sits in a
@@ -786,8 +786,6 @@ so only the bad `14959-1` code affects it):
   `div.data-grid`, so a standalone grid has a 500px band above the
   table. Override with `.data-grid > .cp-row { min-height: auto; }`.
   Your own `Row`s around library components get the same height.
-- No default font: the stylesheet never sets `font-family` for text, so
-  without app CSS the page renders in the browser's default serif.
 
 **Build:**
 - `npm run build:lib` copies `public/404.html` (the docs site's GitHub

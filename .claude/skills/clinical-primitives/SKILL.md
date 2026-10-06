@@ -43,10 +43,10 @@ Wrap the app in **one** `ClinicalDataProvider`, and mount **one** `<Tooltip />` 
 </ClinicalDataProvider>
 ```
 
-The library sets no page font, so it renders in the browser's default serif unless your CSS sets one. A minimal `app.css`:
+The library defaults the page to the system sans-serif font; set `font-family` on `body` to use your own, and library components inherit it. A minimal `app.css`:
 
 ```css
-body { font-family: system-ui, sans-serif; margin: 0; }
+body { margin: 0; }
 .data-grid > .cp-row { min-height: auto; }   /* see the DataGrid gotcha */
 ```
 
