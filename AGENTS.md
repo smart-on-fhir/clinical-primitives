@@ -784,12 +784,6 @@ so only the bad `14959-1` code affects it):
   `LabTrendPanel`'s flag column reads `—`, and it has no prop for
   supplying ranges.
 
-**Build:**
-- `npm run build:lib` copies `public/404.html` (the docs site's GitHub
-  Pages fallback) into `dist/`, so it ships inside the installed
-  package. Vite's library mode copies `publicDir` by default and
-  `vite.lib.config.ts` doesn't turn that off.
-
 **Declared but not wired** (don't rely on these):
 - `DataGridProps.filters`/`onFilterChange` — declared, not implemented.
 - `DataGridColumn.nullable`/`editor` — declared, not read anywhere.

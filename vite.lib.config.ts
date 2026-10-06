@@ -15,6 +15,9 @@ export default defineConfig({
       external: ['react', 'react-dom', 'react/jsx-runtime']
     },
     sourcemap: true,
-    emptyOutDir: false
+    emptyOutDir: false,
+    // public/ holds the docs site's GitHub Pages files (404.html), which
+    // don't belong in the published package.
+    copyPublicDir: false
   }
 });
