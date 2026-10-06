@@ -47,8 +47,8 @@ library to hand-write an app), read that section first.
 | `.github/workflows/deploy-docs.yml` | Builds the docs site and deploys it to GitHub Pages on push to `main` |
 | `.claude/skills/clinical-primitives/` | The agent skill for app builders (see [Skills](#skills)) |
 
-Commands, from the repo root. Node 20.19+ or 22.12+ (Vite 7's
-requirement); CI uses Node 22.
+Commands, from the repo root. Node 20.19+ or 22.13+ (Vite 7 needs
+22.12+, jsdom in the tests 22.13+); CI uses Node 22.
 
 ```bash
 npm ci                              # install; `prepare` also runs build:lib
@@ -187,12 +187,11 @@ const {
 ```
 
 - Throws if called outside a `ClinicalDataProvider`.
-- **Only `clear` is a stable reference.** Every other function,
-  `selectFile` included, is a new function on each render. Putting a
-  `loadFrom*` in an effect's dependency list re-runs the effect after
-  every load (the load changes state, the provider re-renders, the
-  function changes) and loops. Leave them out of deps, and guard
-  rendering with `patient?.id === wantedId`.
+- **Every function is a stable reference** for the life of the
+  provider, so they're safe in effect dependency lists. The context
+  value object itself changes only when `patient`, `resources`,
+  `isLoading` or `error` does. Still guard rendering with
+  `patient?.id === wantedId` while a different patient loads.
 - Every `load*` method sets `isLoading`/`error`/`patient`/`resources`
   **and** throws the failure — `try/catch` even though state also
   updates, if you need to react to the specific call.
@@ -762,10 +761,8 @@ so only the bad `14959-1` code affects it):
   supplying ranges.
 
 **Data loading:**
-- Only `clear` is referentially stable; `selectFile`'s `useCallback`
-  depends on a function recreated every render. See
-  [Data layer](#data-layer) for this and the `selectFile`,
-  `getPatient` and abort behaviors.
+- See [Data layer](#data-layer) for the `selectFile`, `getPatient`
+  and abort behaviors.
 
 **Styling:**
 - `.cp-row` gets `min-height: 500px` when it contains any `cp-*`

@@ -80,13 +80,35 @@ export type ClinicalDataContextValue = {
 
 const ClinicalDataContext = createContext<ClinicalDataContextValue | null>(null);
 
+/**
+ * useState plus a ref that always holds the latest value. The setter writes
+ * the ref synchronously, so a stable callback can read the current value
+ * through the ref without waiting for the next render. Every write must go
+ * through the returned setter for the ref to stay accurate.
+ */
+function useStateWithRef<T>(initial: T) {
+    const [state, setState] = useState(initial);
+    const ref = useRef(initial);
+
+    const set = useCallback((next: T | ((prev: T) => T)) => {
+        ref.current = typeof next === 'function' ? (next as (prev: T) => T)(ref.current) : next;
+        setState(ref.current);
+    }, []);
+
+    return [state, set, ref] as const;
+}
+
+// Every function returned here is stable for the life of the provider: they
+// call only setters, and read `patient`/`resources` through refs. A fresh
+// function per render would re-run any consumer effect that lists it as a
+// dependency, and since each of them sets state, that effect would loop.
 function useClinicalDataState() {
-    const [patient  , setPatient  ] = useState<Patient | null>(null);
-    const [resources, setResources] = useState<ResourcesByType>({});
+    const [patient  , setPatient  , patientRef  ] = useStateWithRef<Patient | null>(null);
+    const [resources, setResources, resourcesRef] = useStateWithRef<ResourcesByType>({});
     const [isLoading, setIsLoading] = useState(false);
     const [error    , setError    ] = useState<Error | null>(null);
 
-    async function load(source: PatientDataSource) {
+    const load = useCallback(async (source: PatientDataSource) => {
         setIsLoading(true);
         setError(null);
 
@@ -104,9 +126,9 @@ function useClinicalDataState() {
         } finally {
             setIsLoading(false);
         }
-    }
+    }, [setPatient, setResources]);
 
-    async function loadFromFHIRServer(baseUrl: string, patientId: string, options?: FetchEverythingOptions) {
+    const loadFromFHIRServer = useCallback(async (baseUrl: string, patientId: string, options?: FetchEverythingOptions) => {
         setIsLoading(true);
         setError(null);
         setPatient(null);
@@ -132,18 +154,18 @@ function useClinicalDataState() {
         } finally {
             setIsLoading(false);
         }
-    }
+    }, [setPatient, setResources]);
 
     // In-flight lazy() fetches, keyed by resourceType, so overlapping callers
     // (e.g. two components mounting in the same render pass) share one fetch
     // instead of each triggering their own.
     const pendingLazyLoads = useRef<Record<string, Promise<unknown[]>>>({});
 
-    async function lazy<T extends { resourceType: string }>(
+    const lazy = useCallback(async <T extends { resourceType: string }>(
         resourceType: string,
         fetcher: () => Promise<T[]>,
         options?: { force?: boolean }
-    ): Promise<T[]> {
+    ): Promise<T[]> => {
         // An in-flight fetch is shared regardless of `force`: a second forced
         // call while one is already running should ride along, not start a
         // redundant fetch of its own.
@@ -151,7 +173,7 @@ function useClinicalDataState() {
         if (pending) return pending as Promise<T[]>;
 
         if (!options?.force) {
-            const cached = resources[resourceType];
+            const cached = resourcesRef.current[resourceType];
             if (cached) return cached as unknown as T[];
         }
 
@@ -166,13 +188,14 @@ function useClinicalDataState() {
 
         pendingLazyLoads.current[resourceType] = promise;
         return promise;
-    }
+    }, [setResources, resourcesRef]);
 
     // In-flight getPatient() fetch, so overlapping callers share one request.
     const pendingPatientLoad = useRef<Promise<Patient> | null>(null);
 
-    async function getPatient(id: string, fetcher: () => Promise<Patient>): Promise<Patient> {
-        if (patient && patient.id === id) return patient;
+    const getPatient = useCallback(async (id: string, fetcher: () => Promise<Patient>): Promise<Patient> => {
+        const current = patientRef.current;
+        if (current && current.id === id) return current;
 
         if (pendingPatientLoad.current) return pendingPatientLoad.current;
 
@@ -187,11 +210,8 @@ function useClinicalDataState() {
 
         pendingPatientLoad.current = promise;
         return promise;
-    }
+    }, [setPatient, patientRef]);
 
-    // Stable, so a consumer can list it as an effect dependency: it touches
-    // only setters and refs, and a fresh function every render would re-run
-    // any effect that calls it — which, since it sets state, would loop.
     const clear = useCallback(() => {
         setPatient(null);
         setResources({});
@@ -199,7 +219,7 @@ function useClinicalDataState() {
         setIsLoading(false);
         pendingLazyLoads.current = {};
         pendingPatientLoad.current = null;
-    }, []);
+    }, [setPatient, setResources]);
 
     return {
         patient,
@@ -229,24 +249,27 @@ export function ClinicalDataProvider({ children }: PropsWithChildren) {
         });
     }, [load]);
 
-    const value = useMemo<ClinicalDataContextValue>(
+    // Built once, apart from the data, so the loadFrom* wrappers keep their
+    // identity when the data changes.
+    const actions = useMemo(
         () => ({
-            patient,
-            resources,
-            isLoading,
-            error,
-            loadFromBundle    : (bundle)        => load({ type: 'bundle'     , bundle }),
-            loadFromBundleFile: (file)          => load({ type: 'bundle-file', file }),
-            loadFromResources : (nextResources) => load({ type: 'resources'  , resources: nextResources }),
-            loadFromNdjson    : (ndjson)        => load({ type: 'ndjson'     , ndjson }),
-            loadFromNdjsonFile: (file)          => load({ type: 'ndjson-file', file }),
+            loadFromBundle    : (bundle: FhirBundle)            => load({ type: 'bundle'     , bundle }),
+            loadFromBundleFile: (file: File)                    => load({ type: 'bundle-file', file }),
+            loadFromResources : (nextResources: FhirResource[]) => load({ type: 'resources'  , resources: nextResources }),
+            loadFromNdjson    : (ndjson: string)                => load({ type: 'ndjson'     , ndjson }),
+            loadFromNdjsonFile: (file: File)                    => load({ type: 'ndjson-file', file }),
             loadFromFHIRServer,
             lazy,
             getPatient,
             selectFile,
             clear
         }),
-        [patient, resources, isLoading, error, selectFile]
+        [load, loadFromFHIRServer, lazy, getPatient, selectFile, clear]
+    );
+
+    const value = useMemo<ClinicalDataContextValue>(
+        () => ({ patient, resources, isLoading, error, ...actions }),
+        [patient, resources, isLoading, error, actions]
     );
 
     return (

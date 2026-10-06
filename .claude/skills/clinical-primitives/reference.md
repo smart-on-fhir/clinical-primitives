@@ -20,11 +20,11 @@ Contents: [Data layer](#data-layer) · [Clinical lists](#clinical-lists) · [Obs
 | `loadFromNdjson(text)` / `loadFromNdjsonFile(file)` | same | Throws on a line with no `resourceType`. |
 | `loadFromFHIRServer(base, patientId, opts?)` | same | Pages through `GET {base}/Patient/{id}/$everything?_count=200` and updates `resources` as each page arrives. `opts`: `{ signal, count=200, throttleMs=500, retries=3, retryDelayMs=1000 }`. Needs a standard FHIR server that implements `$everything`; for any other API, fetch the record yourself and call `loadFromResources`. |
 | `selectFile()` | `Promise<Patient \| null>` | Native picker for .json/.ndjson. The promise never settles if the user cancels or the load fails. |
-| `clear()` | `() => void` | Stable identity. Also drops in-flight `lazy`/`getPatient` bookkeeping. |
+| `clear()` | `() => void` | Also drops in-flight `lazy`/`getPatient` bookkeeping. |
 | `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch. |
 | `getPatient(id, fetcher)` | `Promise<Patient>` | Sets `patient` from a fetcher unless it's already loaded. |
 
-Only `clear` keeps its identity across renders, so don't list the others in effect dependencies. `loadFromFHIRServer` empties `patient`/`resources` before its first page, and an aborted load sets `error` to the AbortError.
+Every function keeps its identity for the life of the provider, so they're safe in effect dependencies. `loadFromFHIRServer` empties `patient`/`resources` before its first page, and an aborted load sets `error` to the AbortError.
 
 Exported helpers: `bundleToResources(bundle)`, `parseNdjson(text)`, `resourcesToPatientDataSet(resources)` (throws unless exactly one Patient), `resolvePatientDataSource({type:'bundle'|'bundle-file'|'resources'|'ndjson'|'ndjson-file', …})`. Exported types: `FhirBundle`, `FhirResource`, `PatientDataSet`, `PatientDataSource`, `PatientResource`.
 

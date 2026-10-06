@@ -104,13 +104,12 @@ const conditions = (resources.Condition ?? []) as unknown as Condition[];   // c
 const { patient, error, loadFromResources, clear } = useClinicalData();
 useEffect(() => {
   const ctrl = new AbortController();
-  clear();                                            // stable; safe to call here
+  clear();
   fetchRecord(patientId, ctrl.signal)
     .then(rs => { if (!ctrl.signal.aborted) return loadFromResources(rs); })
     .catch(e => { if (!ctrl.signal.aborted) console.error(e); });
   return () => ctrl.abort();
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadFromResources is not stable
-}, [patientId]);
+}, [patientId, clear, loadFromResources]);            // both stable, so this runs once per patientId
 if (patient?.id !== patientId) return <Loader msg="Loading…" centered />;   // never show the previous patient
 ```
 
@@ -137,7 +136,7 @@ The chart opens on the **last 2 years**, so a record that ended earlier looks em
 - **Context requirements.** These throw outside `ClinicalDataProvider`: `ObservationsPanel`, `LabTrendPanel` (no prop for passing observations), `ObservationCard`, `SourceDialog`, `ResourceSource`, `MedicationDetail`, `ObservationDetail`, `StaticComponent`'s clinical types, and **`TimelineChart.MedicationsTimeline`/`.ObservationsTimeline`, even when you pass `medications`/`observations` explicitly** (`BarChartTimeline` alone is context-free). `EventFeed` renders without the provider, but clicking a row opens `SourceDialog` and throws. The simplest rule is to always render inside the provider.
 - **The `as unknown as X[]` cast.** `resources.Condition` is a loose `FhirResource[]`, so typed props need `(resources.Condition ?? []) as unknown as Condition[]`. This is expected. `EventFeed` takes `resources` as-is.
 - **Exactly one Patient** per load (see above). Multi-patient data goes through your own list state.
-- **Load functions are not stable.** Only `clear` keeps its identity across renders. `selectFile`, `lazy`, `getPatient` and every `loadFrom*` are new functions each render. If you list `loadFrom*` in effect deps, the effect re-runs after every load and loops. Guard renders with `patient?.id === wantedId`.
+- **Context functions are stable.** Every function from `useClinicalData()` keeps its identity for the life of the provider, so list them in effect deps as the lint rule asks. Guard renders with `patient?.id === wantedId` so the previous patient never shows while the next one loads.
 - **`selectFile()` can hang.** Its promise never settles if the user cancels the picker or the file fails to load (the error lands in `error`). Read `error`/`patient` from the context rather than awaiting it.
 - **`loadFromFHIRServer` + abort.** It accepts `{ signal }`, but an aborted load still sets `error` (AbortError). If you abort in an effect cleanup, StrictMode does that on every dev mount. Ignore `error.name === 'AbortError'`, or use the fetch → `loadFromResources` pattern from recipe 2.
 - **Controlled DataGrid and Pagination.** They never sort, filter or page `rows` themselves. You pass the current page and handle `onSortChange`/`onSearchChange`/`onPaginationChange` (reset `offset` to 0 on sort/search). Only columns with `sortProp` are sortable. Column visibility is fixed **on first mount**, so columns added later start hidden. Pass every column from the first render.
