@@ -225,8 +225,11 @@ const {
 - `clear()` empties everything and forgets in-flight `lazy`/
   `getPatient` fetches.
 - `selectFile()` opens a picker for `.json`/`.ndjson` and loads the
-  file as a Bundle or NDJSON. Its promise never settles if the user
-  cancels or the load fails (the failure still lands in `error`).
+  file as a Bundle or NDJSON. It resolves with the patient, or `null`
+  if the user cancels; a failed load rejects (and sets `error`), like
+  every `loadFrom*`. A second call resolves a still-pending first one
+  with `null`. Safari before 16.4 never reports a cancel, so there the
+  promise stays pending until the next call.
 - `resources.X` is typed as loose `FhirResource[]`, not the real
   `fhir/r4` type. Passing it into a strongly-typed prop (e.g.
   `ConditionList`'s `conditions: Condition[]`) needs a cast:
@@ -761,8 +764,12 @@ so only the bad `14959-1` code affects it):
   supplying ranges.
 
 **Data loading:**
-- See [Data layer](#data-layer) for the `selectFile`, `getPatient`
-  and abort behaviors.
+Each is described with its workaround under [Data layer](#data-layer).
+- `getPatient(id, fetcher)` ignores `id` while a fetch is in flight: a
+  call for patient B during patient A's fetch resolves to patient A.
+- An aborted `loadFromFHIRServer` sets `error` to the `AbortError`, so
+  an effect that aborts on cleanup puts an error in context on every
+  dev mount under React StrictMode.
 
 **Styling:**
 - `.cp-row` gets `min-height: 500px` when it contains any `cp-*`

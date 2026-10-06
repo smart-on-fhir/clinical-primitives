@@ -136,3 +136,73 @@ describe('ClinicalDataProvider', () => {
     expect(result.current.resources).toEqual({});
   });
 });
+
+describe('selectFile()', () => {
+  const fileInput = () => document.querySelector<HTMLInputElement>('input[data-cp-file-input]')!;
+
+  function choose(file?: File) {
+    Object.defineProperty(fileInput(), 'files', { value: file ? [file] : [], configurable: true });
+    fileInput().dispatchEvent(new Event('change'));
+  }
+
+  const cancel = () => fileInput().dispatchEvent(new Event('cancel'));
+
+  const ndjsonFile = (text: string) => new File([text], 'record.ndjson');
+  const validRecord = record.map(row => JSON.stringify(row)).join('\n');
+
+  it('resolves with the patient from the chosen file', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    let patient: Patient | null = null;
+    await act(async () => {
+      const selection = result.current.selectFile();
+      choose(ndjsonFile(validRecord));
+      patient = await selection;
+    });
+
+    expect(patient).toMatchObject({ id: 'p1' });
+    expect(result.current.patient?.id).toBe('p1');
+  });
+
+  it('rejects when the file fails to load, and sets error', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    await act(async () => {
+      const selection = result.current.selectFile();
+      choose(ndjsonFile('{"resourceType":"Patient"}'));
+      await expect(selection).rejects.toThrow('NDJSON line 1 has resourceType "Patient" but no id.');
+    });
+
+    expect(result.current.error?.message).toMatch(/^NDJSON line 1 /);
+  });
+
+  it('resolves null when the picker is cancelled', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    const selection = result.current.selectFile();
+    cancel();
+
+    await expect(selection).resolves.toBeNull();
+  });
+
+  it('resolves null when change fires with no file', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    const selection = result.current.selectFile();
+    choose();
+
+    await expect(selection).resolves.toBeNull();
+  });
+
+  it('resolves an earlier call with null when a later call takes over the picker', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    const first = result.current.selectFile();
+    const second = result.current.selectFile();
+
+    await expect(first).resolves.toBeNull();
+
+    cancel();
+    await expect(second).resolves.toBeNull();
+  });
+});

@@ -19,7 +19,7 @@ Contents: [Data layer](#data-layer) · [Clinical lists](#clinical-lists) · [Obs
 | `loadFromResources(resources)` | same | Use it for anything you fetched yourself. |
 | `loadFromNdjson(text)` / `loadFromNdjsonFile(file)` | same | Throws on a line with no `resourceType`. |
 | `loadFromFHIRServer(base, patientId, opts?)` | same | Pages through `GET {base}/Patient/{id}/$everything?_count=200` and updates `resources` as each page arrives. `opts`: `{ signal, count=200, throttleMs=500, retries=3, retryDelayMs=1000 }`. Needs a standard FHIR server that implements `$everything`; for any other API, fetch the record yourself and call `loadFromResources`. |
-| `selectFile()` | `Promise<Patient \| null>` | Native picker for .json/.ndjson. The promise never settles if the user cancels or the load fails. |
+| `selectFile()` | `Promise<Patient \| null>` | Native picker for .json/.ndjson. Resolves `null` on cancel; rejects (and sets `error`) if the file fails to load. |
 | `clear()` | `() => void` | Also drops in-flight `lazy`/`getPatient` bookkeeping. |
 | `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch. |
 | `getPatient(id, fetcher)` | `Promise<Patient>` | Sets `patient` from a fetcher unless it's already loaded. |

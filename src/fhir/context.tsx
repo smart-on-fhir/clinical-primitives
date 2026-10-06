@@ -25,7 +25,20 @@ import { Patient } from 'fhir/r4';
 const FILE_INPUT_ATTR = 'data-cp-file-input';
 
 let _sharedInput: HTMLInputElement | null = null;
-let _pendingCallback: ((file: File) => void) | null = null;
+
+/** The selectFile() call waiting on the picker. There's one picker, so at most one. */
+type PendingSelection = {
+    onFile  : (file: File) => void;
+    onCancel: () => void;
+};
+
+let _pendingSelection: PendingSelection | null = null;
+
+function takePendingSelection(): PendingSelection | null {
+    const pending = _pendingSelection;
+    _pendingSelection = null;
+    return pending;
+}
 
 function getSharedInput(): HTMLInputElement {
     if (!_sharedInput) {
@@ -35,7 +48,7 @@ function getSharedInput(): HTMLInputElement {
         // though, so without this sweep each reload leaves another one behind.
         //
         // Swept rather than adopted. A stale input's `change` listener closes
-        // over the previous module instance's `_pendingCallback`, so reusing
+        // over the previous module instance's `_pendingSelection`, so reusing
         // the element would give us a picker whose file never reaches the
         // caller waiting on it.
         document.querySelectorAll(`input[${FILE_INPUT_ATTR}]`).forEach(stale => stale.remove());
@@ -47,10 +60,15 @@ function getSharedInput(): HTMLInputElement {
         _sharedInput.setAttribute(FILE_INPUT_ATTR, '');
         _sharedInput.addEventListener('change', () => {
             const file = _sharedInput?.files?.[0];
-            if (file) _pendingCallback?.(file);
+            const pending = takePendingSelection();
             if (_sharedInput) _sharedInput.value = '';
-            _pendingCallback = null;
+            if (file) pending?.onFile(file);
+            else pending?.onCancel();
         });
+        // Fired when the user dismisses the picker. Browsers that predate the
+        // event (Safari before 16.4) give no signal, and the promise stays
+        // pending there until the next selectFile() call settles it.
+        _sharedInput.addEventListener('cancel', () => takePendingSelection()?.onCancel());
         document.body.appendChild(_sharedInput);
     }
     return _sharedInput;
@@ -237,14 +255,25 @@ function useClinicalDataState() {
 export function ClinicalDataProvider({ children }: PropsWithChildren) {
     const { patient, resources, isLoading, error, load, loadFromFHIRServer, lazy, getPatient, clear } = useClinicalDataState();
 
+    // Resolves with the loaded patient, or null if the user cancels. A failed
+    // load rejects, like every loadFrom*, and also sets `error`.
     const selectFile = useCallback(() => {
-        return new Promise<Patient | null>((resolve) => {
+        return new Promise<Patient | null>((resolve, reject) => {
             const input = getSharedInput();
-            _pendingCallback = async (file) => {
-                const isNdjson = file.name.endsWith('.ndjson') || file.type === 'application/x-ndjson';
-                const dataSet = await load(isNdjson ? { type: 'ndjson-file', file } : { type: 'bundle-file', file });
-                resolve(dataSet.patient ?? null);
+
+            // This call takes over the picker, so an earlier call still
+            // waiting on it would otherwise never settle.
+            takePendingSelection()?.onCancel();
+
+            _pendingSelection = {
+                onFile: (file) => {
+                    const isNdjson = file.name.endsWith('.ndjson') || file.type === 'application/x-ndjson';
+                    load(isNdjson ? { type: 'ndjson-file', file } : { type: 'bundle-file', file })
+                        .then(dataSet => resolve(dataSet.patient ?? null), reject);
+                },
+                onCancel: () => resolve(null)
             };
+
             input.click();
         });
     }, [load]);
