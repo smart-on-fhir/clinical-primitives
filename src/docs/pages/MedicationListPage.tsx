@@ -106,7 +106,7 @@ function PatientMedications() {
                         {medications.length} medication requests from the sample bundle, grouped by status.
                         Click the status tabs to filter.
                     </p>
-                    <div className="flex" style={{ height: 420 }}>
+                    <div className="flex" style={{ maxHeight: 420 }}>
                         <MedicationList medications={medications} />
                     </div>
                 </article>

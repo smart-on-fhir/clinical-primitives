@@ -285,6 +285,11 @@ first within a tab. All three follow the identical pattern:
 <MedicationList medications={medications} />  {/* MedicationRequest[] | MedicationAdministration[] */}
 ```
 
+A list scrolls only inside a box of definite height: give its
+container a height (e.g. `height: 50vh` on a flex parent), or put it in
+a `Row`/`Column` that gets one. With no height anywhere it grows to
+show every item.
+
 Fully controlled by the array you pass — **not** context-connected
 themselves (there are internal `*ListWrapper` versions that read
 context, but those aren't exported). Get the array from
@@ -644,7 +649,7 @@ component's source file.
 | `Button` | `Button/Button.tsx` | Same `variant`/`radius`/`hard`, plus `virtual` (ghost until hover). Underlies `RadioButton`, `MenuButton`, `Pagination`. |
 | `Alert` | `Alert/index.tsx` | Block banner, same variant/radius/hard/virtual surface as `Badge`/`Button`. |
 | `Panel` | `Panel/Panel.tsx` | Card container. `PanelHeader` takes `title`/`icon`/`rightContent`. **Note:** `PanelBody`/`PanelToolbar`/`PanelFooter`/`PanelHeader` are not re-exported from the package root today — only `Panel` is — so you can't currently build a full custom panel layout without reaching into the subpath. |
-| `Row` / `Column` | `Row/`, `Column/` | Flex layout wrappers. `Row` takes `cols?: string` to switch to CSS grid. A `Row` containing library components gets `min-height: 500px` unless it sits inside a `cp-*` element (see [Known issues](#known-issues)). |
+| `Row` / `Column` | `Row/`, `Column/` | Flex layout wrappers. `Row` takes `cols?: string` to switch to CSS grid. In a container of definite height they shrink to their share of it (so lists inside scroll); with no height anywhere they take their content height. Give a `Row` `style={{ minHeight }}` if it needs a floor. |
 | `Dialog` | `Dialog/index.tsx` | Modal, portal-rendered. `open`/`onClose`/`title`/`children` all required. Unmounts (not just hides) when closed. |
 | `Collapse` | `Collapse/index.tsx` | Expand/collapse. `label` (always visible) + `children` (collapsible). Controlled via `open`/`onToggle`, or self-managed if `open` omitted. |
 | `Tabs` | `Tabs/index.tsx` | `Tabs > TabBar > Tab` + `Tabs > TabsBody > TabContents`, matched by **position**, not id. Must be nested inside `<Tabs>` or it throws. |
@@ -778,14 +783,6 @@ so only the bad `14959-1` code affects it):
   `referenceRange`/`interpretation`. For data without them,
   `LabTrendPanel`'s flag column reads `—`, and it has no prop for
   supplying ranges.
-
-**Styling:**
-- `.cp-row` gets `min-height: 500px` when it contains any `cp-*`
-  element and has no `cp-*` ancestor (`src/components/Row/Row.scss`).
-  `DataGrid` renders its toolbar in a `Row` inside a plain
-  `div.data-grid`, so a standalone grid has a 500px band above the
-  table. Override with `.data-grid > .cp-row { min-height: auto; }`.
-  Your own `Row`s around library components get the same height.
 
 **Build:**
 - `npm run build:lib` copies `public/404.html` (the docs site's GitHub

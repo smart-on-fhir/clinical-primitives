@@ -2,17 +2,16 @@
     display: flex;
     flex-direction: row;
     gap: 1rem;
-    flex: 1 1 0;
+    flex: 1 1 0%;
     min-width: 0;
+    // Flex items default to `min-height: auto`, which won't let them shrink
+    // below their content. In a container of definite height (an app shell,
+    // a parent Column), that keeps the row at full content height, so the
+    // scrollable lists inside never get less room than all their items and
+    // never scroll. Zero lets the row take its share of the container
+    // instead. A row that needs a floor sets `minHeight` itself.
+    min-height: 0;
     flex-wrap: nowrap;
     align-items: stretch;
     align-content: stretch;
-
-    &:has([class*="cp-"]) {
-        min-height: 500px;
-    }
-
-    [class*=cp-] & {
-        min-height: auto !important;
-    }
 }

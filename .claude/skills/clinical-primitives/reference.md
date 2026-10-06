@@ -177,7 +177,7 @@ Give the model the patient's actual LOINC codes (from `resources.Observation`) s
 | `onNavigate(row, index)` | adds an arrow column for "open" |
 | `title?`, `loading?`, `error?`, `className?` | |
 
-Column visibility is captured on first mount, so columns added later start hidden. The toolbar needs `.data-grid > .cp-row { min-height: auto; }`. `filters`, `onFilterChange`, `nullable` and `editor` do nothing.
+Column visibility is captured on first mount, so columns added later start hidden. `filters`, `onFilterChange`, `nullable` and `editor` do nothing.
 
 `Pagination`: `offset`, `limit`, `total`, `onChange(offset)`. It renders `null` for fewer than 2 pages.
 
@@ -195,7 +195,7 @@ Wraps Recharts. Props: `type: 'line'|'area'|'bar'|'column'|'scatter'|'pie'|'rada
 | `Button` | same as Badge plus `virtual` (ghost until hover) and all `<button>` attributes |
 | `Alert` | same as Button |
 | `Panel` | a `div.cp-panel`. Its header, body and footer subcomponents are not exported. |
-| `Row` / `Column` | flex wrappers. `Row` `cols?` switches it to a grid. Watch the 500px `min-height` on `.cp-row`. |
+| `Row` / `Column` | flex wrappers. `Row` `cols?` switches it to a grid. In a container of definite height they shrink to their share, so lists inside scroll; set `style={{ minHeight }}` for a floor. |
 | `Dialog` | `open`, `onClose`, `title`, `children`, `style?`. Portal-rendered and unmounted when closed. |
 | `Collapse` | `label`, `children`, optional controlled `open`/`onToggle` |
 | `Tabs` | `<Tabs defaultIndex?><TabBar><Tab/>…</TabBar><TabsBody><TabContents/>…</TabsBody></Tabs>`. Tabs and contents are matched by position. |

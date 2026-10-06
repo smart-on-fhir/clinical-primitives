@@ -93,7 +93,7 @@ function PatientImmunizations() {
                         {immunizations.length} immunizations from the sample bundle, grouped by status.
                         Click the status tabs to filter.
                     </p>
-                    <div className="flex" style={{ height: 420 }}>
+                    <div className="flex" style={{ maxHeight: 420 }}>
                         <ImmunizationList immunizations={immunizations} />
                     </div>
                 </article>

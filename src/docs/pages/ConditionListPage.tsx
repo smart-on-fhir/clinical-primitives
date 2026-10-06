@@ -101,7 +101,7 @@ function PatientConditions() {
                         {conditions.length} conditions from the sample bundle, grouped by clinical status.
                         Click the status tabs to filter.
                     </p>
-                    <div className="flex" style={{ height: 420 }}>
+                    <div className="flex" style={{ maxHeight: 420 }}>
                         <ConditionList conditions={conditions} />
                     </div>
                 </article>

@@ -24,7 +24,10 @@ function ComponentDemo({ instruction }: { instruction?: string }) {
                     value={currentInstruction}
                     onChange={(e) => setCurrentInstruction(e.target.value)} />
             </Column>
-            <Column style={{ flex: '1 1 0', minWidth: 0, overflow: 'auto', background: 'var(--bg-secondary)' }}>
+            {/* `contain: size` keeps the rendered UI's content height out of the
+                row's height, so the row follows the textarea (or the 20rem
+                floor) and the lists inside scroll instead of growing it. */}
+            <Column style={{ flex: '1 1 0', minWidth: 0, overflow: 'auto', contain: 'size', background: 'var(--bg-secondary)' }}>
                 <StaticComponent instruction={currentInstruction} />
             </Column>
         </Row>
