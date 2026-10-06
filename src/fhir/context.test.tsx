@@ -15,6 +15,13 @@ const record: FhirResource[] = [
   { resourceType: 'Observation', id: 'o1' }
 ];
 
+/** A promise the test resolves itself, to control the order fetches finish in. */
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(r => { resolve = r; });
+  return { promise, resolve };
+}
+
 const functionNames = [
   'loadFromBundle',
   'loadFromBundleFile',
@@ -204,5 +211,182 @@ describe('selectFile()', () => {
 
     cancel();
     await expect(second).resolves.toBeNull();
+  });
+});
+
+describe('getPatient() with overlapping requests', () => {
+  const patientA: Patient = { resourceType: 'Patient', id: 'a' };
+  const patientB: Patient = { resourceType: 'Patient', id: 'b' };
+
+  it('fetches a different patient instead of returning the one in flight', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const a = deferred<Patient>();
+    const fetchB = vi.fn(async () => patientB);
+
+    let returned: Patient | undefined;
+    await act(async () => {
+      void result.current.getPatient('a', () => a.promise);
+      returned = await result.current.getPatient('b', fetchB);
+    });
+
+    expect(fetchB).toHaveBeenCalledOnce();
+    expect(returned).toBe(patientB);
+    expect(result.current.patient).toBe(patientB);
+  });
+
+  it('does not let an older response overwrite a newer patient', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const a = deferred<Patient>();
+    const b = deferred<Patient>();
+
+    let returnedA: Promise<Patient>;
+    await act(async () => {
+      returnedA = result.current.getPatient('a', () => a.promise);
+      const returnedB = result.current.getPatient('b', () => b.promise);
+      b.resolve(patientB);
+      await returnedB;
+      a.resolve(patientA);
+    });
+
+    // A's caller still gets patient A; only the context is protected.
+    await expect(returnedA!).resolves.toBe(patientA);
+    expect(result.current.patient).toBe(patientB);
+  });
+
+  it('shares one fetch between calls for the same patient', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const a = deferred<Patient>();
+    const fetchA = vi.fn(() => a.promise);
+
+    await act(async () => {
+      const first = result.current.getPatient('a', fetchA);
+      const second = result.current.getPatient('a', fetchA);
+      a.resolve(patientA);
+      expect(await first).toBe(await second);
+    });
+
+    expect(fetchA).toHaveBeenCalledOnce();
+  });
+
+  it('writes a shared fetch when its patient is requested again last', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const a = deferred<Patient>();
+    const b = deferred<Patient>();
+
+    await act(async () => {
+      void result.current.getPatient('a', () => a.promise);
+      void result.current.getPatient('b', () => b.promise);
+      void result.current.getPatient('a', () => a.promise);
+      a.resolve(patientA);
+      b.resolve(patientB);
+      await Promise.all([a.promise, b.promise]);
+    });
+
+    expect(result.current.patient).toBe(patientA);
+  });
+
+  it('drops a fetch for another patient once the loaded one is requested again', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const b = deferred<Patient>();
+
+    await act(() => result.current.getPatient('a', async () => patientA));
+    await act(async () => {
+      void result.current.getPatient('b', () => b.promise);
+      await result.current.getPatient('a', async () => patientA);
+      b.resolve(patientB);
+      await b.promise;
+    });
+
+    expect(result.current.patient).toBe(patientA);
+  });
+
+  it('does not bring a patient back after clear()', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const a = deferred<Patient>();
+
+    await act(async () => {
+      const request = result.current.getPatient('a', () => a.promise);
+      result.current.clear();
+      a.resolve(patientA);
+      await request;
+    });
+
+    expect(result.current.patient).toBeNull();
+  });
+
+  it('does not overwrite a patient set by a load', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const b = deferred<Patient>();
+
+    await act(async () => {
+      const request = result.current.getPatient('b', () => b.promise);
+      await result.current.loadFromResources(record);
+      b.resolve(patientB);
+      await request;
+    });
+
+    expect(result.current.patient?.id).toBe('p1');
+  });
+});
+
+describe('lazy() across a replacement of the record', () => {
+  type Row = { resourceType: string; id: string };
+  const stale: Row[] = [{ resourceType: 'Observation', id: 'stale' }];
+
+  it('does not write after clear(), but still resolves for its caller', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const pending = deferred<Row[]>();
+
+    let returned: Row[] | undefined;
+    await act(async () => {
+      const request = result.current.lazy('Observation', () => pending.promise);
+      result.current.clear();
+      pending.resolve(stale);
+      returned = await request;
+    });
+
+    expect(returned).toBe(stale);
+    expect(result.current.resources).toEqual({});
+  });
+
+  it("does not overwrite a newly loaded patient's data", async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const pending = deferred<Row[]>();
+
+    await act(async () => {
+      const request = result.current.lazy('Observation', () => pending.promise);
+      await result.current.loadFromResources(record);
+      pending.resolve(stale);
+      await request;
+    });
+
+    expect(result.current.resources.Observation).toEqual([{ resourceType: 'Observation', id: 'o1' }]);
+  });
+
+  it('starts a fresh fetch after clear() instead of sharing the dropped one', async () => {
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const old = deferred<Row[]>();
+    const fresh = deferred<Row[]>();
+    const freshRows: Row[] = [{ resourceType: 'Observation', id: 'fresh' }];
+    const third = vi.fn(async () => []);
+
+    await act(async () => {
+      const oldRequest = result.current.lazy('Observation', () => old.promise);
+      result.current.clear();
+      const request = result.current.lazy('Observation', () => fresh.promise);
+
+      // The old fetch landing must not drop the fresh one from the in-flight
+      // list, so this third call still shares it. `force` skips the cache, so
+      // only the in-flight list can keep it from fetching.
+      old.resolve(stale);
+      await oldRequest;
+      void result.current.lazy('Observation', third, { force: true });
+
+      fresh.resolve(freshRows);
+      await request;
+    });
+
+    expect(third).not.toHaveBeenCalled();
+    expect(result.current.resources.Observation).toBe(freshRows);
   });
 });

@@ -21,8 +21,8 @@ Contents: [Data layer](#data-layer) · [Clinical lists](#clinical-lists) · [Obs
 | `loadFromFHIRServer(base, patientId, opts?)` | same | Pages through `GET {base}/Patient/{id}/$everything?_count=200` and updates `resources` as each page arrives. `opts`: `{ signal, count=200, throttleMs=500, retries=3, retryDelayMs=1000 }`. Needs a standard FHIR server that implements `$everything`; for any other API, fetch the record yourself and call `loadFromResources`. |
 | `selectFile()` | `Promise<Patient \| null>` | Native picker for .json/.ndjson. Resolves `null` on cancel; rejects (and sets `error`) if the file fails to load. |
 | `clear()` | `() => void` | Also drops in-flight `lazy`/`getPatient` bookkeeping. |
-| `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch. |
-| `getPatient(id, fetcher)` | `Promise<Patient>` | Sets `patient` from a fetcher unless it's already loaded. |
+| `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch. A fetch overtaken by a load or `clear()` doesn't write. |
+| `getPatient(id, fetcher)` | `Promise<Patient>` | Sets `patient` from a fetcher unless it's already loaded. Calls for the same id share a fetch; when calls overlap, only the latest one sets `patient`. |
 
 Every function keeps its identity for the life of the provider, so they're safe in effect dependencies. `loadFromFHIRServer` empties `patient`/`resources` before its first page, and an aborted load sets `error` to the AbortError.
 

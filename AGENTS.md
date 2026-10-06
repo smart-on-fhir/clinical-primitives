@@ -217,13 +217,17 @@ const {
   demand into `resources[resourceType]` (replacing what was there).
   It returns the cached array without calling `fetcher` when that type
   is already loaded, unless `force` is set. Concurrent calls for the
-  same type share one fetch. It doesn't touch `isLoading`/`error`.
+  same type share one fetch. It doesn't touch `isLoading`/`error`. A
+  fetch overtaken by a load or `clear()` still resolves for its caller
+  but doesn't write into `resources`.
 - `getPatient(id, fetcher)` returns the current `patient` if its id
   matches, else calls `fetcher` and sets `patient` (not `resources`).
-  Any call made while a fetch is in flight gets that fetch's result,
-  even for a different id.
-- `clear()` empties everything and forgets in-flight `lazy`/
-  `getPatient` fetches.
+  Concurrent calls for the same id share one fetch. Only the latest
+  request writes `patient`: a fetch overtaken by a call for another id,
+  a load or `clear()` still resolves with its patient for its caller,
+  but leaves the context alone.
+- `clear()` empties everything. `lazy`/`getPatient` fetches still in
+  flight don't write when they land, and later calls start fresh ones.
 - `selectFile()` opens a picker for `.json`/`.ndjson` and loads the
   file as a Bundle or NDJSON. It resolves with the patient, or `null`
   if the user cancels; a failed load rejects (and sets `error`), like
@@ -758,15 +762,13 @@ so only the bad `14959-1` code affects it):
 - Calprotectin `38445-3` (mass/mass in stool) and 25-OH vitamin D
   `62292-8` are not in `LABS`; data coded that way matches those rows
   only through their keywords.
-- Flags and status colours come only from each observation's own
+- Flags and status colors come only from each observation's own
   `referenceRange`/`interpretation`. For data without them,
   `LabTrendPanel`'s flag column reads `—`, and it has no prop for
   supplying ranges.
 
 **Data loading:**
-Each is described with its workaround under [Data layer](#data-layer).
-- `getPatient(id, fetcher)` ignores `id` while a fetch is in flight: a
-  call for patient B during patient A's fetch resolves to patient A.
+Described with its workaround under [Data layer](#data-layer).
 - An aborted `loadFromFHIRServer` sets `error` to the `AbortError`, so
   an effect that aborts on cleanup puts an error in context on every
   dev mount under React StrictMode.

@@ -126,14 +126,45 @@ function useClinicalDataState() {
     const [isLoading, setIsLoading] = useState(false);
     const [error    , setError    ] = useState<Error | null>(null);
 
+    // The id of the latest getPatient() call, or null once anything else has
+    // replaced `patient` since. A getPatient() fetch writes `patient` only if
+    // this still names its id, so a slow response can't overwrite the patient
+    // from a newer request, a load, or a clear().
+    const requestedPatientId = useRef<string | null>(null);
+
+    // For every write to `patient` other than getPatient()'s own.
+    const replacePatient = useCallback((next: Patient | null) => {
+        requestedPatientId.current = null;
+        setPatient(next);
+    }, [setPatient]);
+
+    // In-flight lazy() fetches, keyed by resourceType, so overlapping callers
+    // (e.g. two components mounting in the same render pass) share one fetch
+    // instead of each triggering their own.
+    const pendingLazyLoads = useRef<Record<string, Promise<unknown[]>>>({});
+
+    // Bumped whenever `resources` is replaced wholesale (a load or clear()).
+    // A lazy() fetch writes its type only if this hasn't moved since it
+    // started, so the previous patient's data can't land in the new record.
+    const resourcesGeneration = useRef(0);
+
+    // For every wholesale replacement of `resources`. Also forgets in-flight
+    // lazy() fetches, so a call after this starts a fresh one instead of
+    // sharing a fetch whose result will be dropped.
+    const replaceResources = useCallback((next: ResourcesByType) => {
+        resourcesGeneration.current++;
+        pendingLazyLoads.current = {};
+        setResources(next);
+    }, [setResources]);
+
     const load = useCallback(async (source: PatientDataSource) => {
         setIsLoading(true);
         setError(null);
 
         try {
             const dataSet = await resolvePatientDataSource(source);
-            setPatient(dataSet.patient);
-            setResources(dataSet.resources);
+            replacePatient(dataSet.patient);
+            replaceResources(dataSet.resources);
             return dataSet;
         } catch (loadError) {
             const normalizedError = loadError instanceof Error ?
@@ -144,13 +175,13 @@ function useClinicalDataState() {
         } finally {
             setIsLoading(false);
         }
-    }, [setPatient, setResources]);
+    }, [replacePatient, replaceResources]);
 
     const loadFromFHIRServer = useCallback(async (baseUrl: string, patientId: string, options?: FetchEverythingOptions) => {
         setIsLoading(true);
         setError(null);
-        setPatient(null);
-        setResources({});
+        replacePatient(null);
+        replaceResources({});
 
         const accumulated: FhirResource[] = [];
 
@@ -159,7 +190,7 @@ function useClinicalDataState() {
                 accumulated.push(...pageResources);
                 setResources(prev => mergeResourcesByType(prev, pageResources));
                 const pagePatient = pageResources.find(r => r.resourceType === 'Patient');
-                if (pagePatient) setPatient(pagePatient as PatientResource);
+                if (pagePatient) replacePatient(pagePatient as PatientResource);
             }, options);
 
             return resourcesToPatientDataSet(accumulated);
@@ -172,12 +203,7 @@ function useClinicalDataState() {
         } finally {
             setIsLoading(false);
         }
-    }, [setPatient, setResources]);
-
-    // In-flight lazy() fetches, keyed by resourceType, so overlapping callers
-    // (e.g. two components mounting in the same render pass) share one fetch
-    // instead of each triggering their own.
-    const pendingLazyLoads = useRef<Record<string, Promise<unknown[]>>>({});
+    }, [replacePatient, replaceResources, setResources]);
 
     const lazy = useCallback(async <T extends { resourceType: string }>(
         resourceType: string,
@@ -195,49 +221,69 @@ function useClinicalDataState() {
             if (cached) return cached as unknown as T[];
         }
 
+        // A fetch overtaken by a load or clear() still resolves for its caller;
+        // it just doesn't write into the context.
+        const generation = resourcesGeneration.current;
         const promise = fetcher()
             .then(fetched => {
-                setResources(prev => ({ ...prev, [resourceType]: fetched as unknown as FhirResource[] }));
+                if (resourcesGeneration.current === generation) {
+                    setResources(prev => ({ ...prev, [resourceType]: fetched as unknown as FhirResource[] }));
+                }
                 return fetched;
             })
             .finally(() => {
-                delete pendingLazyLoads.current[resourceType];
+                // A replacement may have dropped this entry and a new call put
+                // its own fetch here since; leave that one alone.
+                if (pendingLazyLoads.current[resourceType] === promise) {
+                    delete pendingLazyLoads.current[resourceType];
+                }
             });
 
         pendingLazyLoads.current[resourceType] = promise;
         return promise;
     }, [setResources, resourcesRef]);
 
-    // In-flight getPatient() fetch, so overlapping callers share one request.
-    const pendingPatientLoad = useRef<Promise<Patient> | null>(null);
+    // In-flight getPatient() fetches, keyed by patient id, so overlapping
+    // callers for the same patient share one request.
+    const pendingPatientLoads = useRef<Record<string, Promise<Patient>>>({});
 
     const getPatient = useCallback(async (id: string, fetcher: () => Promise<Patient>): Promise<Patient> => {
+        // Recorded even when the patient is already loaded, so a fetch still in
+        // flight for some other id doesn't replace it when it lands.
+        requestedPatientId.current = id;
+
         const current = patientRef.current;
         if (current && current.id === id) return current;
 
-        if (pendingPatientLoad.current) return pendingPatientLoad.current;
+        const pending = pendingPatientLoads.current[id];
+        if (pending) return pending;
 
+        // A superseded fetch still resolves with the patient its caller asked
+        // for; it just doesn't write it into the context.
         const promise = fetcher()
             .then(fetched => {
-                setPatient(fetched);
+                if (requestedPatientId.current === id) setPatient(fetched);
                 return fetched;
             })
             .finally(() => {
-                pendingPatientLoad.current = null;
+                // clear() may have dropped this entry and a new call for the same
+                // id put its own fetch here since; leave that one alone.
+                if (pendingPatientLoads.current[id] === promise) {
+                    delete pendingPatientLoads.current[id];
+                }
             });
 
-        pendingPatientLoad.current = promise;
+        pendingPatientLoads.current[id] = promise;
         return promise;
     }, [setPatient, patientRef]);
 
     const clear = useCallback(() => {
-        setPatient(null);
-        setResources({});
+        replacePatient(null);
+        replaceResources({});
         setError(null);
         setIsLoading(false);
-        pendingLazyLoads.current = {};
-        pendingPatientLoad.current = null;
-    }, [setPatient, setResources]);
+        pendingPatientLoads.current = {};
+    }, [replacePatient, replaceResources]);
 
     return {
         patient,
