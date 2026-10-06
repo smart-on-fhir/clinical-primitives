@@ -1,5 +1,6 @@
 import { ConditionListWrapper }     from "./Condition/ConditionList";
 import { ImmunizationListWrapper }  from "./Immunization/ImmunizationList";
+import { Alert }                    from "./Alert";
 import { Column }                   from "./Column";
 import { Row }                      from "./Row";
 import { MedicationListWrapper }    from "./Medication/MedicationList";
@@ -21,7 +22,7 @@ class ComponentErrorBoundary extends Component<{ children: ReactNode }, { error:
     }
     render() {
         if (this.state.error) {
-            return <div className="alert alert-danger">Error rendering component: {this.state.error}</div>;
+            return <Alert variant="danger">Error rendering component: {this.state.error}</Alert>;
         }
         return this.props.children;
     }
@@ -131,7 +132,7 @@ export function StaticComponent({ instruction }: { instruction: string | Instruc
             throw new Error("Instruction is not an object");
         }
     } catch (e) {
-        return <div className="alert alert-danger">Invalid render instruction: {e + ""}</div>;
+        return <Alert variant="danger">Invalid render instruction: {e + ""}</Alert>;
     }
 
     if (Array.isArray(parsed)) {
@@ -181,9 +182,9 @@ export function StaticComponent({ instruction }: { instruction: string | Instruc
                 return <ComponentErrorBoundary><Row {...sanitizeProps(rowRest)}><StaticComponent instruction={children} /></Row></ComponentErrorBoundary>;
             }
             default:
-                return <div className="cp-color-red">Unhandled type: {(parsed as Instruction).type}</div>;
+                return <div className="cp-text-red">Unhandled type: {(parsed as Instruction).type}</div>;
         }
     } catch (e) {
-        return <div className="alert alert-danger">Error rendering instruction: {e + ""}</div>;
+        return <Alert variant="danger">Error rendering instruction: {e + ""}</Alert>;
     }
 }

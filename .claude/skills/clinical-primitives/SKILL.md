@@ -129,7 +129,7 @@ The chart opens on the **last 2 years**, so a record that ended earlier looks em
 <ObservationChart observations={observations} code={lab.loincs} label={lab.label} height={160} />
 ```
 
-**5. LLM-driven UI.** Put the system prompt from reference.md (StaticComponent section) in the model's system prompt, then render its reply with `<StaticComponent instruction={jsonStringOrObject} />` inside the provider. Bad JSON or an unknown `type` shows an inline error, not a crash. That error text is unstyled, because it uses `alert alert-danger` and `cp-color-red`, which the stylesheet doesn't define; add your own CSS for those classes if you want it to stand out. Try instructions live in `src/docs/pages/StaticComponentPlayground.tsx`.
+**5. LLM-driven UI.** Put the system prompt from reference.md (StaticComponent section) in the model's system prompt, then render its reply with `<StaticComponent instruction={jsonStringOrObject} />` inside the provider. Bad JSON or a failing instruction shows an inline danger `Alert`, and an unknown `type` a line of red text, not a crash. Try instructions live in `src/docs/pages/StaticComponentPlayground.tsx`.
 
 ## Gotchas (each one has bitten someone)
 

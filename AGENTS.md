@@ -518,14 +518,14 @@ Valid `type` values and their extra fields:
 except `text`/`chart`/`column`/`row`/`finding_card`
 **requires `ClinicalDataProvider`**. Each rendered instruction except
 `text` is wrapped in an error boundary — one bad instruction (including
-a clinical type outside the provider) shows an inline error box, not a
-crash. That box is unstyled (see [Known issues](#known-issues)).
+a clinical type outside the provider) shows an inline
+`<Alert variant="danger">`, not a crash.
 `sanitizeProps` strips anything that looks like an unsafe event-handler
 string (e.g. an LLM emitting
 `"onClick": "doStuff()"` as a string instead of omitting it) — so
 malformed instructions degrade rather than execute arbitrary strings as
 handlers. Unrecognized `type` values render `Unhandled type: {type}`
-instead of throwing.
+in red text (`cp-text-red`) instead of throwing.
 
 ### Data grid
 
@@ -787,10 +787,6 @@ so only the bad `14959-1` code affects it):
   `Column`, chart titles) lose. `SidebarLayout`'s main column is
   outside the reset. The comment in `reset.scss` says an app's rules
   always win; that holds only for unlayered app CSS.
-- `StaticComponent` reports errors with `className="alert alert-danger"`
-  and unknown types with `cp-color-red`. The stylesheet defines neither
-  (the text-color utility is `cp-text-red`), so both render as plain
-  text.
 
 **Build:**
 - `npm run build:lib` copies `public/404.html` (the docs site's GitHub
