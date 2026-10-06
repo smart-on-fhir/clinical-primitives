@@ -1,8 +1,8 @@
 @use "sass:math";
 
-// First, so its zero-specificity rules are the ones anything else overrides.
-// Order is not what decides that — see the note in the file — but reading the
-// stylesheet top to bottom should match how it resolves.
+// First, so reading the stylesheet top to bottom matches how it resolves: the
+// reset is in its own cascade layer, below everything unlayered here. See the
+// note in the file.
 @use "reset";
 
 $colors: (

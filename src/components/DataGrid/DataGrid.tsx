@@ -297,7 +297,7 @@ export function DataGrid(props: DataGridProps) {
             <Row style={{ alignItems: "center", justifyContent: "space-between" }}>
                 <Column style={{ flex: "0 1 auto", overflow: "hidden" }}>
                     { title && typeof title === "object" ? title :
-                    <h3 style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ title }</h3> }
+                    <h3 className="cp-text-2xl cp-fw-600" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ title }</h3> }
                 </Column>
                 <Column style={{ flex: "1 1 auto", overflow: "hidden", maxWidth: "250px" }}>
                     <input

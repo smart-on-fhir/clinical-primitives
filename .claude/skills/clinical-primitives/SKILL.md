@@ -32,6 +32,8 @@ import 'clinical-primitives/styles.css';
 import './app.css';            // your own CSS, after the library's
 ```
 
+The order matters with Tailwind v4 (see the CSS reset gotcha below).
+
 Wrap the app in **one** `ClinicalDataProvider`, and mount **one** `<Tooltip />` inside it. Without `<Tooltip />`, the timeline bars, chart points and every `data-tooltip` attribute show nothing on hover:
 
 ```tsx
@@ -146,7 +148,7 @@ The chart opens on the **last 2 years**, so a record that ended earlier looks em
 - **Medication courses need a period.** `lib.Medication.getMedicationPeriod` reads `dosageInstruction[].timing.repeat.boundsPeriod`, then `dispenseRequest.validityPeriod`, then `effectivePeriod`. Orders with none of these get only a start instant (`authoredOn`/`effectiveDateTime`/`dateAsserted`), so they have no course duration to draw.
 - **Dead or reserved props, so don't wire them**: `DataGrid` `filters`/`onFilterChange`, column `nullable`/`editor`; `SourceDialog` `minWidth`/`maxWidth`/`height` (use `style`); `FhirJsonDecorator` `type`.
 - **Not exported**: `PanelHeader`/`PanelBody`/`PanelFooter`/`PanelToolbar` (only `Panel`, a bare `div.cp-panel`), the `LABS`/`FILTERS` dictionaries, the context-connected `*ListWrapper`/`EventFeedWrapper` (reachable only through `StaticComponent`), and the TimelineChart selection context.
-- **CSS reset vs Tailwind.** The library resets margin/padding/border inside every element with a `cp-` class. Those rules are unlayered, so they beat Tailwind v4's layered utilities on elements *inside* library components (children you pass to `Panel`, `Dialog`, `Column`…). Style that content with plain CSS, or keep Tailwind markup outside library wrappers.
+- **CSS reset vs Tailwind.** The library resets margin/padding/border inside every element with a `cp-` class, including children you pass to `Panel`, `Dialog`, `Column`…. The reset sits in a `cp-reset` cascade layer, so Tailwind v4 utilities on those children win **only if the library's CSS loads before yours**. If your CSS must load first, put `@layer cp-reset;` at the very top of it, before `@import "tailwindcss";`.
 - **Stable inputs.** `ObservationChart`'s `code`, `MedicationsTimeline`'s `classify` and `ObservationsTimeline`'s `analytes` are memo dependencies. Define them at module scope or memoize them.
 - **Default time windows hide history.** TimelineChart opens on the last 2 years, and EventFeed shows only the 30 days ending at the latest event. Set `minX`/`maxX` and `defaultRange="All"`.
 - **Bundle size.** The library pulls in Recharts and syntax highlighting, so expect a ~1 MB JS chunk and Vite's "chunk larger than 500 kB" warning. That warning is harmless.

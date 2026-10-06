@@ -27,14 +27,33 @@
 // the chart's own — but it is worth knowing about, and an app's own rules still
 // win over every rule here.
 //
+// Why a cascade layer
+// -------------------
+// The cascade compares layers before specificity: any unlayered rule beats any
+// layered one, however weak. Left unlayered, this file beat every layered rule
+// an app had. Tailwind v4 puts its utilities in `@layer utilities`, so `p-4` on
+// a child passed into a Panel lost to the `padding: 0` here. In the `cp-reset`
+// layer, the reset loses to all unlayered CSS, the library's own included.
+//
+// Among layers, the one named first ranks lowest, so where this one ranks
+// depends on load order. Loaded before the app's stylesheet, it ranks under all
+// of the app's layers, Tailwind's included. An app that loads its own CSS first
+// has to name the layer ahead of its own (`@layer cp-reset;` before
+// `@import "tailwindcss";`), or the reset ranks above them and wins again.
+//
+// It isn't simply put in Tailwind's `base` layer, which would rank right
+// whatever the load order: Tailwind v3 rejects `@layer base` in a file without
+// its own `@tailwind base`, and the docs site builds with v3.
+//
+// Ranked under Tailwind, the reset also loses to its preflight (`@layer base`).
+// The two agree on spacing, borders, lists and controls, but preflight flattens
+// headings to body text, so the library's own headings set their size with
+// utility classes rather than relying on the sizes below.
+//
 // Why `:where()`
 // --------------
-// It contributes no specificity, so everything outranks it: the library's own
-// component rules, and any rule an app writes. That also settles the fight with
-// a host reset without depending on load order — Tailwind puts its preflight in
-// `@layer base`, and unlayered declarations beat layered ones however weak they
-// are. The one thing that must not happen is this file winning an argument
-// against a rule someone wrote on purpose.
+// It contributes no specificity, so even within the layer the reset never
+// outranks a rule someone wrote on purpose.
 
 // Elements carrying a library class, whether it leads the attribute or follows
 // another class.
@@ -43,68 +62,72 @@ $scope: '[class^="cp-"], [class*=" cp-"]';
 // The scope elements themselves and everything inside them.
 $all: '#{$scope}, :where(#{$scope}) *';
 
-:where(#{$all}),
-:where(#{$scope}) *::before,
-:where(#{$scope}) *::after {
-    // Sizes that mean what they say. Every layout in the library is written
-    // assuming padding and borders are inside the box.
-    box-sizing: border-box;
+@layer cp-reset {
 
-    // Nothing carries spacing it was not given. The alternative is spacing that
-    // depends on the user agent, which is where this all started.
-    margin : 0;
-    padding: 0;
+    :where(#{$all}),
+    :where(#{$scope}) *::before,
+    :where(#{$scope}) *::after {
+        // Sizes that mean what they say. Every layout in the library is written
+        // assuming padding and borders are inside the box.
+        box-sizing: border-box;
 
-    // Width zero, style solid: a border shows up only where one is asked for,
-    // and asking takes a width alone. Matches what the components already do,
-    // all of which name a style anyway.
-    border: 0 solid;
-}
+        // Nothing carries spacing it was not given. The alternative is spacing that
+        // depends on the user agent, which is where this all started.
+        margin : 0;
+        padding: 0;
 
-// Text elements keep their block layout but none of their invented spacing —
-// stated here as well because the rules above only reach elements inside the
-// library's scope, and a component root is itself a scope element.
-:where(#{$all}) {
-    // Headings on the library's own scale rather than the browser's, which
-    // ranges from twice the body size to smaller than it. Left at `inherit`
-    // they would be indistinguishable from body text under any host that
-    // flattens them, which every reset does.
-    &:where(h1) { font-size: var(--cp-text-4xl); font-weight: 600; }
-    &:where(h2) { font-size: var(--cp-text-3xl); font-weight: 600; }
-    &:where(h3) { font-size: var(--cp-text-2xl); font-weight: 600; }
-    &:where(h4) { font-size: var(--cp-text-xl);  font-weight: 600; }
-    &:where(h5) { font-size: var(--cp-text-lg);  font-weight: 600; }
-    &:where(h6) { font-size: var(--cp-text-base); font-weight: 600; }
-
-    // Markers are decoration the library never relies on: its lists are laid
-    // out, not bulleted. A component that wants them says so.
-    &:where(ul, ol) { list-style: none; }
-
-    // Controls inherit their type instead of falling back to the system font,
-    // which is smaller than body text and looks like a different application.
-    &:where(button, input, select, optgroup, textarea) {
-        font           : inherit;
-        letter-spacing : inherit;
-        color          : inherit;
-        background     : transparent;
+        // Width zero, style solid: a border shows up only where one is asked for,
+        // and asking takes a width alone. Matches what the components already do,
+        // all of which name a style anyway.
+        border: 0 solid;
     }
 
-    // Kept out of the text baseline, where the descender gap under an icon
-    // makes a row look misaligned by a pixel or two for no visible reason.
-    &:where(svg, img, video, canvas) {
-        display       : block;
-        vertical-align: middle;
+    // Text elements keep their block layout but none of their invented spacing —
+    // stated here as well because the rules above only reach elements inside the
+    // library's scope, and a component root is itself a scope element.
+    :where(#{$all}) {
+        // Headings on the library's own scale rather than the browser's, which
+        // ranges from twice the body size to smaller than it. Left at `inherit`
+        // they would be indistinguishable from body text under any host that
+        // flattens them, which every reset does.
+        &:where(h1) { font-size: var(--cp-text-4xl); font-weight: 600; }
+        &:where(h2) { font-size: var(--cp-text-3xl); font-weight: 600; }
+        &:where(h3) { font-size: var(--cp-text-2xl); font-weight: 600; }
+        &:where(h4) { font-size: var(--cp-text-xl);  font-weight: 600; }
+        &:where(h5) { font-size: var(--cp-text-lg);  font-weight: 600; }
+        &:where(h6) { font-size: var(--cp-text-base); font-weight: 600; }
+
+        // Markers are decoration the library never relies on: its lists are laid
+        // out, not bulleted. A component that wants them says so.
+        &:where(ul, ol) { list-style: none; }
+
+        // Controls inherit their type instead of falling back to the system font,
+        // which is smaller than body text and looks like a different application.
+        &:where(button, input, select, optgroup, textarea) {
+            font           : inherit;
+            letter-spacing : inherit;
+            color          : inherit;
+            background     : transparent;
+        }
+
+        // Kept out of the text baseline, where the descender gap under an icon
+        // makes a row look misaligned by a pixel or two for no visible reason.
+        &:where(svg, img, video, canvas) {
+            display       : block;
+            vertical-align: middle;
+        }
+
+        &:where(img, video) { max-width: 100%; height: auto; }
+
+        &:where(table) { border-collapse: collapse; text-indent: 0; }
+
+        // A rule, not a gap with a line in it. Components draw their own separators
+        // with borders; this is only for the rare literal `<hr>`.
+        &:where(hr) { height: 0; border-top-width: 1px; color: inherit; }
+
+        &:where(b, strong) { font-weight: bolder; }
+
+        &:where(code, kbd, samp, pre) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
     }
 
-    &:where(img, video) { max-width: 100%; height: auto; }
-
-    &:where(table) { border-collapse: collapse; text-indent: 0; }
-
-    // A rule, not a gap with a line in it. Components draw their own separators
-    // with borders; this is only for the rare literal `<hr>`.
-    &:where(hr) { height: 0; border-top-width: 1px; color: inherit; }
-
-    &:where(b, strong) { font-weight: bolder; }
-
-    &:where(code, kbd, samp, pre) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 }

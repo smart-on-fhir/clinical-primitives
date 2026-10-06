@@ -117,6 +117,15 @@ The library sets no page font. Without your own `font-family` on
 `body` (or an ancestor), everything renders in the browser default
 serif.
 
+Load the library's stylesheet **before** your own CSS. Its scoped reset
+(margin, padding and border zeroed inside `cp-*` elements) sits in a
+`cp-reset` cascade layer, and a layer ranks by where its name first
+appears. Loaded first, it ranks under every layer of yours, so Tailwind
+v4 utilities (`p-4`, `mt-2`…) on content you pass into library
+components win. If your CSS has to load first, start it with
+`@layer cp-reset;` (before `@import "tailwindcss";`); otherwise the
+reset outranks your layers. Unlayered CSS beats it either way.
+
 If your UI shows tooltips anywhere (`data-tooltip-*` attributes, used by
 several components internally), mount `<Tooltip />` once near the app
 root too — see [Tooltip](#tooltip).
@@ -779,14 +788,6 @@ so only the bad `14959-1` code affects it):
   Your own `Row`s around library components get the same height.
 - No default font: the stylesheet never sets `font-family` for text, so
   without app CSS the page renders in the browser's default serif.
-- The scoped reset (`src/styles/reset.scss`) zeroes margin, padding
-  and border on every `cp-*` element and everything inside one. It is
-  unlayered, and unlayered rules beat any `@layer` rule regardless of
-  specificity, so Tailwind v4 utilities (`p-4`, `mt-2`, `border`…) on
-  content you pass into library components (`Panel`, `Dialog`,
-  `Column`, chart titles) lose. `SidebarLayout`'s main column is
-  outside the reset. The comment in `reset.scss` says an app's rules
-  always win; that holds only for unlayered app CSS.
 
 **Build:**
 - `npm run build:lib` copies `public/404.html` (the docs site's GitHub

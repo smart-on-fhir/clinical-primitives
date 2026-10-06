@@ -229,4 +229,4 @@ import { lib, utils } from 'clinical-primitives';
 - Dark mode: `data-theme="dark"|"light"` on `<html>`. Without it, the theme follows the OS. Only the surface (`win*`) and text (`txt*`) tones change.
 - Tokens: `--cp-color-{red,amber,yellow,green,teal,blue,gray,purple,white,black,win,win-1..7,txt,txt-1..7}`, `--cp-space-1..7`, `--cp-text-{xs..6xl}`. Use them in your own CSS (`background: var(--cp-color-win-1)`) so the app follows the theme.
 - Utility classes: `cp-fill-*`, `cp-border-*`, `cp-text-*`, `cp-p-*`/`cp-m-*`/`cp-gap-*`, `cp-rounded-*`.
-- The library's scoped reset zeroes margin/padding/border inside `cp-*` elements, and it beats layered Tailwind utilities there.
+- The library's scoped reset zeroes margin/padding/border inside `cp-*` elements. It sits in the `cp-reset` layer: load the library CSS before yours (or start yours with `@layer cp-reset;`) and Tailwind v4 utilities win over it.
