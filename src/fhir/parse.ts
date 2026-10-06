@@ -69,20 +69,34 @@ export function resourcesToPatientDataSet(resources: FhirResource[]): PatientDat
   };
 }
 
+// Unlike bundles, NDJSON (bulk export) always carries resource ids, so a row
+// without one is treated as a non-FHIR file mixed into the input. Without this
+// check such rows reach assertSinglePatient, where an id-less "Patient" row
+// counts as a second distinct patient.
 export function parseNdjson(ndjson: string): FhirResource[] {
-  return ndjson
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const parsed = JSON.parse(line) as unknown;
+  const resources: FhirResource[] = [];
 
-      if (!isFhirResource(parsed)) {
-        throw new Error('Encountered an NDJSON line that is not a FHIR resource object.');
-      }
+  ndjson.split(/\r?\n/).forEach((rawLine, index) => {
+    const line = rawLine.trim();
+    if (!line) return;
 
-      return parsed;
-    });
+    const lineNumber = index + 1;
+    const parsed = JSON.parse(line) as unknown;
+
+    if (!isFhirResource(parsed)) {
+      throw new Error(`NDJSON line ${lineNumber} is not a FHIR resource object.`);
+    }
+
+    if (typeof parsed.id !== 'string' || !parsed.id) {
+      throw new Error(
+        `NDJSON line ${lineNumber} has resourceType "${parsed.resourceType}" but no id. Is a non-FHIR file mixed in?`
+      );
+    }
+
+    resources.push(parsed);
+  });
+
+  return resources;
 }
 
 export async function readTextFile(file: File): Promise<string> {

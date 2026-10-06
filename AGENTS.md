@@ -43,6 +43,7 @@ library to hand-write an app), read that section first.
 | `src/styles/` | `library.scss` (tokens, utility classes) and `reset.scss` (the scoped reset) |
 | `src/docs/` | The docs/demo site: one page per component in `pages/`, sample data in `samplePatientBundle.json` |
 | `dist/` | Library build output (gitignored). `docs-dist/` is the docs build. |
+| `.github/workflows/ci.yml` | Library build, typecheck and tests on every PR and push to `main` |
 | `.github/workflows/deploy-docs.yml` | Builds the docs site and deploys it to GitHub Pages on push to `main` |
 | `.claude/skills/clinical-primitives/` | The agent skill for app builders (see [Skills](#skills)) |
 
@@ -56,9 +57,11 @@ npm run build                       # build:lib, then the docs site -> docs-dist
 npx tsc -p tsconfig.json --noEmit   # typecheck everything, docs included
 npm run dev                         # docs site with HMR
 npm run dev:lib                     # rebuild dist/ on change (pair with a linked app)
+npm test                            # Vitest, once; `npm run test:watch` to watch
 ```
 
-There is no test suite and no lint script. `npm run typecheck`
+Tests are Vitest, colocated as `*.test.ts(x)` next to the code they
+cover, and excluded from the declaration build. There is no lint script. `npm run typecheck`
 doesn't exist; use the `tsc` line above. The docs build prints Vite's
 "chunks larger than 500 kB" warning, which is expected.
 
@@ -236,7 +239,7 @@ const {
 | Function | Signature | Notes |
 |---|---|---|
 | `bundleToResources` | `(bundle: FhirBundle) => FhirResource[]` | Extracts `entry[].resource` |
-| `parseNdjson` | `(ndjson: string) => FhirResource[]` | Throws on a line without a string `resourceType`; accepts rows with no `id` (see [Known issues](#known-issues)) |
+| `parseNdjson` | `(ndjson: string) => FhirResource[]` | Throws, naming the line, on a row without a string `resourceType` or a non-empty string `id` |
 | `resolvePatientDataSource` | `(source: PatientDataSource) => Promise<PatientDataSet>` | Dispatches on `source.type` |
 | `resourcesToPatientDataSet` | `(resources: FhirResource[]) => PatientDataSet` | Throws unless exactly one `Patient` is present |
 
@@ -759,12 +762,6 @@ so only the bad `14959-1` code affects it):
   supplying ranges.
 
 **Data loading:**
-- `parseNdjson` accepts any row with a string `resourceType`, with or
-  without an `id`. `resourcesToPatientDataSet` counts distinct
-  `Patient` ids, and a missing id counts as one. So a non-FHIR NDJSON
-  that reuses `resourceType` (a provenance sidecar whose rows are
-  `{fullUrl, resourceId, resourceType}`, say) concatenated with the
-  real files makes the load throw "multiple distinct patients".
 - Only `clear` is referentially stable; `selectFile`'s `useCallback`
   depends on a function recreated every render. See
   [Data layer](#data-layer) for this and the `selectFile`,

@@ -62,7 +62,7 @@ The provider holds **one patient at a time**: `patient`, plus `resources` keyed 
 
 Every loader throws unless the input holds **exactly one** `Patient`. A multi-patient bundle or ndjson throws, and so does a record assembled without its Patient. For a cohort, keep the patient list in your own state and load one record into the provider when a patient is opened (recipe 2).
 
-A row with a `resourceType` but no `id` counts as another patient, so concatenating any non-FHIR NDJSON that reuses `resourceType` (a provenance or audit sidecar, say) with the real NDJSON files makes the load throw "multiple distinct patients". Load only real FHIR files.
+NDJSON rows must each have a `resourceType` and an `id`; the load throws on the first one that doesn't, naming its line. A non-FHIR NDJSON concatenated with the real files (a provenance or audit sidecar, say) fails that way. Load only real FHIR files.
 
 ## I need to… → use
 
