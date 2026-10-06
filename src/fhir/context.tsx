@@ -157,27 +157,41 @@ function useClinicalDataState() {
         setResources(next);
     }, [setResources]);
 
+    // Numbers each load. Only the newest one, and only until clear() is
+    // called, writes the context or touches `isLoading`/`error`, so a slow
+    // load landing late can't overwrite a newer patient. An older load still
+    // resolves or rejects for its own caller.
+    const latestLoad = useRef(0);
+
     const load = useCallback(async (source: PatientDataSource) => {
+        const loadId = ++latestLoad.current;
+        const isLatest = () => latestLoad.current === loadId;
+
         setIsLoading(true);
         setError(null);
 
         try {
             const dataSet = await resolvePatientDataSource(source);
-            replacePatient(dataSet.patient);
-            replaceResources(dataSet.resources);
+            if (isLatest()) {
+                replacePatient(dataSet.patient);
+                replaceResources(dataSet.resources);
+            }
             return dataSet;
         } catch (loadError) {
             const normalizedError = loadError instanceof Error ?
                 loadError :
                 new Error('Failed to load patient data.');
-            setError(normalizedError);
+            if (isLatest()) setError(normalizedError);
             throw normalizedError;
         } finally {
-            setIsLoading(false);
+            if (isLatest()) setIsLoading(false);
         }
     }, [replacePatient, replaceResources]);
 
     const loadFromFHIRServer = useCallback(async (baseUrl: string, patientId: string, options?: FetchEverythingOptions) => {
+        const loadId = ++latestLoad.current;
+        const isLatest = () => latestLoad.current === loadId;
+
         setIsLoading(true);
         setError(null);
         replacePatient(null);
@@ -188,6 +202,7 @@ function useClinicalDataState() {
         try {
             await fetchPatientEverything(baseUrl, patientId, (pageResources) => {
                 accumulated.push(...pageResources);
+                if (!isLatest()) return;
                 setResources(prev => mergeResourcesByType(prev, pageResources));
                 const pagePatient = pageResources.find(r => r.resourceType === 'Patient');
                 if (pagePatient) replacePatient(pagePatient as PatientResource);
@@ -195,13 +210,19 @@ function useClinicalDataState() {
 
             return resourcesToPatientDataSet(accumulated);
         } catch (loadError) {
+            // An abort is the caller's choice, not a failure: rethrown as is, so
+            // an awaiting caller knows the load didn't finish, but kept out of
+            // `error`. Checked on the signal because an abort can surface from
+            // fetch() or response.json(), not always as a named AbortError.
+            if (options?.signal?.aborted) throw loadError;
+
             const normalizedError = loadError instanceof Error ?
                 loadError :
                 new Error('Failed to load patient data from FHIR server.');
-            setError(normalizedError);
+            if (isLatest()) setError(normalizedError);
             throw normalizedError;
         } finally {
-            setIsLoading(false);
+            if (isLatest()) setIsLoading(false);
         }
     }, [replacePatient, replaceResources, setResources]);
 
@@ -278,6 +299,7 @@ function useClinicalDataState() {
     }, [setPatient, patientRef]);
 
     const clear = useCallback(() => {
+        latestLoad.current++;
         replacePatient(null);
         replaceResources({});
         setError(null);

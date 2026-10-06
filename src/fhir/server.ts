@@ -14,6 +14,32 @@ function getNextUrl(bundle: FhirBundle): string | null {
     return links?.find(l => l.relation === 'next')?.url ?? null;
 }
 
+/**
+ * Client errors that ask to try again later, so they're retried like 5xx:
+ * 408 Request Timeout and 429 Too Many Requests.
+ */
+const RETRYABLE_CLIENT_ERRORS = new Set([408, 429]);
+
+const abortError = () => new DOMException('Aborted', 'AbortError');
+
+/** Waits `ms`, but rejects with an AbortError as soon as `signal` aborts. */
+function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+    return new Promise((resolve, reject) => {
+        if (signal?.aborted) return reject(abortError());
+
+        const onAbort = () => {
+            clearTimeout(timer);
+            reject(abortError());
+        };
+        const timer = setTimeout(() => {
+            signal?.removeEventListener('abort', onAbort);
+            resolve();
+        }, ms);
+
+        signal?.addEventListener('abort', onAbort, { once: true });
+    });
+}
+
 async function fetchWithRetry(
     url: string,
     signal: AbortSignal | undefined,
@@ -23,31 +49,34 @@ async function fetchWithRetry(
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= retries; attempt++) {
-        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        if (signal?.aborted) throw abortError();
 
         if (attempt > 0) {
-            const delay = retryDelayMs * 2 ** (attempt - 1);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await sleep(retryDelayMs * 2 ** (attempt - 1), signal);
         }
 
+        let response: Response;
         try {
-            const response = await fetch(url, {
+            response = await fetch(url, {
                 signal,
                 headers: { Accept: 'application/fhir+json' },
             });
-
-            if (response.ok) return response;
-
-            // Don't retry client errors (4xx) — only server errors (5xx)
-            if (response.status < 500) {
-                throw new Error(`FHIR server error: ${response.status} ${response.statusText}`);
-            }
-
-            lastError = new Error(`FHIR server error: ${response.status} ${response.statusText}`);
         } catch (err) {
-            if (err instanceof DOMException && err.name === 'AbortError') throw err;
+            // Checked on the signal, not the error: fetch rejects with the
+            // signal's reason, which needn't be a DOMException.
+            if (signal?.aborted) throw err;
             lastError = err instanceof Error ? err : new Error(String(err));
+            continue;
         }
+
+        if (response.ok) return response;
+
+        const error = new Error(`FHIR server error: ${response.status} ${response.statusText}`);
+
+        // Other client errors won't change on a retry, so they fail at once.
+        if (response.status < 500 && !RETRYABLE_CLIENT_ERRORS.has(response.status)) throw error;
+
+        lastError = error;
     }
 
     throw lastError!;
@@ -73,7 +102,7 @@ export async function fetchPatientEverything(
 
         url = getNextUrl(bundle);
         if (url && throttleMs > 0) {
-            await new Promise(resolve => setTimeout(resolve, throttleMs));
+            await sleep(throttleMs, signal);
         }
     }
 }

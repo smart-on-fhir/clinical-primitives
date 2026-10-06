@@ -194,7 +194,10 @@ const {
   `patient?.id === wantedId` while a different patient loads.
 - Every `load*` method sets `isLoading`/`error`/`patient`/`resources`
   **and** throws the failure — `try/catch` even though state also
-  updates, if you need to react to the specific call.
+  updates, if you need to react to the specific call. When loads
+  overlap, only the newest one writes the context (and `clear()`
+  cancels the write of any in flight); an older one still resolves or
+  rejects for its own caller.
 - `resourcesToPatientDataSet` (used internally by every loader) requires
   **exactly one** `Patient` resource in the input — zero or multiple
   distinct patient ids throws. Don't feed it a multi-patient bundle.
@@ -203,16 +206,16 @@ const {
   `link[rel=next]`, with `Accept: application/fhir+json`. It needs a
   server that implements `$everything`. `options`:
   `{ signal?, count = 200, throttleMs = 500, retries = 3, retryDelayMs = 1000 }`.
-  `throttleMs` is the pause between pages; 5xx responses and network
-  errors are retried with exponential backoff from `retryDelayMs`; 4xx
-  fails at once. It clears `patient`/`resources` first, then streams:
+  `throttleMs` is the pause between pages; 5xx, 408, 429 and network
+  errors are retried with exponential backoff from `retryDelayMs`
+  (`Retry-After` is ignored); any other 4xx fails at once. It clears
+  `patient`/`resources` first, then streams:
   they update as each page arrives, before the returned promise
   resolves. Duplicate ids across pages are dropped.
-- **An aborted `loadFromFHIRServer` sets `error`** to the `AbortError`
-  (and rethrows it). Aborting in an effect cleanup therefore puts an
-  error in context on every dev mount under React StrictMode. Ignore
-  `error?.name === 'AbortError'`, or fetch yourself and call
-  `loadFromResources`.
+- Aborting `loadFromFHIRServer` through `signal` rejects its promise
+  with the abort error, untouched, but doesn't set `error`; the pauses
+  between pages and retries end at once. So an effect can abort it on
+  cleanup, StrictMode remounts included. `catch` the rejection.
 - `lazy(resourceType, fetcher, { force })` loads one resource type on
   demand into `resources[resourceType]` (replacing what was there).
   It returns the cached array without calling `fetcher` when that type
@@ -766,12 +769,6 @@ so only the bad `14959-1` code affects it):
   `referenceRange`/`interpretation`. For data without them,
   `LabTrendPanel`'s flag column reads `—`, and it has no prop for
   supplying ranges.
-
-**Data loading:**
-Described with its workaround under [Data layer](#data-layer).
-- An aborted `loadFromFHIRServer` sets `error` to the `AbortError`, so
-  an effect that aborts on cleanup puts an error in context on every
-  dev mount under React StrictMode.
 
 **Styling:**
 - `.cp-row` gets `min-height: 500px` when it contains any `cp-*`

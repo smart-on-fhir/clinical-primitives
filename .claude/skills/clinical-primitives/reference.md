@@ -24,7 +24,7 @@ Contents: [Data layer](#data-layer) · [Clinical lists](#clinical-lists) · [Obs
 | `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch. A fetch overtaken by a load or `clear()` doesn't write. |
 | `getPatient(id, fetcher)` | `Promise<Patient>` | Sets `patient` from a fetcher unless it's already loaded. Calls for the same id share a fetch; when calls overlap, only the latest one sets `patient`. |
 
-Every function keeps its identity for the life of the provider, so they're safe in effect dependencies. `loadFromFHIRServer` empties `patient`/`resources` before its first page, and an aborted load sets `error` to the AbortError.
+Every function keeps its identity for the life of the provider, so they're safe in effect dependencies. `loadFromFHIRServer` empties `patient`/`resources` before its first page; an aborted load rejects with the abort error but leaves `error` alone. When loads overlap, only the newest one writes the context.
 
 Exported helpers: `bundleToResources(bundle)`, `parseNdjson(text)`, `resourcesToPatientDataSet(resources)` (throws unless exactly one Patient), `resolvePatientDataSource({type:'bundle'|'bundle-file'|'resources'|'ndjson'|'ndjson-file', …})`. Exported types: `FhirBundle`, `FhirResource`, `PatientDataSet`, `PatientDataSource`, `PatientResource`.
 

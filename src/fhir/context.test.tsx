@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, renderHook } from '@testing-library/react';
-import { useEffect, type PropsWithChildren } from 'react';
+import { StrictMode, useEffect, type PropsWithChildren } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Patient } from 'fhir/r4';
 import { ClinicalDataProvider, useClinicalData, type ClinicalDataContextValue } from './context';
@@ -388,5 +388,157 @@ describe('lazy() across a replacement of the record', () => {
 
     expect(third).not.toHaveBeenCalled();
     expect(result.current.resources.Observation).toBe(freshRows);
+  });
+});
+
+describe('loadFromFHIRServer()', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const everything = (...resources: FhirResource[]) => ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    json: async () => ({ resourceType: 'Bundle', entry: resources.map(resource => ({ resource })) })
+  });
+  type Reply = ReturnType<typeof everything>;
+
+  const recordA: FhirResource[] = [
+    { resourceType: 'Patient', id: 'a' },
+    { resourceType: 'Observation', id: 'from-a' }
+  ];
+
+  // Never answers, and rejects the way fetch does once the request is aborted.
+  const hangUntilAborted = (_url: string, init?: RequestInit) => new Promise<never>((_, reject) => {
+    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+  });
+
+  it('rejects when aborted, but leaves error null', async () => {
+    vi.stubGlobal('fetch', vi.fn(hangUntilAborted));
+    const { result } = renderHook(useClinicalData, { wrapper });
+    const controller = new AbortController();
+
+    await act(async () => {
+      const request = result.current.loadFromFHIRServer('http://x', 'a', { signal: controller.signal });
+      controller.abort();
+      await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('loads cleanly under StrictMode when an effect aborts on cleanup', async () => {
+    const second = deferred<Reply>();
+    const fetch = vi.fn()
+      .mockImplementationOnce(hangUntilAborted)
+      .mockImplementationOnce(() => second.promise);
+    vi.stubGlobal('fetch', fetch);
+
+    let context!: ClinicalDataContextValue;
+    function Loader() {
+      context = useClinicalData();
+      const { loadFromFHIRServer } = context;
+      useEffect(() => {
+        const controller = new AbortController();
+        loadFromFHIRServer('http://x', 'a', { signal: controller.signal }).catch(() => {});
+        return () => controller.abort();
+      }, [loadFromFHIRServer]);
+      return null;
+    }
+
+    // StrictMode runs the effect, its cleanup (aborting the first load), then
+    // the effect again.
+    await act(async () => {
+      render(<StrictMode><ClinicalDataProvider><Loader /></ClinicalDataProvider></StrictMode>);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    // The aborted load has settled without touching error or isLoading.
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(context.error).toBeNull();
+    expect(context.isLoading).toBe(true);
+
+    await act(async () => {
+      second.resolve(everything(...recordA));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(context.patient?.id).toBe('a');
+    expect(context.isLoading).toBe(false);
+    expect(context.error).toBeNull();
+  });
+
+  it('does not let a slower, older load overwrite a newer one', async () => {
+    const reply = deferred<Reply>();
+    vi.stubGlobal('fetch', vi.fn(() => reply.promise));
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    let olderResult: Awaited<ReturnType<ClinicalDataContextValue['loadFromFHIRServer']>> | undefined;
+    await act(async () => {
+      const older = result.current.loadFromFHIRServer('http://x', 'a');
+      await result.current.loadFromResources(record);
+      reply.resolve(everything(...recordA));
+      olderResult = await older;
+    });
+
+    // The older load's caller still gets its own data.
+    expect(olderResult?.patient.id).toBe('a');
+    expect(result.current.patient?.id).toBe('p1');
+    expect(result.current.resources.Observation).toEqual([{ resourceType: 'Observation', id: 'o1' }]);
+  });
+
+  it('does not let an older load write once a newer one has started', async () => {
+    const reply = deferred<Reply>();
+    vi.stubGlobal('fetch', vi.fn(() => reply.promise));
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    let newer: Promise<unknown>;
+    await act(async () => {
+      const older = result.current.loadFromResources(record);
+      newer = result.current.loadFromFHIRServer('http://x', 'a');
+      await older;
+    });
+
+    expect(result.current.patient).toBeNull();
+    expect(result.current.isLoading).toBe(true);
+
+    await act(async () => {
+      reply.resolve(everything(...recordA));
+      await newer;
+    });
+
+    expect(result.current.patient?.id).toBe('a');
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('stays cleared when clear() is called mid-load', async () => {
+    const reply = deferred<Reply>();
+    vi.stubGlobal('fetch', vi.fn(() => reply.promise));
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    await act(async () => {
+      const request = result.current.loadFromFHIRServer('http://x', 'a');
+      result.current.clear();
+      reply.resolve(everything(...recordA));
+      await request;
+    });
+
+    expect(result.current.patient).toBeNull();
+    expect(result.current.resources).toEqual({});
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('still reports a failed load in error', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, statusText: 'Not Found' })));
+    const { result } = renderHook(useClinicalData, { wrapper });
+
+    await act(async () => {
+      await expect(result.current.loadFromFHIRServer('http://x', 'a', { retries: 0 })).rejects.toThrow();
+    });
+
+    expect(result.current.error?.message).toBe('FHIR server error: 404 Not Found');
+    expect(result.current.isLoading).toBe(false);
   });
 });
