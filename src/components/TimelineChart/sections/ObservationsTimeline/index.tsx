@@ -60,7 +60,7 @@ export interface TimelineAnalyte {
      * LOINC, typically — whatever the observations are coded with.
      *
      * Several where one analyte reaches the record under more than one code, as
-     * CRP does: `1988-5`, `14959-1` and `71426-1` are the same measurement, and
+     * CRP does: `1988-5` (serum/plasma) and `71426-1` (blood) measure it, and
      * a row given only one of them draws a fraction of the trend while the rest
      * appear as separate analytes. All of them gather into the one row.
      *
@@ -651,7 +651,7 @@ export function ObservationsTimeline({
      * Passing a list does two things discovery cannot. It gathers an analyte
      * that reaches the record under several codes, or under none — discovery
      * keys on a reading's first coding, so CRP arriving as `1988-5` from one
-     * feed and `14959-1` from another becomes two half-empty rows. And it makes
+     * feed and `71426-1` from another becomes two half-empty rows. And it makes
      * the narrative's counts mean something: "three more are tracked but absent
      * from this record" is a statement about an expected panel, and there is
      * nothing to say where the list came from the record itself.

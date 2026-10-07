@@ -38,7 +38,10 @@ export type ObservationFilter = {
 };
 
 export const LABS = {
-    CRP:          { label: "CRP",          loincs: ['1988-5', '14959-1', '71426-1'],  keywords: ['c reactive protein', 'crp']},
+    // 1988-5 serum/plasma, 71426-1 blood, 30522-7 high-sensitivity (hs-CRP).
+    // hs-CRP is a separate assay with a lower reference range (~<3 mg/L), but
+    // many labs report CRP only that way, so it trends in the same row.
+    CRP:          { label: "CRP",          loincs: ['1988-5', '71426-1', '30522-7'],  keywords: ['c reactive protein', 'crp']},
     ESR:          { label: "ESR",          loincs: ['30341-2', '4537-7'],             keywords: ['erythrocyte sedimentation', 'esr', 'sed rate', 'sedimentation rate']},
     Albumin:      { label: "Albumin",      loincs: ['1751-7', '3519-7', '2862-1'],    keywords: ['albumin']},
     Calprotectin: { label: "Calprotectin", loincs: ['35896-1', '27818-8'],            keywords: ['calprotectin']},

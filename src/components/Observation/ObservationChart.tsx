@@ -94,7 +94,7 @@ interface ResolvedSeries {
  * How a caller says which observations a chart is about.
  *
  * A code, for the ordinary case. Several codes where one analyte is coded
- * differently across sources — CRP is `1988-5` in one feed and `14959-1` in the
+ * differently across sources — CRP is `1988-5` in one feed and `71426-1` in the
  * next, and a chart handed only one of them draws a fraction of the trend. A
  * predicate where neither is enough: records that carry no usable coding at all
  * can only be found by their own words, and that test is the caller's to write

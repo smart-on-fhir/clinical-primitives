@@ -765,10 +765,7 @@ each one is a candidate fix in the library.
 **Lab matching** (`LABS` in `src/components/Observation/ObservationFilters.ts`,
 matcher in `LabTrendPanel.tsx`. The `IBD` filter of `ObservationsPanel`
 pools the same lists but requires a code match *and* a keyword match,
-so only the bad `14959-1` code affects it):
-- The `CRP` preset's codes include `14959-1`, which is urine
-  microalbumin/creatinine ratio, not CRP. A Synthea record with that
-  test shows it in the CRP row.
+so none of these affect it):
 - The keyword test runs for every observation, even when others
   already matched the row by LOINC, so substring hits leak in:
   `RBC` ("erythrocyte") shows ESR (4537-7, "Erythrocyte sedimentation
