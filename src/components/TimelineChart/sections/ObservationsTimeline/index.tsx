@@ -60,7 +60,7 @@ export interface TimelineAnalyte {
      * LOINC, typically — whatever the observations are coded with.
      *
      * Several where one analyte reaches the record under more than one code, as
-     * CRP does: `1988-5` (serum/plasma) and `71426-1` (blood) measure it, and
+     * CRP does: `1988-5` (serum/plasma) and `71426-1` (hs-CRP, blood) both carry it, and
      * a row given only one of them draws a fraction of the trend while the rest
      * appear as separate analytes. All of them gather into the one row.
      *

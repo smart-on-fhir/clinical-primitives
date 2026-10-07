@@ -770,12 +770,15 @@ so none of these affect it):
   already matched the row by LOINC, so substring hits leak in:
   `RBC` ("erythrocyte") shows ESR (4537-7, "Erythrocyte sedimentation
   rate"); `Hemoglobin` catches Hemoglobin A1c (4548-4); `Albumin`
-  catches microalbumin (14959-1); `Weight` and `BMI` catch the
-  pediatric percentile codes 77606-2 (weight-for-length) and 59576-9
-  (BMI percentile).
-- Calprotectin `38445-3` (mass/mass in stool) and 25-OH vitamin D
-  `62292-8` are not in `LABS`; data coded that way matches those rows
-  only through their keywords.
+  catches microalbumin (14959-1); `Lymphocytes` catches the percentage
+  code 26478-8 ("Lymphocytes/Leukocytes"), mixing % into a count row;
+  `Weight` and `BMI` catch the pediatric percentile codes 77606-2
+  (weight-for-length) and 59576-9 (BMI percentile).
+- `VitaminD` and `VitaminB12` each mix mass and molar codes
+  (`1989-3` ng/mL with `14635-7` nmol/L; `2132-9` pg/mL with `14685-2`
+  pmol/L). The row plots raw values with no unit conversion, so a
+  record carrying both draws a trend that jumps by the conversion
+  factor.
 - Flags and status colors come only from each observation's own
   `referenceRange`/`interpretation`. For data without them,
   `LabTrendPanel`'s flag column reads `—`, and it has no prop for

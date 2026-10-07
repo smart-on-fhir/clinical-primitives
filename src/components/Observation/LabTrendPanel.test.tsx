@@ -15,11 +15,12 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 
-const observation = (id: string, code: string, display: string, value: number, unit: string, date: string): FhirResource => ({
+// `display` undefined makes a code-only reading, which no keyword can match.
+const observation = (id: string, code: string, display: string | undefined, value: number, unit: string, date: string): FhirResource => ({
   resourceType: 'Observation',
   id,
   status: 'final',
-  code: { coding: [{ system: 'http://loinc.org', code, display }], text: display },
+  code: display ? { coding: [{ system: 'http://loinc.org', code, display }], text: display } : { coding: [{ system: 'http://loinc.org', code }] },
   subject: { reference: 'Patient/p1' },
   effectiveDateTime: date,
   valueQuantity: { value, unit }
@@ -65,5 +66,34 @@ describe('LabTrendPanel CRP preset', () => {
     ], ['CRP']);
 
     expect(container.textContent).toContain('1.7');
+  });
+});
+
+describe('LabTrendPanel preset codes', () => {
+  // One reading per corrected code, with no display text, so only the code can
+  // put it in the row.
+  it.each([
+    ['Calprotectin', '38445-3'],
+    ['VitaminD', '62292-8'],
+    ['VitaminD', '83070-3'],
+    ['PreAlbumin', '14338-8'],
+    ['Albumin', '61151-7'],
+    ['MPV', '32623-1'],
+    ['Lymphocytes', '26474-7']
+  ] as const)('%s matches %s by code alone', async (preset, code) => {
+    const { container } = await renderPanel([observation('o1', code, undefined, 12.3, 'x', '2024-01-01')], [preset]);
+    expect(container.textContent).toContain('12.3');
+  });
+
+  it.each([
+    ['PreAlbumin', '2857-1'], // prostate-specific antigen
+    ['PreAlbumin', '1809-3'], // salivary amylase
+    // Lymphocytes as a percentage of leukocytes. Only the code is gone: a
+    // reading displayed as "Lymphocytes/Leukocytes" still matches the
+    // `lymphocyte` keyword (see Known issues in AGENTS.md).
+    ['Lymphocytes', '26478-8']
+  ] as const)('%s no longer matches %s', async (preset, code) => {
+    const { container } = await renderPanel([observation('o1', code, undefined, 12.3, 'x', '2024-01-01')], [preset]);
+    expect(container.textContent).not.toContain('12.3');
   });
 });
