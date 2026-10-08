@@ -337,11 +337,15 @@ their reference ranges. Readings it can't convert (a molar result in
 a mass row) are left out and noted under the row's name.
 `ObservationCard` does the same for its sparkline and delta.
 
-An observation matches a row if any of its codings is in `loincs`
-**or** its `code.text`/`coding.display` contains any keyword. Every
-preset has keywords, so presets pull in look-alike analytes (see
-[Known issues](#known-issues)). For exact rows, pass
-`{ label, loincs: [...] }` with no `keywords`.
+Each reading goes to at most one row, by the same rules
+`ObservationsTimeline` uses (`assignReadings` in
+`src/components/Observation/analyteMatching.ts`): a row whose `loincs`
+contain one of its codes takes it; a reading coded in LOINC under a
+code no row lists goes to no row, whatever its name says (so HbA1c
+stays out of Hemoglobin); otherwise the row with the longest matching
+keyword takes it. Keywords match whole words in `code.text` and the
+codings' `display`, so they only reach readings with a local code or
+none.
 
 #### ObservationsPanel
 `src/components/Observation/ObservationsPanel.tsx`
@@ -769,17 +773,7 @@ Current behavior, as of 2026-10-05. Work around these in app code;
 each one is a candidate fix in the library.
 
 **Lab matching** (`LABS` in `src/components/Observation/ObservationFilters.ts`,
-matcher in `LabTrendPanel.tsx`. The `IBD` filter of `ObservationsPanel`
-pools the same lists but requires a code match *and* a keyword match,
-so none of these affect it):
-- The keyword test runs for every observation, even when others
-  already matched the row by LOINC, so substring hits leak in:
-  `RBC` ("erythrocyte") shows ESR (4537-7, "Erythrocyte sedimentation
-  rate"); `Hemoglobin` catches Hemoglobin A1c (4548-4); `Albumin`
-  catches microalbumin (14959-1); `Lymphocytes` catches the percentage
-  code 26478-8 ("Lymphocytes/Leukocytes"), mixing % into a count row;
-  `Weight` and `BMI` catch the pediatric percentile codes 77606-2
-  (weight-for-length) and 59576-9 (BMI percentile).
+row assignment in `src/components/Observation/analyteMatching.ts`):
 - `VitaminD` and `VitaminB12` each mix mass and molar codes
   (`1989-3` ng/mL with `14635-7` nmol/L; `2132-9` pg/mL with `14685-2`
   pmol/L). Mass and molar units convert only through the analyte's

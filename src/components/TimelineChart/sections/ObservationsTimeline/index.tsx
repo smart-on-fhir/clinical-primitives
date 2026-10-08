@@ -16,6 +16,7 @@ import {
     type RangeEdits
 } from "../../../Observation/RangeAdjuster";
 import { cleanUnit } from "../../../Observation/utils";
+import { assignReadings, codeHit, keywordHit, type AnalyteSpec } from "../../../Observation/analyteMatching";
 import { escapeTooltipMarkdown } from "../../../Tooltip";
 import { CheckBox } from "../../../CheckBox";
 import { Collapse } from "../../../Collapse";
@@ -80,7 +81,9 @@ export interface TimelineAnalyte {
      * For records that arrive with a local code, or no usable coding at all,
      * which is common enough in flowsheet- and extract-derived data that a
      * code-only panel silently under-reports. Matched case-insensitively as
-     * substrings against `code.text` and each coding's `display`.
+     * whole words against `code.text` and each coding's `display`, and never
+     * against a reading coded in LOINC under a code no analyte claims — see
+     * `assignReadings` in `Observation/analyteMatching.ts`.
      *
      * A blunt instrument, deliberately kept out of the codes list so it is
      * visible as one: a keyword can claim a reading its author never meant it
@@ -195,56 +198,9 @@ export function analyteKey(analyte: TimelineAnalyte): string {
     return analyteCodes(analyte)[0] ?? analyte.label;
 }
 
-/** Whether one of the analyte's codes appears among the reading's codings. */
-function codeHit(analyte: TimelineAnalyte, obs: Observation): boolean {
-    const codes = new Set(analyteCodes(analyte));
-
-    return (obs.code?.coding ?? []).some(coding =>
-        coding.code !== undefined && codes.has(coding.code));
-}
-
-/** Every name the record gives a reading, lowercased into one string. */
-function readingText(obs: Observation): string {
-    return [obs.code?.text, ...(obs.code?.coding ?? []).map(coding => coding.display)]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-}
-
-/**
- * The longest of the analyte's keywords that the reading's own text contains,
- * as a length — zero for none.
- *
- * A length rather than a boolean because two analytes can both match by keyword
- * and only one can have the reading. Length stands in for specificity, which is
- * crude but right in the cases that occur: "prealbumin" beats "albumin" for a
- * result named Prealbumin, and that is exactly the pair that goes wrong.
- *
- * Matched on word boundaries rather than as bare substrings. Without that, `mch`
- * claims MCHC, `alt` claims anything with "elastase" or "cobalt" in its name,
- * and `ast` claims gastrin — abbreviations are short enough that free substring
- * matching finds them everywhere.
- */
-function keywordHit(analyte: TimelineAnalyte, obs: Observation): number {
-    const keywords = analyte.keywords ?? [];
-    if (keywords.length === 0) return 0;
-
-    const text = readingText(obs);
-
-    let best = 0;
-
-    for (const keyword of keywords) {
-        const escaped = keyword.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-        // Bounded by anything that is not alphanumeric, so a keyword can sit at
-        // either end of the text and can itself contain spaces or hyphens —
-        // "c reactive protein", "pre-albumin", "25-oh" all behave.
-        if (new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`).test(text)) {
-            best = Math.max(best, keyword.length);
-        }
-    }
-
-    return best;
+/** The part of an analyte that decides which readings it owns. */
+function matchSpec(analyte: TimelineAnalyte): AnalyteSpec {
+    return { codes: analyteCodes(analyte), keywords: analyte.keywords };
 }
 
 /**
@@ -260,41 +216,16 @@ function keywordHit(analyte: TimelineAnalyte, obs: Observation): number {
  * want to ask about one analyte in isolation.
  */
 export function analyteMatcher(analyte: TimelineAnalyte): (obs: Observation) => boolean {
-    return obs => codeHit(analyte, obs) || keywordHit(analyte, obs) > 0;
+    const spec = matchSpec(analyte);
+
+    return obs => codeHit(spec, obs) || keywordHit(spec, obs) > 0;
 }
 
 /**
- * Which analyte each reading belongs to, decided across the whole list at once.
- *
- * Necessary because "does this analyte match" is the wrong question. Laboratory
- * names nest: LOINC calls MCV "MCV [Entitic mean volume] in **Red Blood
- * Cells**", MCHC "MCHC … in **Red Blood Cells**", RDW "**Erythrocyte**
- * distribution width", ESR "**Erythrocyte** [Sedimentation Rate]". An RBC row
- * with the obvious keywords claims all four, and asked one analyte at a time
- * there is no way to notice, because each of them is also right on its own
- * terms. The result is a row labeled RBC plotting distribution widths, on a
- * scale inferred from whichever of them happened to be commonest.
- *
- * So ownership is exclusive and decided in two passes:
- *
- * 1. **A code beats a name.** A reading coded 787-2 is MCV's, whatever its
- *    display text says, because a code is an assertion by whoever wrote the
- *    record and a keyword is a guess by whoever wrote the panel.
- * 2. **A reading that names a LOINC code no analyte claims belongs to nobody**,
- *    and its text is not consulted. This is what stops the panel swallowing
- *    tests it does not contain: HbA1c is `4548-4` and is not an anemia measure,
- *    but its name contains "hemoglobin"; nucleated red cells are `30392-5` and
- *    sit at zero in a healthy patient, but their name contains "RBC". Both used
- *    to land in rows that then plotted them as though they were something else.
- *    A record that named itself in LOINC has already said what it is.
- * 3. **Otherwise the longest matching keyword wins** — the specificity tiebreak
- *    above — with ties going to list order, so the outcome is at least stable
- *    and statable.
- *
- * Step 2 turns on the coding *system*, not merely on a code being present:
- * keywords exist for records coded in a local dictionary or not usefully coded
- * at all, and those must still be reachable. Only an explicit LOINC coding is
- * treated as the record having identified itself.
+ * Which analyte each reading belongs to, by analyte key, decided across the
+ * whole list at once. A code beats a name, a LOINC-coded reading no analyte
+ * claims belongs to nobody, and otherwise the longest matching keyword wins —
+ * the rules and the reasons for them are in {@link assignReadings}.
  */
 export function assignOwners(
     analytes: TimelineAnalyte[],
@@ -302,34 +233,8 @@ export function assignOwners(
 ): Map<Observation, string> {
     const owners = new Map<Observation, string>();
 
-    for (const obs of observations) {
-        const byCode = analytes.find(analyte => codeHit(analyte, obs));
-
-        if (byCode) {
-            owners.set(obs, analyteKey(byCode));
-            continue;
-        }
-
-        // Coded in LOINC, and no analyte wanted that code: the reading is some
-        // other test, and its name is not evidence to the contrary.
-        const loincCoded = (obs.code?.coding ?? []).some(coding =>
-            coding.code !== undefined && coding.system === "http://loinc.org");
-
-        if (loincCoded) continue;
-
-        let bestKey: string | null = null;
-        let bestLen = 0;
-
-        for (const analyte of analytes) {
-            const length = keywordHit(analyte, obs);
-
-            if (length > bestLen) {
-                bestLen = length;
-                bestKey = analyteKey(analyte);
-            }
-        }
-
-        if (bestKey !== null) owners.set(obs, bestKey);
+    for (const [obs, index] of assignReadings(analytes.map(matchSpec), observations)) {
+        owners.set(obs, analyteKey(analytes[index]));
     }
 
     return owners;

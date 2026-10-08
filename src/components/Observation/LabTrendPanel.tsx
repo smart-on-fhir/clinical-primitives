@@ -14,6 +14,7 @@ import {
 import './LabTrendPanel.scss';
 import { Panel, PanelBody, PanelHeader } from '../Panel/Panel';
 import { LABS } from './ObservationFilters';
+import { assignReadings } from './analyteMatching';
 import { useClinicalData } from '../../fhir/context';
 
 // ---------------------------------------------------------------------------
@@ -25,26 +26,13 @@ export type LabTrendEntry = {
     label: string;
     /** LOINC or SNOMED codes to match against the observation's code.coding */
     loincs?: readonly string[];
-    /** Case-insensitive keywords matched against the observation code text / display */
+    /**
+     * Case-insensitive whole words matched against the observation's code text
+     * and displays, for readings no row claims by code and that aren't coded in
+     * LOINC. See `assignReadings` in `analyteMatching.ts`.
+     */
     keywords?: readonly string[];
 };
-
-// ---------------------------------------------------------------------------
-// Observation matching
-// ---------------------------------------------------------------------------
-
-function matchesEntry(obs: Observation, entry: LabTrendEntry): boolean {
-    if (entry.loincs?.length) {
-        const obsCodes = new Set((obs.code?.coding ?? []).map(c => c.code).filter(Boolean));
-        if (entry.loincs.some(c => obsCodes.has(c))) return true;
-    }
-    if (entry.keywords?.length) {
-        const haystack = [obs.code?.text, ...(obs.code?.coding ?? []).map(c => c.display)]
-            .filter(Boolean).join(' ').toLowerCase();
-        if (entry.keywords.some(kw => haystack.includes(kw.toLowerCase()))) return true;
-    }
-    return false;
-}
 
 // ---------------------------------------------------------------------------
 // Row data computation
@@ -62,8 +50,7 @@ type RowData = {
     dropped:     { count: number; units: string[] };
 };
 
-function computeRowData(entry: LabTrendEntry, allObs: Observation[]): RowData | null {
-    const matching = allObs.filter(obs => matchesEntry(obs, entry));
+function computeRowData(entry: LabTrendEntry, matching: Observation[]): RowData | null {
     if (matching.length === 0) return null;
 
     const sortedDesc = [...matching].sort(
@@ -170,18 +157,29 @@ export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPane
     const { resources } = useClinicalData();
     const allObs = (resources.Observation ?? []) as unknown as Observation[];
 
-    // Each row filters and sorts every observation, so this runs only when the
-    // data or the requested labs change.
-    const rows = useMemo(() => labs
-        .map(entry => {
+    // Sorting every observation into rows is the expensive part, so this runs
+    // only when the data or the requested labs change.
+    const rows = useMemo(() => {
+        const entries = labs.flatMap(entry => {
             const e = typeof entry === 'string' ? LABS[entry] : entry;
-            if (!e) {
-                console.warn(`LabTrendPanel: unknown lab "${entry}"`);
-                return null;
-            }
-            return computeRowData(e, allObs);
-        })
-        .filter((r): r is RowData => r !== null), [labs, allObs]);
+            if (!e) console.warn(`LabTrendPanel: unknown lab "${entry}"`);
+            return e ? [e] : [];
+        });
+
+        // Each reading goes to at most one row, decided across all of them: a
+        // code beats a keyword, and a reading coded in LOINC under a code no row
+        // claims goes to none, however its name reads.
+        const owners = assignReadings(
+            entries.map(e => ({ codes: e.loincs ?? [], keywords: e.keywords })),
+            allObs
+        );
+        const byRow = entries.map((): Observation[] => []);
+        for (const [obs, index] of owners) byRow[index].push(obs);
+
+        return entries
+            .map((e, index) => computeRowData(e, byRow[index]))
+            .filter((r): r is RowData => r !== null);
+    }, [labs, allObs]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const tbodyRef     = useRef<HTMLTableSectionElement>(null);

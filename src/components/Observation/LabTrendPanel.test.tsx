@@ -120,3 +120,49 @@ describe('LabTrendPanel units', () => {
   });
 });
 
+describe('LabTrendPanel row assignment', () => {
+  const local = (id: string, code: string, display: string, value: number): FhirResource => ({
+    ...observation(id, code, display, value, 'x', '2024-01-01'),
+    code: { coding: [{ system: 'urn:local', code, display }], text: display }
+  });
+  const uncoded = (id: string, display: string, value: number): FhirResource => ({
+    ...observation(id, 'unused', display, value, 'x', '2024-01-01'),
+    code: { text: display }
+  });
+
+  // Every one of these is coded in LOINC under a code the row doesn't list, and
+  // used to land in the row through a keyword in its name.
+  it.each([
+    ['Hemoglobin',  '4548-4',  'Hemoglobin A1c/Hemoglobin.total in Blood'],
+    ['Albumin',     '14959-1', 'Microalbumin/Creatinine [Mass Ratio] in Urine'],
+    ['Lymphocytes', '26478-8', 'Lymphocytes/Leukocytes in Blood'],
+    ['VitaminD',    '1649-3',  '1,25-Dihydroxyvitamin D'],
+    ['Weight',      '77606-2', 'Weight-for-length Per age and sex'],
+    ['BMI',         '59576-9', 'Body mass index (BMI) [Percentile] Per age and sex'],
+    ['RBC',         '4537-7',  'Erythrocyte [Sedimentation Rate] in Blood by Westergren method']
+  ] as const)('keeps %s free of %s (%s)', async (preset, code, display) => {
+    const { container } = await renderPanel([observation('o1', code, display, 12.3, 'x', '2024-01-01')], [preset]);
+    expect(container.textContent).not.toContain('12.3');
+  });
+
+  it('gives a reading to one row only, the one that claims its code', async () => {
+    const { container } = await renderPanel([
+      observation('esr', '4537-7', 'Erythrocyte [Sedimentation Rate] in Blood by Westergren method', 12.3, 'mm/h', '2024-01-01')
+    ], ['RBC', 'ESR']);
+    const rows = [...container.querySelectorAll('tr')].map(tr => tr.textContent);
+    expect(rows.filter(text => text?.includes('12.3'))).toHaveLength(1);
+    expect(rows.find(text => text?.includes('12.3'))).toContain('ESR');
+  });
+
+  it('still matches a locally coded reading by keyword', async () => {
+    const { container } = await renderPanel([local('o1', 'CRP-LOCAL', 'CRP', 7.7)], ['CRP']);
+    expect(container.textContent).toContain('7.7');
+  });
+
+  it('gives an uncoded reading to the longest matching keyword', async () => {
+    const { container } = await renderPanel([uncoded('o1', 'Prealbumin', 21.5)], ['Albumin', 'PreAlbumin']);
+    const row = [...container.querySelectorAll('tr')].find(tr => tr.textContent?.includes('21.5'));
+    expect(row?.textContent).toContain('PreAlbumin');
+  });
+});
+

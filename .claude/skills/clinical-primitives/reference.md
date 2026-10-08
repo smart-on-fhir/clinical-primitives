@@ -41,10 +41,10 @@ These take arrays as props, without ctx. Each renders a panel with status tabs, 
 ## Observations
 
 **`LabTrendPanel`** (ctx; reads `resources.Observation`, with no prop for passing your own)
-- `labs: (LabTrendEntry | PresetKey)[]`, where `LabTrendEntry = { label, loincs?: string[], keywords?: string[] }`. An observation matches if any code matches **or** any keyword is a substring of `code.text`/`coding.display`.
+- `labs: (LabTrendEntry | PresetKey)[]`, where `LabTrendEntry = { label, loincs?: string[], keywords?: string[] }`. Each reading goes to at most one row: a matching code wins; a reading coded in LOINC under a code no row lists goes nowhere; otherwise the longest whole-word keyword match in `code.text`/`coding.display` wins.
 - `title?: ReactNode` (default "Lab Trends"), `meta?: ReactNode` (right side of the header).
 - Unknown preset keys are skipped with a `console.warn`. If no row has data, it renders `null`.
-- Preset keys: CRP ESR Albumin Calprotectin Hemoglobin Platelets Weight Height BMI PreAlbumin PCT Ferritin VitaminD VitaminB12 WBC RBC Hematocrit MCV MCH MCHC RDW Neutrophils Lymphocytes Monocytes Eosinophils Basophils MPV ALT AST HeartRate OxygenSat Temperature RespRate BloodPressure. Each one has keywords, so prefer `{label, loincs}` objects.
+- Preset keys: CRP ESR Albumin Calprotectin Hemoglobin Platelets Weight Height BMI PreAlbumin PCT Ferritin VitaminD VitaminB12 WBC RBC Hematocrit MCV MCH MCHC RDW Neutrophils Lymphocytes Monocytes Eosinophils Basophils MPV ALT AST HeartRate OxygenSat Temperature RespRate BloodPressure. Add `{label, loincs}` objects for LOINC codes the presets lack.
 - Flags: ↑↑ / ↑H / ↓↓ / ↓L / ! / ↑, computed from each observation's own `referenceRange`/`interpretation`.
 
 **`ObservationChart`** (no ctx)
@@ -54,7 +54,7 @@ These take arrays as props, without ctx. Each renders a panel with status tabs, 
 
 **`ObservationCard`** (ctx): `observation: Observation`, `history?: Observation[]` (already filtered to the same analyte), `style?`. Handles up to 2 components (e.g. BP). With more than that, it shows a placeholder.
 
-**`ObservationsPanel`** (ctx): `title?`, `filters?: ('All'|'Vitals'|'Labs'|'Social'|'Activity'|'IBD')[]`. Filtering is by `category` (vital-signs, laboratory, …). 'IBD' uses the keyword-based LABS list.
+**`ObservationsPanel`** (ctx): `title?`, `filters?: ('All'|'Vitals'|'Labs'|'Social'|'Activity'|'IBD')[]`. Filtering is by `category` (vital-signs, laboratory, …). 'IBD' keeps readings whose code is in the lab presets and whose name has one of their keywords.
 
 **`ObservationHistoryTable`**: `history: Observation[]`.
 
@@ -132,7 +132,7 @@ It reads Observation, MedicationRequest, MedicationAdministration, DocumentRefer
 
 Each node except `text` renders inside an error boundary. Unknown types render "Unhandled type: …", and bad JSON renders "Invalid render instruction". Props that look like event handlers (`on*` strings), string `style` values and non-string `className` values are dropped.
 
-**System prompt for an LLM.** Paste this into the model's system prompt so it replies with a valid instruction tree, then pass the reply to `<StaticComponent instruction={reply} />` inside the provider. Labs use LOINC-only entries because the presets' keyword matching pulls in look-alike analytes.
+**System prompt for an LLM.** Paste this into the model's system prompt so it replies with a valid instruction tree, then pass the reply to `<StaticComponent instruction={reply} />` inside the provider.
 
 ```text
 Reply with ONE JSON object (no prose, no code fence) describing the UI.
