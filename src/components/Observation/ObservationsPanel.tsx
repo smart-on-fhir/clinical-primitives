@@ -104,6 +104,26 @@ function groupByName(observations: Observation[]): { latestObservation: Observat
     });
 }
 
+const STATUS_RANK: Record<string, number> = { abnormal: 0, warn: 1, ok: 2 };
+
+type Group = { latestObservation: Observation; history: Observation[] };
+
+/** Abnormal first, then warn, then ok, then no status at all. */
+function statusRank(group: Group): number {
+    const status = getObservationStatus(group.latestObservation);
+    return status ? (STATUS_RANK[status] ?? 3) : 3;
+}
+
+/**
+ * Whether sorting these groups by status would differ from sorting them by
+ * date. Status sort breaks ties by date, so it changes nothing when every group
+ * has the same rank — as when no reading carries an interpretation or a
+ * reference range (Synthea data) and all of them rank as "no status".
+ */
+function canSortByStatus(groups: Group[]): boolean {
+    return new Set(groups.map(statusRank)).size > 1;
+}
+
 function ObsGrid({ groups }: { groups: { latestObservation: Observation; history: Observation[] }[] }) {
     return (
         <div className="obs-grid">
@@ -136,6 +156,7 @@ export function ObservationsPanel({
 
     const { resources } = useClinicalData();
     const [sortBy, setSortBy] = useState<'date' | 'status'>('date');
+    const [activeTab, setActiveTab] = useState(0);
 
     const observations = (resources.Observation || []) as unknown as Observation[];
 
@@ -148,8 +169,6 @@ export function ObservationsPanel({
             ...[makeLatestFilter(groups)].filter(Boolean) as ObservationFilter[],
         ];
 
-    const STATUS_RANK: Record<string, number> = { abnormal: 0, warn: 1, ok: 2 };
-    type Group = { latestObservation: Observation; history: Observation[] };
     function sortGroups(gs: Group[]): Group[] {
         if (sortBy === 'date') {
             return [...gs].sort((a, b) =>
@@ -158,10 +177,8 @@ export function ObservationsPanel({
             );
         }
         return [...gs].sort((a, b) => {
-            const sa = getObservationStatus(a.latestObservation);
-            const sb = getObservationStatus(b.latestObservation);
-            const ra = sa ? (STATUS_RANK[sa] ?? 3) : 3;
-            const rb = sb ? (STATUS_RANK[sb] ?? 3) : 3;
+            const ra = statusRank(a);
+            const rb = statusRank(b);
             if (ra !== rb) return ra - rb;
             return (getObservationDate(b.latestObservation)?.getTime() ?? 0) -
                    (getObservationDate(a.latestObservation)?.getTime() ?? 0);
@@ -176,24 +193,42 @@ export function ObservationsPanel({
             label: f.label,
             count: filtered.length,
             hidden: filtered.length === 0,
+            statusSortable: canSortByStatus(filtered),
             content: <ObsGrid groups={sortGroups(filtered)} />,
         };
     });
 
     const isEmpty = tabs.every(t => t.count === 0);
 
+    // The order toggle shows only if sorting by status changes some tab, and
+    // its Status button is disabled on a tab where it changes nothing. That
+    // tab shows as date-sorted, but the choice holds for the other tabs.
+    const showOrder = tabs.some(t => t.statusSortable);
+    const statusHere = tabs[activeTab]?.statusSortable ?? false;
+    const orderShown = statusHere ? sortBy : 'date';
+
     return (
         <div className="obs-panel">
             <div className="obs-panel-header">
                 <span className="obs-panel-title">{title}</span>
-                { !isEmpty && <div style={{ display: 'flex', gap: 2, alignItems: 'center' }} className='cp-text-txt-7 cp-text-sm'>
+                { showOrder && <div style={{ display: 'flex', gap: 2, alignItems: 'center' }} className='cp-text-txt-7 cp-text-sm'>
                     <span className='cp-me-3'>Order:</span>
-                    <Button variant='info' virtual={sortBy !== 'date'} hard className='cp-py-2 cp-px-4 cp-rounded-pill' onClick={() => setSortBy('date')}>
+                    <Button variant='info' virtual={orderShown !== 'date'} hard className='cp-py-2 cp-px-4 cp-rounded-pill' onClick={() => setSortBy('date')}>
                         Date
                     </Button>
-                    <Button variant='info' virtual={sortBy !== 'status'} hard className='cp-py-2 cp-px-4 cp-rounded-pill' onClick={() => setSortBy('status')}>
-                        Status
-                    </Button>
+                    {/* Disabled buttons take no pointer events, so the tooltip sits on a wrapper. */}
+                    <span data-tooltip={statusHere ? undefined : 'All cards in this tab have the same status, so ordering by status would change nothing.'}>
+                        <Button
+                            variant='info'
+                            virtual={orderShown !== 'status'}
+                            hard
+                            className='cp-py-2 cp-px-4 cp-rounded-pill'
+                            onClick={() => setSortBy('status')}
+                            disabled={!statusHere}
+                        >
+                            Status
+                        </Button>
+                    </span>
                 </div> }
             </div>
 
@@ -204,7 +239,7 @@ export function ObservationsPanel({
                     ? tabs[0].content
                     : <div className="obs-empty">No observations in this category.</div>
             ) : (
-                <Tabs>
+                <Tabs activeIndex={activeTab} onActiveIndexChange={setActiveTab}>
                     <TabBar>
                         {tabs.map((t, i) => (
                             <Tab key={i} hidden={t.hidden} style={{ display: 'flex', gap: '0.5em', alignItems: 'center' }}>

@@ -372,7 +372,10 @@ none.
 `src/components/Observation/ObservationsPanel.tsx`
 
 Grid of `ObservationCard`s with filter tabs and a date/status sort
-toggle.
+toggle. Status comes from interpretation codes or reference ranges, so
+the toggle shows only when some tab has cards of differing status, and
+Status is disabled on a tab whose cards all share one (Synthea data has
+neither, so there it never shows).
 
 ```tsx
 <ObservationsPanel filters={['Vitals', 'Labs']} />
@@ -683,7 +686,7 @@ component's source file.
 | `Row` / `Column` | `Row/`, `Column/` | Flex layout wrappers. `Row` takes `cols?: string` to switch to CSS grid. In a container of definite height they shrink to their share of it (so lists inside scroll); with no height anywhere they take their content height. Give a `Row` `style={{ minHeight }}` if it needs a floor. |
 | `Dialog` | `Dialog/index.tsx` | Modal, portal-rendered. `open`/`onClose`/`title`/`children` all required. Unmounts (not just hides) when closed. |
 | `Collapse` | `Collapse/index.tsx` | Expand/collapse. `label` (always visible) + `children` (collapsible). Controlled via `open`/`onToggle`, or self-managed if `open` omitted. |
-| `Tabs` | `Tabs/index.tsx` | `Tabs > TabBar > Tab` + `Tabs > TabsBody > TabContents`, matched by **position**, not id. Must be nested inside `<Tabs>` or it throws. |
+| `Tabs` | `Tabs/index.tsx` | `Tabs > TabBar > Tab` + `Tabs > TabsBody > TabContents`, matched by **position**, not id. Must be nested inside `<Tabs>` or it throws. Uncontrolled (`defaultIndex`) unless you pass `activeIndex`; `onActiveIndexChange` reports clicks either way. |
 | `Loader` | `Loader/index.tsx` | Spinner. `msg?` shows text beside it, `centered?` flex-centers it. |
 | `CheckBox` | `CheckBox/index.tsx` | `<input type="checkbox">` wrapper adding `indeterminate` support. |
 | `RadioButton` | `RadioButton/index.tsx` | Segmented single-select built on `Button`, not native radios. Fully controlled: `value`, `onChange`, `options`. |

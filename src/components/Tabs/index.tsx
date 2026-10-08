@@ -18,13 +18,29 @@ function useTabsContext() {
 
 // --- Tabs (root) --------------------------------------------------------------
 
+/**
+ * Uncontrolled by default, starting on `defaultIndex`. Pass `activeIndex` to
+ * control it, and `onActiveIndexChange` to hear about tab clicks either way.
+ */
 export function Tabs({
     children,
     defaultIndex = 0,
+    activeIndex: controlledIndex,
+    onActiveIndexChange,
     className,
     ...rest
-}: React.HTMLAttributes<HTMLDivElement> & { defaultIndex?: number }) {
-    const [activeIndex, setActiveIndex] = useState(defaultIndex);
+}: React.HTMLAttributes<HTMLDivElement> & {
+    defaultIndex?: number;
+    activeIndex?: number;
+    onActiveIndexChange?: (index: number) => void;
+}) {
+    const [ownIndex, setOwnIndex] = useState(defaultIndex);
+    const activeIndex = controlledIndex ?? ownIndex;
+
+    const setActiveIndex = (index: number) => {
+        setOwnIndex(index);
+        onActiveIndexChange?.(index);
+    };
 
     return (
         <TabsContext.Provider value={{ activeIndex, setActiveIndex }}>
