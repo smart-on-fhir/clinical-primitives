@@ -14,6 +14,7 @@ import {
     getObservationDisplayName,
     getObservationStatus,
     getObservationValue,
+    inUnitOf,
     SPARKLINE_MAX_POINTS,
 } from "./utils";
 import "./ObservationCard.scss";
@@ -60,7 +61,10 @@ export function ObservationCard({
         seen.add(key);
         return getObservationDisplayName(obs) === name;
     });
-    const sortedAsc = [...allSameName].sort(
+    // In this card's unit, so the sparkline and the delta compare like with
+    // like; readings that can't be converted are left out.
+    const { observations: comparable } = inUnitOf(allSameName, observation);
+    const sortedAsc = [...comparable].sort(
         (a, b) => (getObservationDate(a)?.getTime() ?? 0) - (getObservationDate(b)?.getTime() ?? 0)
     );
     const observations: Observation[] = (() => {

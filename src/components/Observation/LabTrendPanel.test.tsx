@@ -97,3 +97,26 @@ describe('LabTrendPanel preset codes', () => {
     expect(container.textContent).not.toContain('12.3');
   });
 });
+
+describe('LabTrendPanel units', () => {
+  const withRange = (obs: FhirResource, low: number, high: number) => ({ ...obs, referenceRange: [{ low: { value: low }, high: { value: high } }] });
+
+  it('converts an older reading\'s reference range into the row\'s unit', async () => {
+    const { container } = await renderPanel([
+      withRange(observation('old', '1988-5', 'CRP', 0.4, 'mg/dL', '2024-01-01'), 0, 0.5),
+      observation('new', '1988-5', 'CRP', 3, 'mg/L', '2024-06-01')
+    ], ['CRP']);
+
+    expect(container.textContent).toContain('Ref 0–5');
+  });
+
+  it('says how many readings it left out, and in what unit', async () => {
+    const { container } = await renderPanel([
+      observation('old', '14635-7', undefined, 75, 'nmol/L', '2024-01-01'),
+      observation('new', '1989-3', undefined, 30, 'ng/mL', '2024-06-01')
+    ], ['VitaminD']);
+
+    expect(container.textContent).toContain('1 in nmol/L not plotted');
+  });
+});
+

@@ -331,6 +331,12 @@ more) or a custom `{ label, loincs?, keywords? }` object. **Requires
 prop to pass observations explicitly. Unknown preset keys are skipped
 with a `console.warn`. Renders `null` if no row has data.
 
+Each row plots its readings in the latest reading's unit, converting
+other spellings of the same dimension (mg/dL into mg/L) along with
+their reference ranges. Readings it can't convert (a molar result in
+a mass row) are left out and noted under the row's name.
+`ObservationCard` does the same for its sparkline and delta.
+
 An observation matches a row if any of its codings is in `loincs`
 **or** its `code.text`/`coding.display` contains any keyword. Every
 preset has keywords, so presets pull in look-alike analytes (see
@@ -776,9 +782,11 @@ so none of these affect it):
   (weight-for-length) and 59576-9 (BMI percentile).
 - `VitaminD` and `VitaminB12` each mix mass and molar codes
   (`1989-3` ng/mL with `14635-7` nmol/L; `2132-9` pg/mL with `14685-2`
-  pmol/L). The row plots raw values with no unit conversion, so a
-  record carrying both draws a trend that jumps by the conversion
-  factor.
+  pmol/L). Mass and molar units convert only through the analyte's
+  molar mass, which the library doesn't carry, so a row plots the
+  readings in its latest reading's unit and leaves the others out
+  ("1 in nmol/L not plotted"). A record that switched units shows only
+  part of its history.
 - Flags and status colors come only from each observation's own
   `referenceRange`/`interpretation`. For data without them,
   `LabTrendPanel`'s flag column reads `—`, and it has no prop for

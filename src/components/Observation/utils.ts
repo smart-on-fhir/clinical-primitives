@@ -437,6 +437,66 @@ export function unitScale(from: string, to: string): number | null {
     return group ? group[from] / group[to] : null;
 }
 
+/**
+ * `observations` with every scalar reading expressed in `reference`'s unit, for
+ * views that plot or compare readings without looking at units (sparklines,
+ * deltas, a row's reference range).
+ *
+ * A reading in another spelling of the same dimension (mg/dL against mg/L) comes
+ * back as a copy with its value and reference range rescaled through
+ * {@link unitScale}. One that cannot be converted (a molar result among mass
+ * ones) is left out and counted in `dropped`, by unit, so the caller can say so:
+ * plotted as-is it would sit on the wrong scale and look plausible.
+ *
+ * Readings without a `valueQuantity` (blood pressure components, coded or text
+ * values) and readings without a unit pass through untouched, as does
+ * everything when `reference` has no unit to convert into.
+ */
+export function inUnitOf(
+    observations: Observation[],
+    reference: Observation
+): { observations: Observation[]; dropped: { count: number; units: string[] } } {
+    const dropped = { count: 0, units: [] as string[] };
+    const rawTarget = reference.valueQuantity?.unit;
+    if (!rawTarget) return { observations, dropped };
+    const target = cleanUnit(rawTarget);
+
+    // Twelve significant digits: enough for any lab value, and few enough to
+    // shed the float noise of a scale like 0.1 (4.2 mg/dL is 42 mg/L, not
+    // 42.00000000000001).
+    const scaled = (value: number, scale: number) => Number((value * scale).toPrecision(12));
+
+    const converted: Observation[] = [];
+    for (const obs of observations) {
+        const quantity = obs.valueQuantity;
+        if (!quantity?.unit || quantity.value === undefined) { converted.push(obs); continue; }
+
+        const unit  = cleanUnit(quantity.unit);
+        const scale = unitScale(unit, target);
+        if (scale === null) {
+            dropped.count++;
+            if (!dropped.units.includes(unit)) dropped.units.push(unit);
+            continue;
+        }
+        if (scale === 1) { converted.push(obs); continue; }
+
+        // A range bound states its own unit, or shares the reading's.
+        const bound = (q?: Observation['valueQuantity']) => {
+            if (q?.value === undefined) return q;
+            const s = q.unit ? unitScale(cleanUnit(q.unit), target) : scale;
+            return s === null ? undefined : { ...q, value: scaled(q.value, s), unit: rawTarget };
+        };
+
+        converted.push({
+            ...obs,
+            valueQuantity: { ...quantity, value: scaled(quantity.value, scale), unit: rawTarget },
+            referenceRange: obs.referenceRange?.map(range => ({ ...range, low: bound(range.low), high: bound(range.high) }))
+        });
+    }
+
+    return { observations: converted, dropped };
+}
+
 export function cleanUnit(raw: string): string {
     const trimmed = raw.trim();
 

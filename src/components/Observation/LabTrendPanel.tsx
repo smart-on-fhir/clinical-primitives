@@ -8,6 +8,7 @@ import {
     getObservationStatus,
     getObservationValue,
     extractObservationNumericValue,
+    inUnitOf,
     SPARKLINE_MAX_POINTS,
 } from './utils';
 import './LabTrendPanel.scss';
@@ -57,6 +58,8 @@ type RowData = {
     flag:        string;
     refRangeStr: string | null;
     series:      SparklineSeries[];
+    /** Readings left out because their unit can't be converted to the row's. */
+    dropped:     { count: number; units: string[] };
 };
 
 function computeRowData(entry: LabTrendEntry, allObs: Observation[]): RowData | null {
@@ -67,7 +70,11 @@ function computeRowData(entry: LabTrendEntry, allObs: Observation[]): RowData | 
         (a, b) => (getObservationDate(b)?.getTime() ?? 0) - (getObservationDate(a)?.getTime() ?? 0)
     );
     const current = sortedDesc[0];
-    const sortedAsc = [...sortedDesc].reverse();
+
+    // Everything in the current reading's unit, so the sparkline, the delta
+    // and the reference range share one scale.
+    const { observations: comparable, dropped } = inUnitOf(sortedDesc, current);
+    const sortedAsc = [...comparable].reverse();
 
     const date = getObservationDate(current);
     const half = Math.floor(SPARKLINE_MAX_POINTS / 2);
@@ -143,7 +150,7 @@ function computeRowData(entry: LabTrendEntry, allObs: Observation[]): RowData | 
     else if (status === 'abnormal')             flag = '!';
     else if (status === 'warn')                 flag = '↑';
 
-    return { label: entry.label, value, unit, status, flag, refRangeStr, series };
+    return { label: entry.label, value, unit, status, flag, refRangeStr, series, dropped };
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +228,11 @@ export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPane
                                     <td>
                                         <div className="lt-name">{row.label}</div>
                                         {row.refRangeStr && <div className="lt-ref">{row.refRangeStr}</div>}
+                                        {row.dropped.count > 0 && (
+                                            <div className="lt-ref" title={`Reported in ${row.dropped.units.join(', ')}, which can't be converted to ${row.unit ?? "this row's unit"}`}>
+                                                {row.dropped.count} in {row.dropped.units.join(', ')} not plotted
+                                            </div>
+                                        )}
                                     </td>
                                     <td className='lt-spark'>
                                         {row.series.length > 0 && <Sparkline series={row.series} height={30} />}
