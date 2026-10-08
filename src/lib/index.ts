@@ -4,20 +4,8 @@ export * as Identifier from "./Identifier";
 export * as Medication from "./Medication";
 
 /**
- * Converts a date string into a more readable format.
- * @param dateStr - Any valid date string that can be parsed by the Date constructor.
- * @returns A locally formatted date string
+ * A FHIR date or dateTime as display text. Same function as `formatDate` in
+ * `components/Date/utils.ts`: date-only values are shown in UTC, at their own
+ * precision, so they don't read a day early west of UTC.
  */
-export function formatDate(
-    dateStr: string | Date | undefined,
-    options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' }
-): string {
-    if (!dateStr) return '—';
-    try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return dateStr instanceof Date ? dateStr.toString() : dateStr;
-        return date.toLocaleDateString(undefined, { year: options.year, month: options.month, day: options.day });
-    } catch (e) {
-        return dateStr instanceof Date ? dateStr.toString() : dateStr;
-    }
-}
+export { formatFhirDate as formatDate } from "../components/Date/utils";

@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronsUpDown, ChevronUp }  from "lucide-react";
 import { useState }                                from "react";
 import { getObservationDate, getObservationValue } from "./utils";
+import { formatFhirDate }                          from "../Date/utils";
 import { Observation }                             from "fhir/r4";
 import "./ObservationHistoryTable.scss";
 
@@ -72,7 +73,7 @@ export function ObservationHistoryTable({ history }: { history: Observation[] } 
                         const { value: v, unit: u } = getObservationValue(obs);
                         return (
                             <tr key={obs.id ? `${obs.id}-${i}` : i}>
-                                <td>{d ? d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</td>
+                                <td>{formatFhirDate(d)}</td>
                                 <td>
                                     {v || '—'}
                                     {u && <span className="cp-obs-history-unit"> {u}</span>}

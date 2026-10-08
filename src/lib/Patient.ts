@@ -1,4 +1,5 @@
 import { Patient } from "fhir/r4";
+import { parseFhirDateLocal } from "../components/Date/utils";
 
 export function calcAge(patient: Patient): { age: number | null, unit: 'years' | 'months' | 'days' | null } {
     const out = { age: null, unit: null };
@@ -10,8 +11,11 @@ export function calcAge(patient: Patient): { age: number | null, unit: 'years' |
     if (patient.deceasedBoolean === true) return out
   
     // Calculate age at death if we have a date of death, otherwise calculate current age
-    const from = new Date(patient.birthDate)
-    const to   = new Date(patient.deceasedDateTime || new Date())
+    // Local calendar dates, so a birthDate isn't read as the day before it west
+    // of UTC (which would add the year a day early).
+    const from = parseFhirDateLocal(patient.birthDate)
+    const to   = patient.deceasedDateTime ? parseFhirDateLocal(patient.deceasedDateTime) : new Date()
+    if (!from || !to) return out
 
     // Calculate age in years
     let age = to.getFullYear() - from.getFullYear()

@@ -4,6 +4,7 @@ import { Alert }                             from "../Alert"
 import { CheckBox }                          from "../CheckBox"
 import { Pagination }                        from "../Pagination"
 import { classList, getPath, highlightText } from "../../utils"
+import { formatFhirDateTime }                from "../Date/utils"
 import { DataGridColumn, DataGridProps }     from "./types"
 import { Column }                            from "../Column"
 import { Row }                               from "../Row"
@@ -280,7 +281,7 @@ export function DataGrid(props: DataGridProps) {
             case "number":
                 return <div className="cell--number"><code>{ highlightText(Number(value).toLocaleString(), search) }</code></div>
             case "date":
-                return <time className="cell--date" dateTime={value}>{ highlightText(new Date(value).toLocaleString(), search) }</time>
+                return <time className="cell--date" dateTime={value}>{ highlightText(formatFhirDateTime(value), search) }</time>
             case "id":
                 return <code className="cell--id">{ highlightText(value + "", search) }</code>
         }

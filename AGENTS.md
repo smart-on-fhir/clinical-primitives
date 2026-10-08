@@ -61,7 +61,10 @@ npm test                            # Vitest, once; `npm run test:watch` to watc
 ```
 
 Tests are Vitest, colocated as `*.test.ts(x)` next to the code they
-cover, and excluded from the declaration build. There is no lint script. `npm run typecheck`
+cover, and excluded from the declaration build. They run in
+`America/New_York` (`vitest.config.ts`): west of UTC is where a
+date-only value shown in local time reads a day early, and CI runs in
+UTC. There is no lint script. `npm run typecheck`
 doesn't exist; use the `tsc` line above. The docs build prints Vite's
 "chunks larger than 500 kB" warning, which is expected.
 
@@ -246,6 +249,14 @@ const {
   every `loadFrom*`. A second call resolves a still-pending first one
   with `null`. Safari before 16.4 never reports a cancel, so there the
   promise stays pending until the next call.
+- Dates: anything the library shows from a resource goes through
+  `formatFhirDate` (`src/components/Date/utils.ts`, public as
+  `lib.formatDate`), or `formatFhirDateTime` where the time of day
+  matters (it adds the time for dateTimes only). FHIR date-only values parse to UTC midnight, so
+  formatting them in local time shows the day before west of UTC; it
+  formats them in UTC at their own precision instead. Code that groups
+  by local day (`EventFeed`, ages) uses `parseFhirDateLocal`, which
+  reads a date-only value as local midnight of that day.
 - `resources.X` is typed as loose `FhirResource[]`, not the real
   `fhir/r4` type. Passing it into a strongly-typed prop (e.g.
   `ConditionList`'s `conditions: Condition[]`) needs a cast:
@@ -744,7 +755,7 @@ import { lib } from 'clinical-primitives';
 
 | Namespace | Key functions |
 |---|---|
-| `lib.formatDate(dateStr, options?)` | Formats a date; returns `'—'` for falsy input |
+| `lib.formatDate(dateStr, options?)` | Formats a FHIR date or dateTime; `'—'` for falsy input. Date-only values (`2024-01-01`, partial `2024-03`, `2019`) show as the day, month or year they name, in any time zone; dateTimes in local time |
 | `lib.Person` | `displayName(humanName)`, `displayPersonName(person, use?)`, `displayAddress`, `displayPersonAddress`, `displayPersonGender` |
 | `lib.Patient` | `calcAge(patient) => {age, unit}`, `displayPatientAge(patient, units?)` |
 | `lib.Identifier` | `format`, `matches`, `findAll`, `find` — filtering/formatting FHIR `Identifier`s |
@@ -798,10 +809,6 @@ row assignment in `src/components/Observation/analyteMatching.ts`):
   outdated interval (the "Ref" tooltip says when). A row where no
   reading has either shows no flag, and the panel has no prop for
   supplying ranges.
-- `getObservationDate` (`src/components/Observation/utils.ts`) parses
-  a date-only `effectiveDateTime` such as `2024-01-01` as UTC midnight,
-  so west of UTC every date the library shows from it (cards, tooltips,
-  feeds) reads a day early: Dec 31, 2023.
 
 **Declared but not wired** (don't rely on these):
 - `DataGridProps.filters`/`onFilterChange` — declared, not implemented.

@@ -10,7 +10,6 @@ import type {
     Procedure,
 } from 'fhir/r4';
 import {
-    getObservationDate,
     getObservationDisplayName,
     getObservationStatus,
     getObservationValue,
@@ -19,6 +18,9 @@ import './EventFeed.scss';
 import { Badge } from '../Badge/Badge';
 import { FunnelIcon } from 'lucide-react';
 import { useClinicalData } from '../../fhir/context';
+// Date-only values as local midnight of their own day, so they group under
+// that day and show no invented time of day.
+import { parseFhirDateLocal } from '../Date/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,7 +53,9 @@ const DEFAULT_RANGES: RangeOption[] = [
 
 function obsToEvents(observations: Observation[]): FeedEvent[] {
     return observations.flatMap((obs): FeedEvent[] => {
-        const date = getObservationDate(obs);
+        // Same fields getObservationDate reads, parsed as a local calendar day.
+        const dateStr = obs.effectiveDateTime || obs.issued;
+        const date = dateStr ? parseFhirDateLocal(dateStr) : null;
         if (!date) return [];
         const { value, unit } = getObservationValue(obs);
         if (!value) return [];
@@ -89,8 +93,8 @@ function medAdminToEvents(admins: MedicationAdministration[]): FeedEvent[] {
     return admins.flatMap((ma): FeedEvent[] => {
         const dateStr = (ma as any).effectiveDateTime || (ma as any).effectivePeriod?.start;
         if (!dateStr) return [];
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return [];
+        const date = parseFhirDateLocal(dateStr);
+        if (!date) return [];
 
         const name = (ma as any).medicationCodeableConcept?.text
             || (ma as any).medicationCodeableConcept?.coding?.[0]?.display
@@ -118,8 +122,8 @@ function medRequestToEvents(requests: MedicationRequest[]): FeedEvent[] {
     return requests.flatMap((mr): FeedEvent[] => {
         const dateStr = mr.authoredOn;
         if (!dateStr) return [];
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return [];
+        const date = parseFhirDateLocal(dateStr);
+        if (!date) return [];
 
         // Skip cancelled/entered-in-error to reduce noise
         if (mr.status === 'cancelled' || mr.status === 'entered-in-error') return [];
@@ -157,8 +161,8 @@ function docRefToEvents(docs: DocumentReference[]): FeedEvent[] {
     return docs.flatMap((doc): FeedEvent[] => {
         const dateStr = doc.date || (doc as any).context?.period?.start;
         if (!dateStr) return [];
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return [];
+        const date = parseFhirDateLocal(dateStr);
+        if (!date) return [];
 
         const title = doc.description
             || doc.type?.text
@@ -184,8 +188,8 @@ function diagReportToEvents(reports: DiagnosticReport[]): FeedEvent[] {
     return reports.flatMap((dr): FeedEvent[] => {
         const dateStr = dr.effectiveDateTime || dr.issued;
         if (!dateStr) return [];
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return [];
+        const date = parseFhirDateLocal(dateStr);
+        if (!date) return [];
 
         const title = dr.code?.text || dr.code?.coding?.[0]?.display || 'Report';
         const subtitle = typeof dr.conclusion === 'string' && dr.conclusion.length > 0
@@ -210,8 +214,8 @@ function procedureToEvents(procedures: Procedure[]): FeedEvent[] {
 
         const dateStr = proc.performedDateTime || (proc as any).performedPeriod?.start;
         if (!dateStr) return [];
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return [];
+        const date = parseFhirDateLocal(dateStr);
+        if (!date) return [];
 
         const name = proc.code?.text || proc.code?.coding?.[0]?.display || 'Procedure';
         const reason = proc.reasonCode?.[0]?.text || proc.reasonCode?.[0]?.coding?.[0]?.display;
@@ -236,8 +240,8 @@ function immunizationToEvents(immunizations: Immunization[]): FeedEvent[] {
 
         const dateStr = imm.occurrenceDateTime || (typeof imm.occurrenceString === 'string' ? imm.occurrenceString : undefined);
         if (!dateStr) return [];
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) return [];
+        const date = parseFhirDateLocal(dateStr);
+        if (!date) return [];
 
         const name = imm.vaccineCode?.text || imm.vaccineCode?.coding?.[0]?.display || 'Vaccine';
         const notDone = imm.status === 'not-done';
@@ -275,8 +279,7 @@ function getResourceDateMs(r: any, type: string): number | null {
         case 'Immunization':             str = r.occurrenceDateTime ?? (typeof r.occurrenceString === 'string' ? r.occurrenceString : undefined); break;
     }
     if (!str) return null;
-    const ms = new Date(str).getTime();
-    return isNaN(ms) ? null : ms;
+    return parseFhirDateLocal(str)?.getTime() ?? null;
 }
 
 // ---------------------------------------------------------------------------

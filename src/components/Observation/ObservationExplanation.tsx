@@ -1,6 +1,7 @@
 import { Observation } from "fhir/r4";
 import { DeltaResult, getObservationDate, getObservationValue, SPARKLINE_MAX_POINTS, VitalStatus } from "./utils";
 import { SparklineSeries } from "../Sparkline/utils";
+import { formatFhirDate } from "../Date/utils";
 import "./ObservationExplanation.scss";
 
 
@@ -44,7 +45,7 @@ export function ObservationExplanation({
     totalReadings: number;         // full history count
 }) {
     const dateStr = date
-        ? date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        ? formatFhirDate(date, { year: 'numeric', month: 'long', day: 'numeric' })
         : null;
 
     // --- Status source ---
@@ -147,7 +148,7 @@ export function ObservationExplanation({
                     <p>
                         Compared to the
                         {prevDate
-                            ? ` ${prevDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+                            ? ` ${formatFhirDate(prevDate)}`
                             : ' previous'} reading
                         {prevValue ? ` of ${prevValue.value}${prevValue.unit ? '\u00a0' + prevValue.unit : ''}` : ''},
                         the value has <strong>

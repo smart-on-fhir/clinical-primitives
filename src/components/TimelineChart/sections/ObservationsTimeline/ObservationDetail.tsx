@@ -8,6 +8,7 @@ import {
     getObservationValue
 } from "../../../Observation/utils";
 import { formatTick } from "../../../Observation/ObservationChart";
+import { formatFhirDateTime } from "../../../Date/utils";
 
 /** One component's name, as short as the record allows. */
 function componentName(component: ObservationComponent): string {
@@ -137,7 +138,7 @@ export function ObservationDetail({ observation }: { observation: Observation })
                 {/* With the time, unlike a medication's dates: readings taken
                     the same day are ordinary, and a date alone would make two
                     of them look like duplicates of one another. */}
-                <dd>{date ? date.toLocaleString() : "unknown"}</dd>
+                <dd>{date ? formatFhirDateTime(date) : "unknown"}</dd>
 
                 <dt>Status</dt>
                 <dd>{observation.status ?? "unknown"}</dd>

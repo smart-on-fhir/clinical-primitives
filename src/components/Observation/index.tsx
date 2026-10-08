@@ -8,6 +8,7 @@ import { SourceDialog }               from "../Dialog/SourceDialog";
 import { Sparkline }        from "../Sparkline";
 import { useClinicalData } from "../../fhir/context";
 import { ellipsis }                   from "../../utils";
+import { formatFhirDate }             from "../Date/utils";
 import {
     computeDelta,
     getObservationDate,
@@ -144,7 +145,7 @@ export function ObservationCard({
                                 ? <div className="vital-delta delta-flat">{observations.length} readings</div>
                                 : delta && <div className={`vital-delta ${deltaClass}`}>{delta.text}</div>
                     }
-                    <div className="vital-date">{date ? date.toLocaleDateString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit' }) : ''}</div>
+                    <div className="vital-date">{date ? formatFhirDate(date, { year: '2-digit', month: '2-digit', day: '2-digit' }) : ''}</div>
                 </div>
             </div>
             <SourceDialog

@@ -3,6 +3,7 @@ import type { Observation } from "fhir/r4";
 import { splinePath } from "./spline";
 import { escapeTooltipMarkdown } from "../Tooltip";
 import { cleanUnit, unitScale } from "./utils";
+import { formatFhirDate } from "../Date/utils";
 import {
     boundRuns,
     carryForward,
@@ -1138,7 +1139,7 @@ function ObservationPlot({ resolved, width, height, heading, mapX, crosshair, mi
                 : shownPoint.status === "high" ? ["**High**"]
                 : shownPoint.status === "low"  ? ["**Low**"]
                 : []),
-            escapeTooltipMarkdown(new Date(shownPoint.x).toLocaleDateString())
+            escapeTooltipMarkdown(formatFhirDate(new Date(shownPoint.x), { year: 'numeric', month: 'numeric', day: 'numeric' }))
           ].join("\n")
         : undefined;
 
@@ -1208,10 +1209,10 @@ function ObservationPlot({ resolved, width, height, heading, mapX, crosshair, mi
                 { !mapX &&
                     <>
                         <text className="cp-observation-chart-tick" x={PADDING.left} y={height - 6} textAnchor="start">
-                            {new Date(minX).toLocaleDateString()}
+                            {formatFhirDate(new Date(minX), { year: 'numeric', month: 'numeric', day: 'numeric' })}
                         </text>
                         <text className="cp-observation-chart-tick" x={width - PADDING.right} y={height - 6} textAnchor="end">
-                            {new Date(maxX).toLocaleDateString()}
+                            {formatFhirDate(new Date(maxX), { year: 'numeric', month: 'numeric', day: 'numeric' })}
                         </text>
                     </> }
 

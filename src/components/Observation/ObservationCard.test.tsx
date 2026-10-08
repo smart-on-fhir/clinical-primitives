@@ -39,3 +39,16 @@ describe('ObservationCard units', () => {
     expect(container.textContent).toContain('+12 mg/L');
   });
 });
+
+describe('ObservationCard date', () => {
+  it('shows a date-only reading on the day it names, west of UTC too', async () => {
+    let container!: HTMLElement;
+    await act(async () => {
+      ({ container } = render(
+        <ClinicalDataProvider><ObservationCard observation={crp('a', 4, 'mg/L', '2024-01-01')} /></ClinicalDataProvider>
+      ));
+    });
+    expect(container.querySelector('.vital-date')?.textContent).toBe('01/01/24');
+  });
+});
+
