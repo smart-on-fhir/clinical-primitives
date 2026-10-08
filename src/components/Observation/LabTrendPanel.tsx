@@ -1,4 +1,4 @@
-import React, { useRef, useState, type ReactNode } from 'react';
+import React, { useMemo, useRef, type ReactNode } from 'react';
 import type { Observation }         from 'fhir/r4';
 import { Sparkline }                from '../Sparkline';
 import type { SparklineSeries }     from '../Sparkline/utils';
@@ -170,7 +170,9 @@ export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPane
     const { resources } = useClinicalData();
     const allObs = (resources.Observation ?? []) as unknown as Observation[];
 
-    const rows = labs
+    // Each row filters and sorts every observation, so this runs only when the
+    // data or the requested labs change.
+    const rows = useMemo(() => labs
         .map(entry => {
             const e = typeof entry === 'string' ? LABS[entry] : entry;
             if (!e) {
@@ -179,23 +181,33 @@ export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPane
             }
             return computeRowData(e, allObs);
         })
-        .filter((r): r is RowData => r !== null);
+        .filter((r): r is RowData => r !== null), [labs, allObs]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const tbodyRef     = useRef<HTMLTableSectionElement>(null);
-    const [crosshairLeft, setCrosshairLeft] = useState<number | null>(null);
+    const crosshairRef = useRef<HTMLDivElement>(null);
 
+    // The crosshair is moved on the DOM node directly, not through state: a
+    // state update per mousemove re-rendered every row and sparkline just to
+    // shift a 1px line, which fell behind the pointer once there were more
+    // than a dozen labs.
     function handleMouseMove(e: React.MouseEvent) {
+        const line    = crosshairRef.current;
         const sparkTd = tbodyRef.current?.querySelector<HTMLElement>('.lt-spark');
-        if (!sparkTd || !containerRef.current) return;
+        if (!line || !sparkTd || !containerRef.current) return;
         const sparkRect     = sparkTd.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
         const mx = e.clientX;
         if (mx >= sparkRect.left && mx <= sparkRect.right) {
-            setCrosshairLeft(mx - containerRect.left);
+            line.style.transform = `translateX(${mx - containerRect.left}px)`;
+            line.style.visibility = 'visible';
         } else {
-            setCrosshairLeft(null);
+            line.style.visibility = 'hidden';
         }
+    }
+
+    function hideCrosshair() {
+        if (crosshairRef.current) crosshairRef.current.style.visibility = 'hidden';
     }
 
     if (rows.length === 0) return null;
@@ -206,21 +218,20 @@ export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPane
             <PanelBody>
                 <div ref={containerRef} style={{ position: 'relative' }}
                     onMouseMove={handleMouseMove}
-                    onMouseLeave={() => setCrosshairLeft(null)}
+                    onMouseLeave={hideCrosshair}
                 >
-                    {crosshairLeft !== null && (
-                        <div style={{
-                            position    : 'absolute',
-                            left        : crosshairLeft,
-                            top         : 0,
-                            bottom      : 0,
-                            width       : 1,
-                            opacity     : 0.2,
-                            pointerEvents: 'none',
-                            zIndex      : 1,
-                            borderRight : '1px dashed var(--cp-color-txt-3)',
-                        }} />
-                    )}
+                    <div ref={crosshairRef} style={{
+                        position    : 'absolute',
+                        left        : 0,
+                        top         : 0,
+                        bottom      : 0,
+                        width       : 1,
+                        opacity     : 0.2,
+                        pointerEvents: 'none',
+                        zIndex      : 1,
+                        visibility  : 'hidden',
+                        borderRight : '1px dashed var(--cp-color-txt-3)',
+                    }} />
                     <table className='lt-panel-table'>
                         <tbody ref={tbodyRef}>
                             {rows.map((row, i) => (
