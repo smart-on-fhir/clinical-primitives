@@ -1,8 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import type { Patient }                from "fhir/r4";
-import { Button, Column, Row, StaticComponent, useClinicalData }     from "../..";
+import { useState }                   from "react";
+import { Column, Row, StaticComponent } from "../..";
 import { ClinicalPageHeader }          from "../components/ClinicalPageHeader";
-import bundle                          from "../samplePatientBundle.json";
 
 
 function ComponentDemo({ instruction }: { instruction?: string }) {
@@ -28,7 +26,9 @@ function ComponentDemo({ instruction }: { instruction?: string }) {
                 row's height, so the row follows the textarea (or the 20rem
                 floor) and the lists inside scroll instead of growing it. */}
             <Column style={{ flex: '1 1 0', minWidth: 0, overflow: 'auto', contain: 'size', background: 'var(--bg-secondary)' }}>
-                <StaticComponent instruction={currentInstruction} />
+                {/* Keyed so an edit remounts it: an error boundary that has
+                    caught doesn't reset when `instruction` changes. */}
+                <StaticComponent key={currentInstruction} instruction={currentInstruction} />
             </Column>
         </Row>
     )
@@ -37,7 +37,14 @@ function ComponentDemo({ instruction }: { instruction?: string }) {
 export function Playground() {
     return (
         <section className="mt-4 max-w-8xl">
-            <ClinicalPageHeader title="SourceDialog" />
+            <ClinicalPageHeader title="StaticComponent Playground" />
+            <p className="cp-text-txt-4 mb-6">
+                Edit the JSON instruction on the left and <code>StaticComponent</code> renders it on
+                the right. Break the JSON, or use a clinical type with a bad field, and the error
+                shows as a danger <code>Alert</code> in place of that instruction, while its
+                siblings keep rendering. An unknown <code>type</code> renders an "Unhandled type"
+                message.
+            </p>
             <ComponentDemo instruction={`{
   "type": "row",
   "children": [

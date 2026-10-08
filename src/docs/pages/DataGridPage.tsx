@@ -199,7 +199,8 @@ export function DataGridPage() {
                     >
                         { Object.keys(resources || {}).map(rt => <option key={rt} value={rt}>{rt}</option>) }
                     </select>
-                    <button onClick={selectFile}>Select Patient Bundle</button>
+                    {/* Resolves null on cancel, rejects (and sets `error`) on a bad file. */}
+                    <button onClick={() => { selectFile().catch(() => {}); }}>Select Patient Bundle</button>
                     { patient
                         ? <span className="text-sm cp-text-txt-4">
                             Patient: <strong>
