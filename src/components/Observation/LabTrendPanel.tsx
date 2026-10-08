@@ -15,6 +15,9 @@ import './LabTrendPanel.scss';
 import { Panel, PanelBody, PanelHeader } from '../Panel/Panel';
 import { LABS } from './ObservationFilters';
 import { assignReadings } from './analyteMatching';
+import { escapeTooltipMarkdown as esc } from '../Tooltip/markdown';
+import { formatDate } from '../../lib';
+import { roundToPrecision } from '../../utils';
 import { useClinicalData } from '../../fhir/context';
 
 // ---------------------------------------------------------------------------
@@ -48,7 +51,30 @@ type RowData = {
     series:      SparklineSeries[];
     /** Readings left out because their unit can't be converted to the row's. */
     dropped:     { count: number; units: string[] };
+    /** Tooltip Markdown for each part of the row; FHIR-derived text is escaped. */
+    tips: { name: string; ref: string | null; value: string; flag: string; spark: string; dropped: string | null };
 };
+
+/** "Ref 12–16", "Ref ≥ 12", "Ref ≤ 16", or null. */
+function rangeText(lo: number | undefined, hi: number | undefined): string | null {
+    return lo !== undefined && hi !== undefined ? `${lo}–${hi}`
+         : lo !== undefined ? `≥ ${lo}`
+         : hi !== undefined ? `≤ ${hi}`
+         : null;
+}
+
+/** The tests a row gathered, by name and code, most frequent first. */
+function testsTip(observations: Observation[]): string {
+    const counts = new Map<string, number>();
+    for (const obs of observations) {
+        const coding = obs.code?.coding?.find(c => c.code);
+        const name   = obs.code?.text ?? coding?.display ?? 'Unnamed test';
+        const label  = esc(name) + (coding?.code ? ` \`${coding.code}\`` : '');
+        counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    const lines = [...counts].sort((a, b) => b[1] - a[1]).map(([label, n]) => `- ${label}${n > 1 ? ` ×${n}` : ''}`);
+    return lines.length > 5 ? [...lines.slice(0, 5), `- and ${lines.length - 5} more`].join('\n') : lines.join('\n');
+}
 
 function computeRowData(entry: LabTrendEntry, matching: Observation[]): RowData | null {
     if (matching.length === 0) return null;
@@ -77,16 +103,18 @@ function computeRowData(entry: LabTrendEntry, matching: Observation[]): RowData 
 
     const { value, unit } = getObservationValue(current);
 
-    // Reference range — scan all observations for the first usable range,
-    // matching what computeMultiSparklines does internally.
+    // Reference range: the latest reading's own if it states one, otherwise the
+    // oldest one in the window, matching what computeMultiSparklines draws.
+    // The flag is graded against the same range the row shows.
     let refLo: number | undefined;
     let refHi: number | undefined;
-    for (const obs of observations) {
+    let refFrom: Observation | null = null;
+    for (const obs of [current, ...observations]) {
         const rr = obs.referenceRange?.[0];
         if (!rr) continue;
         const lo = rr.low?.value;
         const hi = rr.high?.value;
-        if (lo !== undefined || hi !== undefined) { refLo = lo; refHi = hi; break; }
+        if (lo !== undefined || hi !== undefined) { refLo = lo; refHi = hi; refFrom = obs; break; }
     }
 
     // Compute status from the observation; if it has no referenceRange but we
@@ -119,13 +147,20 @@ function computeRowData(entry: LabTrendEntry, matching: Observation[]): RowData 
         lineWidth: 1.5,
     });
 
-    const refRangeStr = refLo !== undefined && refHi !== undefined
-        ? `Ref ${refLo}–${refHi}`
-        : refLo !== undefined ? `Ref ≥ ${refLo}`
-        : refHi !== undefined ? `Ref ≤ ${refHi}`
-        : null;
+    const range       = rangeText(refLo, refHi);
+    const refRangeStr = range && `Ref ${range}`;
 
-    // Flag: prefer explicit interpretation codes, fall back to computed status
+    // Which side of the range the latest value is on, so a computed flag can
+    // point the right way.
+    const n  = extractObservationNumericValue(current);
+    const side = n === null ? null
+               : refLo !== undefined && n < refLo ? 'low'
+               : refHi !== undefined && n > refHi ? 'high'
+               : null;
+
+    // Flag: prefer explicit interpretation codes, fall back to computed status.
+    // `!` only where the status gives no direction (an "abnormal" interpretation
+    // code with no range to compare against).
     const interpCodes = (current.interpretation ?? [])
         .flatMap(i => i.coding ?? [])
         .map(c => (c.code ?? '').toUpperCase());
@@ -134,10 +169,61 @@ function computeRowData(entry: LabTrendEntry, matching: Observation[]): RowData 
     else if (interpCodes.some(c => c === 'H'))  flag = '↑H';
     else if (interpCodes.some(c => c === 'LL')) flag = '↓↓';
     else if (interpCodes.some(c => c === 'L'))  flag = '↓L';
-    else if (status === 'abnormal')             flag = '!';
-    else if (status === 'warn')                 flag = '↑';
+    else if (status === 'abnormal')             flag = side === 'high' ? '↑↑' : side === 'low' ? '↓↓' : '!';
+    else if (status === 'warn')                 flag = side === 'high' ? '↑'  : side === 'low' ? '↓'  : '!';
 
-    return { label: entry.label, value, unit, status, flag, refRangeStr, series, dropped };
+    // --- Tooltips --------------------------------------------------------------
+
+    const u        = unit ? ` ${esc(unit)}` : '';
+    const when     = (obs: Observation) => formatDate(getObservationDate(obs) ?? undefined);
+    const inRange  = range ? ` (${range}${u})` : '';
+    const byLab    = (code: string) => `Flagged by the lab (interpretation \`${code}\`).`;
+    const computed = refFrom === current
+        ? 'Worked out against the reading\'s own reference range; the lab sent no interpretation code.'
+        : 'Worked out against the range borrowed from an older reading; the lab sent no interpretation code.';
+    const flagTip =
+          flag === '↑↑' && interpCodes.includes('HH') ? `**Critically high.** ${byLab('HH')}`
+        : flag === '↑H' ? `**High.** ${byLab('H')}`
+        : flag === '↓↓' && interpCodes.includes('LL') ? `**Critically low.** ${byLab('LL')}`
+        : flag === '↓L' ? `**Low.** ${byLab('L')}`
+        : flag === '↑↑' ? `**Far above** the reference range${inRange}, by more than a quarter of its width.\n${computed}`
+        : flag === '↓↓' ? `**Far below** the reference range${inRange}, by more than a quarter of its width.\n${computed}`
+        : flag === '↑'  ? `**Above** the reference range${inRange}.\n${computed}`
+        : flag === '↓'  ? `**Below** the reference range${inRange}.\n${computed}`
+        : flag === '!'  ? '**Abnormal**, per the lab, with no range to say in which direction.'
+        : status === 'ok' && range ? `**Within** the reference range${inRange}.`
+        : status === 'ok' ? '**Normal**, per the lab.'
+        : 'Nothing to judge this value by: no reference range or interpretation from the lab.';
+
+    const previous = comparable[1];
+    const valueTip = [
+        `**${esc(value)}${u}** on ${when(current)}, the latest reading.`,
+        previous && `Before that: ${esc(getObservationValue(previous).value)}${u} on ${when(previous)}.`
+    ].filter(Boolean).join('\n');
+
+    const refTip = range && (refFrom === current
+        ? `Reference range${inRange}, as reported with the latest reading.`
+        : `Reference range${inRange}, borrowed from the reading of ${when(refFrom!)}: the latest reading reports none, so it may be out of date.`);
+
+    const numbers = observations.map(o => extractObservationNumericValue(o)).filter((v): v is number => v !== null);
+    const sparkTip = [
+        `**${observations.length} of ${matching.length} readings**, ${when(observations[0])} – ${when(observations[observations.length - 1])}.`,
+        // Two decimals, as getObservationValue shows the latest value.
+        numbers.length > 1 && `Lowest ${roundToPrecision(Math.min(...numbers), 2)}${u}, highest ${roundToPrecision(Math.max(...numbers), 2)}${u}.`,
+        'Oldest on the left; the dot is the latest. The line is colored against the reference range where there is one.'
+    ].filter(Boolean).join('\n');
+
+    const span = matching.length > 1 ? `, ${when(sortedDesc[sortedDesc.length - 1])} – ${when(current)}` : `, ${when(current)}`;
+    const nameTip = `**${esc(entry.label)}**: ${matching.length} reading${matching.length === 1 ? '' : 's'}${span}.\n\n${testsTip(matching)}`;
+
+    const droppedTip = dropped.count > 0
+        ? `Reported in ${esc(dropped.units.join(', '))}, which can't be converted to${u || ' this row\'s unit'}: the two measure different things, so there is no fixed factor between them. They're left out rather than drawn on the wrong scale.`
+        : null;
+
+    return {
+        label: entry.label, value, unit, status, flag, refRangeStr, series, dropped,
+        tips: { name: nameTip, ref: refTip, value: valueTip, flag: flagTip, spark: sparkTip, dropped: droppedTip }
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -235,24 +321,24 @@ export function LabTrendPanel({ title = "Lab Trends", meta, labs }: LabTrendPane
                             {rows.map((row, i) => (
                                 <tr key={i} className={`lt-row${row.status ? ` ${row.status}` : ''}`}>
                                     <td>
-                                        <div className="lt-name">{row.label}</div>
-                                        {row.refRangeStr && <div className="lt-ref">{row.refRangeStr}</div>}
+                                        <div className="lt-name" data-tooltip={row.tips.name} data-tooltip-x="left">{row.label}</div>
+                                        {row.refRangeStr && <div className="lt-ref" data-tooltip={row.tips.ref ?? undefined} data-tooltip-x="left">{row.refRangeStr}</div>}
                                         {row.dropped.count > 0 && (
-                                            <div className="lt-ref" title={`Reported in ${row.dropped.units.join(', ')}, which can't be converted to ${row.unit ?? "this row's unit"}`}>
+                                            <div className="lt-ref" data-tooltip={row.tips.dropped ?? undefined} data-tooltip-x="left">
                                                 {row.dropped.count} in {row.dropped.units.join(', ')} not plotted
                                             </div>
                                         )}
                                     </td>
-                                    <td className='lt-spark'>
+                                    <td className='lt-spark' data-tooltip={row.tips.spark} data-tooltip-x="pointer">
                                         {row.series.length > 0 && <Sparkline series={row.series} height={30} />}
                                     </td>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em', justifyContent: 'space-between' }}>
-                                            <div>
+                                            <div data-tooltip={row.tips.value}>
                                                 <div className={`lt-value${row.status ? ` lt-${row.status}` : ''}`}>{row.value}</div>
                                                 <div className="lt-unit">{row.unit || ""}</div>
                                             </div>
-                                            <b className={`lt-flag${row.status ? ` lt-${row.status}` : ''}`}>{row.flag}</b>
+                                            <b className={`lt-flag${row.status ? ` lt-${row.status}` : ''}`} data-tooltip={row.tips.flag} data-tooltip-x="right">{row.flag}</b>
                                         </div>
                                     </td>
                                     {/* <td className={`lt-value${row.status ? ` lt-${row.status}` : ''}`}>{row.value}</td> */}

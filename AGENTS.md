@@ -316,7 +316,9 @@ shows a placeholder instead of a chart.
 `src/components/Observation/LabTrendPanel.tsx`
 
 Compact table, one row per tracked lab: sparkline + latest value + ref
-range + flag (↑↑/↑H/↓↓/↓L/!/↑).
+range + flag (`↑H`/`↓L`/`↑↑`/`↓↓` from interpretation codes; computed
+`↑`/`↓` slightly out of range, `↑↑`/`↓↓` far out; `!` abnormal with no
+direction; `—` nothing to judge by).
 
 ```tsx
 <LabTrendPanel labs={['CRP', 'Hemoglobin', 'Albumin']} />
@@ -336,6 +338,14 @@ other spellings of the same dimension (mg/dL into mg/L) along with
 their reference ranges. Readings it can't convert (a molar result in
 a mass row) are left out and noted under the row's name.
 `ObservationCard` does the same for its sparkline and delta.
+
+Each part of a row has a tooltip, so mount `<Tooltip />`: the name
+lists the tests the row gathered (names and codes); the "Ref" line says
+whether the range is the latest reading's own or borrowed, and from
+when; the value gives its date and the previous reading; the sparkline
+gives the count, dates and spread; the flag says what it means and
+whether the lab or the panel decided it. The flag itself shows only on
+out-of-range rows.
 
 Each reading goes to at most one row, by the same rules
 `ObservationsTimeline` uses (`assignReadings` in
@@ -700,7 +710,8 @@ Key attributes: `data-tooltip` (content, small Markdown subset),
 `data-tooltip-x`/`data-tooltip-y` (placement axes), `data-tooltip-anchor`
 (CSS selector for what the bubble should point at, for a moving
 target inside a wide trigger). Several other components
-(`TimelineChart` bars, `ObservationChart` markers) already emit
+(`TimelineChart` bars, `ObservationChart` markers, every part of a
+`LabTrendPanel` row) already emit
 `data-tooltip` attributes and will show nothing until you mount
 `<Tooltip/>` somewhere in the tree.
 
@@ -781,10 +792,16 @@ row assignment in `src/components/Observation/analyteMatching.ts`):
   readings in its latest reading's unit and leaves the others out
   ("1 in nmol/L not plotted"). A record that switched units shows only
   part of its history.
-- Flags and status colors come only from each observation's own
-  `referenceRange`/`interpretation`. For data without them,
-  `LabTrendPanel`'s flag column reads `—`, and it has no prop for
+- `LabTrendPanel` grades a row from the latest reading's own
+  `interpretation` or `referenceRange`; failing those, it borrows the
+  range of the oldest reading in the row that has one, which may be an
+  outdated interval (the "Ref" tooltip says when). A row where no
+  reading has either shows no flag, and the panel has no prop for
   supplying ranges.
+- `getObservationDate` (`src/components/Observation/utils.ts`) parses
+  a date-only `effectiveDateTime` such as `2024-01-01` as UTC midnight,
+  so west of UTC every date the library shows from it (cards, tooltips,
+  feeds) reads a day early: Dec 31, 2023.
 
 **Declared but not wired** (don't rely on these):
 - `DataGridProps.filters`/`onFilterChange` — declared, not implemented.

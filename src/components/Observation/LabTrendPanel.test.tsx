@@ -166,3 +166,76 @@ describe('LabTrendPanel row assignment', () => {
   });
 });
 
+describe('LabTrendPanel computed flags', () => {
+  const ranged = (obs: FhirResource, low: number, high: number) => ({ ...obs, referenceRange: [{ low: { value: low }, high: { value: high } }] });
+  const hgb = (id: string, value: number, date: string) => observation(id, '718-7', 'Hemoglobin [Mass/volume] in Blood', value, 'g/dL', date);
+  const flagOf = (container: HTMLElement) => container.querySelector('.lt-flag')?.textContent;
+
+  // Hemoglobin 12–16 g/dL, no interpretation codes, so the panel grades the
+  // value itself. A quarter of the range width (1 g/dL) past a bound is the
+  // line between slightly and far out.
+  it.each([
+    [11.5, '↓'],
+    [9,    '↓↓'],
+    [16.5, '↑'],
+    [19,   '↑↑'],
+    [14,   '—']
+  ])('flags %s g/dL as %s', async (value, flag) => {
+    const { container } = await renderPanel([ranged(hgb('o1', value, '2024-01-01'), 12, 16)], ['Hemoglobin']);
+    expect(flagOf(container)).toBe(flag);
+  });
+
+  it('points the arrow using a range borrowed from an older reading', async () => {
+    const { container } = await renderPanel([
+      ranged(hgb('old', 14, '2024-01-01'), 12, 16),
+      hgb('new', 11.5, '2024-06-01')
+    ], ['Hemoglobin']);
+    expect(flagOf(container)).toBe('↓');
+  });
+});
+
+describe('LabTrendPanel tooltips', () => {
+  const ranged = (obs: FhirResource, low: number, high: number) => ({ ...obs, referenceRange: [{ low: { value: low }, high: { value: high } }] });
+  const hgb = (id: string, value: number, date: string) => observation(id, '718-7', 'Hemoglobin [Mass/volume] in Blood', value, 'g/dL', date);
+  const tip = (container: HTMLElement, selector: string) => container.querySelector(selector)?.getAttribute('data-tooltip') ?? '';
+
+  it('explains a computed flag and the range it was judged against', async () => {
+    const { container } = await renderPanel([ranged(hgb('o1', 11.5, '2024-06-01'), 12, 16)], ['Hemoglobin']);
+    expect(tip(container, '.lt-flag')).toContain('**Below** the reference range (12–16 g/dL)');
+    expect(tip(container, '.lt-flag')).toContain('the lab sent no interpretation code');
+  });
+
+  it('attributes an interpretation-code flag to the lab', async () => {
+    const flagged = { ...hgb('o1', 18, '2024-06-01'), interpretation: [{ coding: [{ code: 'H' }] }] };
+    const { container } = await renderPanel([flagged], ['Hemoglobin']);
+    expect(tip(container, '.lt-flag')).toBe('**High.** Flagged by the lab (interpretation `H`).');
+  });
+
+  it("shows the latest reading's own range, and says when a range is borrowed", async () => {
+    const own = await renderPanel([ranged(hgb('old', 14, '2024-01-01'), 10, 20), ranged(hgb('new', 14, '2024-06-01'), 12, 16)], ['Hemoglobin']);
+    expect(own.container.querySelector('.lt-ref')?.textContent).toBe('Ref 12–16');
+    expect(tip(own.container, '.lt-ref')).toContain('as reported with the latest reading');
+    cleanup();
+
+    // Mid-month, so the displayed date stays in 2024 whatever the timezone.
+    const borrowed = await renderPanel([ranged(hgb('old', 14, '2024-03-15'), 12, 16), hgb('new', 14, '2024-06-15')], ['Hemoglobin']);
+    expect(tip(borrowed.container, '.lt-ref')).toMatch(/borrowed from the reading of Mar 1[45], 2024/);
+  });
+
+  it('lists the tests in a row with their codes, and the previous value', async () => {
+    const { container } = await renderPanel([
+      observation('a', '1988-5', 'C reactive protein [Mass/volume] in Serum or Plasma', 4.2, 'mg/L', '2024-01-01'),
+      observation('b', '30522-7', 'C-reactive protein, high sensitivity', 1.7, 'mg/L', '2024-06-01')
+    ], ['CRP']);
+    expect(tip(container, '.lt-name')).toContain('2 readings');
+    expect(tip(container, '.lt-name')).toContain('`30522-7`');
+    expect(tip(container, '.lt-value > div')).toBe('');
+    expect(container.querySelector('[data-tooltip*="the latest reading."]')?.getAttribute('data-tooltip')).toContain('Before that: 4.2 mg/L');
+  });
+
+  it('escapes Markdown in names taken from the record', async () => {
+    const { container } = await renderPanel([observation('a', 'X-1', 'CRP *stat*', 3, 'mg/L', '2024-01-01')], [{ label: 'CRP', loincs: ['X-1'] }]);
+    expect(tip(container, '.lt-name')).toContain('CRP \\*stat\\*');
+  });
+});
+

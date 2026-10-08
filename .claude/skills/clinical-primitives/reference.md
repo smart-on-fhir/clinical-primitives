@@ -45,7 +45,7 @@ These take arrays as props, without ctx. Each renders a panel with status tabs, 
 - `title?: ReactNode` (default "Lab Trends"), `meta?: ReactNode` (right side of the header).
 - Unknown preset keys are skipped with a `console.warn`. If no row has data, it renders `null`.
 - Preset keys: CRP ESR Albumin Calprotectin Hemoglobin Platelets Weight Height BMI PreAlbumin PCT Ferritin VitaminD VitaminB12 WBC RBC Hematocrit MCV MCH MCHC RDW Neutrophils Lymphocytes Monocytes Eosinophils Basophils MPV ALT AST HeartRate OxygenSat Temperature RespRate BloodPressure. Add `{label, loincs}` objects for LOINC codes the presets lack.
-- Flags: ↑↑ / ↑H / ↓↓ / ↓L / ! / ↑, computed from each observation's own `referenceRange`/`interpretation`.
+- Flags: `↑H`/`↓L`/`↑↑`/`↓↓` from interpretation codes; otherwise computed against the latest reading's range (or an older reading's): `↑`/`↓` slightly out, `↑↑`/`↓↓` far out, `!` abnormal with no direction, `—` nothing to grade by.
 
 **`ObservationChart`** (no ctx)
 - Required: `observations: Observation[]`, `code: string | string[] | (obs) => boolean`. `code` is a memo dependency, so keep it stable.
