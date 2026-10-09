@@ -23,9 +23,11 @@ export function LabTrendPanelPage() {
             <p className="cp-text-txt-4 mb-6">
                 A compact panel that renders a table of lab trends. Each row shows the most recent
                 value, a mini sparkline of historical readings, the reference range, and an
-                interpretation flag. Rows are matched to observations by LOINC codes or
-                case-insensitive keywords. Built-in presets are available via the <code>LABS</code>
-                {' '}constant — pass a key string instead of a full <code>LabTrendEntry</code> object.
+                interpretation flag. Rows are matched to observations by LOINC codes or, for
+                readings without a usable code, by keywords. Built-in presets are available via
+                the <code>LABS</code> constant — pass a key string instead of a full
+                {' '}<code>LabTrendEntry</code> object. Every part of a row has a tooltip, so
+                mount <code>{'<Tooltip />'}</code> once in your app.
             </p>
 
             <hr className="mb-6" />
@@ -95,7 +97,11 @@ export function LabTrendPanelPage() {
                     <tr>
                         <td className="pr-6 py-1"><code>keywords</code></td>
                         <td className="pr-6 py-1"><code>readonly string[]</code></td>
-                        <td className="py-1">Case-insensitive keywords matched against code text and display values. Used as a fallback when no LOINC codes match.</td>
+                        <td className="py-1">
+                            Case-insensitive whole words matched against code text and display
+                            values, for readings no row claims by code. A reading coded in LOINC
+                            is never matched by keyword — see Matching below.
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -103,52 +109,93 @@ export function LabTrendPanelPage() {
             {/* Built-in presets */}
             <h3 className="mb-3">Built-in LABS Presets</h3>
             <p className="text-sm cp-text-txt-4 mb-4">
-                Pass any of these string keys directly in the <code>labs</code> array as a shorthand:
+                Pass any of these string keys directly in the <code>labs</code> array as a shorthand.
+                An unknown key is skipped with a console warning.
             </p>
             <div className="flex flex-wrap gap-2 mb-8 text-sm">
-                {[
-                    'Hemoglobin', 'WBC', 'Platelets', 'Hematocrit',
-                    'Sodium', 'Potassium', 'Chloride', 'Bicarbonate', 'BUN', 'Creatinine', 'Glucose',
-                    'ALT', 'AST', 'AlkPhos', 'TotalBili',
-                    'Albumin', 'TotalProtein',
-                    'CRP', 'ESR', 'Ferritin', 'Iron', 'TIBC', 'Transferrin',
-                    'Calprotectin', 'ANCA',
-                    'TSH', 'FreeT4', 'Calcium', 'Magnesium', 'Phosphorus',
-                    'Triglycerides', 'TotalCholesterol', 'HDL', 'LDL',
-                    'INR', 'PTT',
-                    'VitaminD', 'VitaminB12', 'Folate',
-                    'HIV', 'HepBsAg', 'HepBsAb', 'HepCAb',
-                    'CMV', 'EBV', 'CDiff', 'SARS2',
-                    'Cocaine', 'Opiates', 'THC', 'Amphetamines', 'Benzodiazepines',
-                ].map(k => (
-                    <code key={k} className="cp-fill-win-2 rounded px-2 py-1">{k}</code>
+                {(Object.keys(LABS) as (keyof typeof LABS)[]).map(k => (
+                    <code key={k} className="cp-fill-win-2 rounded px-2 py-1" title={LABS[k].loincs.join(', ')}>{k}</code>
                 ))}
             </div>
 
+            {/* Matching */}
+            <h3 className="mb-3">Matching</h3>
+            <p className="text-sm cp-text-txt-4 mb-3">
+                Readings are sorted into rows across the whole panel at once, and each one goes to
+                at most one row:
+            </p>
+            <ul className="text-sm cp-text-txt-4 mb-8" style={{ paddingLeft: '1.2em', listStyle: 'disc' }}>
+                <li className="mb-1">
+                    <strong>A code beats a keyword.</strong> When two rows list the same code, the
+                    earlier row gets the reading.
+                </li>
+                <li className="mb-1">
+                    <strong>A reading coded in LOINC under a code no row lists goes nowhere</strong>,
+                    whatever its name says. Hemoglobin A1c (<code>4548-4</code>) has "hemoglobin" in
+                    its name but stays out of the Hemoglobin row.
+                </li>
+                <li className="mb-1">
+                    <strong>Otherwise the longest matching keyword wins</strong>, matched as whole
+                    words: "prealbumin" beats "albumin", and <code>alt</code> doesn't match "cobalt".
+                    Keywords exist for locally coded or uncoded data.
+                </li>
+            </ul>
+
+            {/* Units */}
+            <h3 className="mb-3">Units</h3>
+            <p className="text-sm cp-text-txt-4 mb-8">
+                Each row is drawn in the latest reading's unit. Older readings in another unit of
+                the same kind (mg/dL and mg/L, lb and kg, ×10⁹/L and K/µL) are converted, along with
+                their reference ranges. A reading that can't be converted — a molar CRP in a row
+                reported in mg/L — is left off the sparkline rather than drawn on the wrong scale,
+                and the row says how many were left out.
+            </p>
+
+            {/* Flags and tooltips */}
+            <h3 className="mb-3">Flags and Tooltips</h3>
+            <p className="text-sm cp-text-txt-4 mb-8">
+                The flag uses the latest reading's interpretation code when the lab sent one
+                (<code>↑↑</code> HH, <code>↑H</code> H, <code>↓L</code> L, <code>↓↓</code> LL),
+                and otherwise compares the value with the reference range (<code>↑</code>,
+                {' '}<code>↓</code>, or <code>↑↑</code>/<code>↓↓</code> when far outside it). Hover
+                any part of a row for an explanation: the name lists the tests the row gathered,
+                the range says which reading it came from, the value shows the previous reading,
+                the flag says whether the lab or the range raised it, and the sparkline gives the
+                span and extremes. Tooltips need <code>{'<Tooltip />'}</code> mounted once.
+            </p>
+
             {/* Usage */}
             <h3 className="mb-3">Usage</h3>
-            <CodeBlock>{`import { LabTrendPanel } from "clinical-primitives";
+            <CodeBlock>{`import { LabTrendPanel, Tooltip } from "clinical-primitives";
+
+// Once, near the app root, for the row tooltips
+<Tooltip />
 
 // Using built-in presets
 <LabTrendPanel
     title="Lab Trends"
     meta="Most recent right"
-    labs={['Hemoglobin', 'WBC', 'Platelets', 'Creatinine', 'BUN']}
+    labs={['Hemoglobin', 'WBC', 'Platelets', 'ALT', 'AST']}
 />
 
-// Custom entry
+// Presets and custom entries together
 <LabTrendPanel
     labs={[
-        { label: 'Lactoferrin', loincs: ['57698-3'], keywords: ['lactoferrin'] },
         'CRP',
-        'ESR',
+        'Hemoglobin',
+        // No LOINC code: matched by keyword in locally coded data
+        { label: 'Lactoferrin', keywords: ['lactoferrin'] },
+        // Exact codes only: no keywords, so nothing look-alike leaks in
+        { label: 'Albumin', loincs: ['1751-7'] },
+        'Weight',
     ]}
 />`}</CodeBlock>
 
             {/* Example */}
             <h3 className="mb-4">Example</h3>
             <p className="text-sm cp-text-txt-4 mb-3">
-                Live panel from the sample bundle showing a CBC + metabolic selection.
+                Live panel from the sample bundle with every preset. Rows with no matching
+                readings are left out.
             </p>
             <div className="mb-8" style={{ maxWidth: '700px' }}>
                 <LabTrendPanel

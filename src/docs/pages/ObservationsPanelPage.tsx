@@ -23,9 +23,18 @@ export function ObservationsPanelPage() {
             <p className="cp-text-txt-4 mb-6">
                 A tabbed panel that groups all of a patient's observations by configurable filters.
                 Each tab shows a grid of <code>ObservationCard</code>s for the matching observations,
-                deduplicated by concept identity and sortable by date or status. A dynamic
-                <code> Latest</code> tab is generated automatically when no custom filters are provided,
-                showing observations from within 7 days of the most recent recorded value.
+                deduplicated by concept identity and ordered by date or, where the data allows it,
+                by status. A dynamic <code> Latest</code> tab is generated automatically when no custom
+                filters are provided, showing observations from within 7 days of the most recent
+                recorded value.
+            </p>
+            <p className="cp-text-txt-4 mb-6">
+                The Date/Status order toggle only appears when ordering by status would change
+                something: status comes from interpretation codes and reference ranges, so a record
+                without them (like the Synthea sample bundle) has every card at the same status and
+                shows no toggle. On a tab where every card shares a status, the Status button is
+                disabled, and that tab stays in date order while the choice still holds for the
+                others.
             </p>
 
             <hr className="mb-6" />
@@ -135,7 +144,8 @@ export function ObservationsPanelPage() {
             {/* Example */}
             <h3 className="mb-4">Example</h3>
             <p className="text-sm cp-text-txt-4 mb-3">
-                Live panel from the sample bundle. Use the sort buttons and tabs to explore.
+                Live panel from the sample bundle. It carries no interpretation codes or reference
+                ranges, so it shows no order toggle; select a bundle that has them to see one.
             </p>
             <div className="mb-8 cp-border-1 cp-border-win-3" style={{
                 maxWidth    : '800px',

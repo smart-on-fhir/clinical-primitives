@@ -64,7 +64,10 @@ Tests are Vitest, colocated as `*.test.ts(x)` next to the code they
 cover, and excluded from the declaration build. They run in
 `America/New_York` (`vitest.config.ts`): west of UTC is where a
 date-only value shown in local time reads a day early, and CI runs in
-UTC. There is no lint script. `npm run typecheck`
+UTC. The default environment is Node; a component test opts into jsdom
+with `// @vitest-environment jsdom` as its first line. Vitest collects
+only `src/**/*.test.{ts,tsx}`, so tests elsewhere (e.g. a local
+`scratch/`) never run. There is no lint script. `npm run typecheck`
 doesn't exist; use the `tsc` line above. The docs build prints Vite's
 "chunks larger than 500 kB" warning, which is expected.
 
@@ -223,7 +226,9 @@ const {
   (`Retry-After` is ignored); any other 4xx fails at once. It clears
   `patient`/`resources` first, then streams:
   they update as each page arrives, before the returned promise
-  resolves. Duplicate ids across pages are dropped.
+  resolves. A failure partway leaves the pages already received in
+  context. Duplicate ids across pages are dropped from context; the
+  `PatientDataSet` the promise resolves with still has them.
 - Aborting `loadFromFHIRServer` through `signal` rejects its promise
   with the abort error, untouched, but doesn't set `error`; the pauses
   between pages and retries end at once. So an effect can abort it on
@@ -252,9 +257,10 @@ const {
 - Dates: anything the library shows from a resource goes through
   `formatFhirDate` (`src/components/Date/utils.ts`, public as
   `lib.formatDate`), or `formatFhirDateTime` where the time of day
-  matters (it adds the time for dateTimes only). FHIR date-only values parse to UTC midnight, so
-  formatting them in local time shows the day before west of UTC; it
-  formats them in UTC at their own precision instead. Code that groups
+  matters (it adds the time for dateTimes only). FHIR date-only values
+  parse to UTC midnight, so formatting them in local time shows the day
+  before west of UTC; it formats them in UTC at their own precision
+  instead. Code that groups
   by local day (`EventFeed`, ages) uses `parseFhirDateLocal`, which
   reads a date-only value as local midnight of that day.
 - `resources.X` is typed as loose `FhirResource[]`, not the real
@@ -268,7 +274,7 @@ const {
 | Function | Signature | Notes |
 |---|---|---|
 | `bundleToResources` | `(bundle: FhirBundle) => FhirResource[]` | Extracts `entry[].resource` |
-| `parseNdjson` | `(ndjson: string) => FhirResource[]` | Throws, naming the line, on a row without a string `resourceType` or a non-empty string `id` |
+| `parseNdjson` | `(ndjson: string) => FhirResource[]` | Throws, naming the line, on a row without a string `resourceType` or a non-empty string `id`. A line that isn't JSON throws `JSON.parse`'s own `SyntaxError`, with no line number |
 | `resolvePatientDataSource` | `(source: PatientDataSource) => Promise<PatientDataSet>` | Dispatches on `source.type` |
 | `resourcesToPatientDataSet` | `(resources: FhirResource[]) => PatientDataSet` | Throws unless exactly one `Patient` is present |
 
@@ -356,7 +362,7 @@ whether the range is the latest reading's own or borrowed, and from
 when; the value gives its date and the previous reading; the sparkline
 gives the count, dates and spread; the flag says what it means and
 whether the lab or the panel decided it. The flag itself shows only on
-out-of-range rows.
+rows graded high, low or abnormal.
 
 Each reading goes to at most one row, by the same rules
 `ObservationsTimeline` uses (`assignReadings` in
@@ -382,7 +388,12 @@ neither, so there it never shows).
 ```
 
 `filters` values: `'All' | 'Vitals' | 'Labs' | 'Social' | 'Activity' |
-'IBD'`; empty/omitted falls back to an "All"/"Latest" pair. **Requires
+'IBD'`; empty/omitted falls back to an "All"/"Latest" pair ("Latest" is
+the 7 days up to the newest reading). A tab with no cards is hidden.
+`IBD` doesn't use `assignReadings`: it pools the codes and keywords of
+every `LABS` preset (vitals such as Weight, BMI, Heart Rate and Blood
+Pressure included) and takes a reading that matches one of those codes
+**and** contains one of those keywords as a substring. **Requires
 `ClinicalDataProvider`** — no prop for passing observations in, it's a
 connected component.
 
@@ -473,8 +484,11 @@ x-axis — for a single analyte, use `ObservationChart` instead.
   dependency, takes plain `rows: {label, bars: {x1,x2,color?,tooltip?}[]}[]`.
   Use it for anything interval-shaped that isn't medications/labs.
 - `ObservationsTimeline`'s `analytes` prop lets you pin an explicit
-  panel of rows (`{code, label, keywords?, unit?, range?, ranges?}`);
-  omit it to auto-discover every numeric analyte in the record.
+  panel of rows (`{code, label, keywords?, unit?, range?, ranges?,
+  defaultShown?}`, `code` a string or array whose first entry is the
+  row's identity); omit it to auto-discover every numeric analyte in the
+  record, one row per first coding code. Readings go to rows by the
+  same `assignReadings` rules as `LabTrendPanel`.
 - `MedicationsTimeline`'s `classify` prop lets you override which
   medications are included and how they're grouped/colored/labeled.
 - Bar `tooltip` strings need `<Tooltip/>` mounted somewhere in the tree
@@ -567,7 +581,8 @@ except `text`/`chart`/`column`/`row`/`finding_card`
 **requires `ClinicalDataProvider`**. Each rendered instruction except
 `text` is wrapped in an error boundary — one bad instruction (including
 a clinical type outside the provider) shows an inline
-`<Alert variant="danger">`, not a crash.
+`<Alert variant="danger">`, not a crash. The boundary stays tripped
+when the `instruction` prop changes (see [Known issues](#known-issues)).
 `sanitizeProps` strips anything that looks like an unsafe event-handler
 string (e.g. an LLM emitting
 `"onClick": "doStuff()"` as a string instead of omitting it) — so
@@ -748,7 +763,7 @@ import { utils } from 'clinical-primitives';
 | `utils.highlightText` | `(text, search?) => ReactNode` | Wraps matches in `<mark class="cp-search-highlight">` — what `DataGrid` search uses |
 | `utils.Condition.getName/getClinicalStatus/getVerificationStatus/getBodySite/getOnset/getAbatement` | `(condition) => string\|null` | Field extraction with FHIR fallback chains |
 | `utils.Immunization.getName/getOccurrence/getStatusReason/getRoute` | `(immunization) => string\|null` | Same pattern |
-| `utils.Observation.*` | e.g. `getObservationDisplayName`, `getObservationValue`, `getObservationDate`, `extractObservationNumericValue`, `computeDelta` | Observation helpers from `src/components/Observation/utils.ts` |
+| `utils.Observation.*` | e.g. `getObservationDisplayName`, `getObservationValue`, `getObservationDate`, `getObservationStatus`, `extractObservationNumericValue`, `computeDelta`, `unitScale`, `inUnitOf` | Observation helpers from `src/components/Observation/utils.ts`. `inUnitOf(observations, reference)` rescales readings (and their reference ranges) into `reference`'s unit and returns `{ observations, dropped }`, leaving out the ones it can't convert — what `LabTrendPanel` and `ObservationCard` plot from |
 
 ### `lib` namespace
 
@@ -763,6 +778,13 @@ import { lib } from 'clinical-primitives';
 | `lib.Patient` | `calcAge(patient) => {age, unit}`, `displayPatientAge(patient, units?)` |
 | `lib.Identifier` | `format`, `matches`, `findAll`, `find` — filtering/formatting FHIR `Identifier`s |
 | `lib.Medication` | `getMedicationName`, `getShortMedicationName`, `normalizeMedName`, `getActiveMedications`, `getMedicationPeriod` (marked provisional — validated only against Synthea sample data), `getMedicationDosages` |
+
+The package root also exports `ObservationHistoryTable` and the
+reference-range helpers `ObservationChart` uses (`resolveRange`,
+`statusFor`, `toneFor`, `rangeZones`, `boundsFromObservation`, …, plus
+`splinePath`). They're undocumented here; read
+`src/components/Observation/referenceRange.ts` before relying on them.
+`formatFhirDateTime` and `parseFhirDateLocal` are not exported.
 
 Prefer `lib.Medication` over anything in
 `src/components/Medication/utils.ts` — the latter is an older, less
@@ -787,6 +809,13 @@ Import once: `import 'clinical-primitives/styles.css'`.
   (`cp-ps/pe/pt/pb/px/py`, `cp-ms/me/mt/mb`).
 - **Radius**: `cp-rounded-{sm|md|lg|pill|full|none}`.
 - **Font size**: `cp-text-{xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl}`.
+  **Weight**: `cp-fw-{100..900|normal|medium|semibold|bold|…}`.
+- **Reset and headings**: the scoped reset sizes `h1`–`h6` inside
+  library components, but it's in the `cp-reset` layer (see
+  [Install & setup](#install--setup) for load order), so under
+  Tailwind its preflight wins and a heading you pass in reads as body
+  text. Size it with a class (`cp-text-2xl cp-fw-600`, or Tailwind's),
+  as the library's own headings do.
 - **Component variants** follow `cp-{component}--{variant}` /
   `cp-{component}--{variant}-hard`, where variant is the shared union
   `danger|warning|success|info|neutral|muted|link` used by `Badge`,
@@ -794,11 +823,17 @@ Import once: `import 'clinical-primitives/styles.css'`.
 
 ## Known issues
 
-Current behavior, as of 2026-10-05. Work around these in app code;
+Current behavior, as of 2026-10-08. Work around these in app code;
 each one is a candidate fix in the library.
 
 **Lab matching** (`LABS` in `src/components/Observation/ObservationFilters.ts`,
 row assignment in `src/components/Observation/analyteMatching.ts`):
+- The `CRP` preset takes high-sensitivity CRP (`30522-7`, `71426-1`)
+  alongside standard CRP (`1988-5`), on purpose, since many labs report
+  only hs-CRP. It's a separate assay with a lower reference range
+  (~<3 mg/L), so a row mixing the two plots them on one line, and a
+  borrowed range can come from the other assay. Pass
+  `{ label: 'CRP', loincs: ['1988-5'] }` to keep them apart.
 - `VitaminD` and `VitaminB12` each mix mass and molar codes
   (`1989-3` ng/mL with `14635-7` nmol/L; `2132-9` pg/mL with `14685-2`
   pmol/L). Mass and molar units convert only through the analyte's
@@ -808,10 +843,17 @@ row assignment in `src/components/Observation/analyteMatching.ts`):
   part of its history.
 - `LabTrendPanel` grades a row from the latest reading's own
   `interpretation` or `referenceRange`; failing those, it borrows the
-  range of the oldest reading in the row that has one, which may be an
-  outdated interval (the "Ref" tooltip says when). A row where no
-  reading has either shows no flag, and the panel has no prop for
-  supplying ranges.
+  range of the oldest plotted reading (of the latest 16) that has one,
+  which may be an outdated interval (the "Ref" tooltip says when). A
+  row where no reading has either shows no flag, and the panel has no
+  prop for supplying ranges.
+
+**StaticComponent** (`src/components/StaticComponent.tsx`):
+- Once an instruction throws, its error boundary keeps showing the
+  error after the `instruction` prop changes, even to a valid one
+  (the boundary is reused and never resets). An app that streams or
+  regenerates instructions should remount on change, e.g.
+  `<StaticComponent key={JSON.stringify(instruction)} instruction={instruction} />`.
 
 **Declared but not wired** (don't rely on these):
 - `DataGridProps.filters`/`onFilterChange` — declared, not implemented.

@@ -1,6 +1,6 @@
 # clinical-primitives component reference
 
-Props checked against the library source at https://github.com/smart-on-fhir/clinical-primitives (`src/index.ts` and the component files) as of 2026-10-05. The library is pre-1.0. If a prop here doesn't match the version in your app, check `node_modules/clinical-primitives/dist/components/**/*.d.ts`. Source paths below are relative to that repo.
+Props checked against the library source at https://github.com/smart-on-fhir/clinical-primitives (`src/index.ts` and the component files) as of 2026-10-08. The library is pre-1.0. If a prop here doesn't match the version in your app, check `node_modules/clinical-primitives/dist/components/**/*.d.ts`. Source paths below are relative to that repo.
 
 Contents: [Data layer](#data-layer) · [Clinical lists](#clinical-lists) · [Observations](#observations) · [TimelineChart](#timelinechart) · [EventFeed](#eventfeed) · [FindingCard](#findingcard) · [StaticComponent](#staticcomponent) · [Source viewers and detail panels](#source-viewers-and-detail-panels) · [DataGrid and Pagination](#datagrid-and-pagination) · [Chart](#chart) · [Generic primitives](#generic-primitives) · [Tooltip](#tooltip) · [utils and lib](#utils-and-lib) · [Styling](#styling)
 
@@ -17,11 +17,11 @@ Contents: [Data layer](#data-layer) · [Clinical lists](#clinical-lists) · [Obs
 | `isLoading`, `error` | `boolean`, `Error \| null` | |
 | `loadFromBundle(bundle)` / `loadFromBundleFile(file)` | `Promise<PatientDataSet>` | Each one sets state **and** rethrows on failure. |
 | `loadFromResources(resources)` | same | Use it for anything you fetched yourself. |
-| `loadFromNdjson(text)` / `loadFromNdjsonFile(file)` | same | Throws on a line with no `resourceType`. |
-| `loadFromFHIRServer(base, patientId, opts?)` | same | Pages through `GET {base}/Patient/{id}/$everything?_count=200` and updates `resources` as each page arrives. `opts`: `{ signal, count=200, throttleMs=500, retries=3, retryDelayMs=1000 }`. Needs a standard FHIR server that implements `$everything`; for any other API, fetch the record yourself and call `loadFromResources`. |
-| `selectFile()` | `Promise<Patient \| null>` | Native picker for .json/.ndjson. Resolves `null` on cancel; rejects (and sets `error`) if the file fails to load. |
+| `loadFromNdjson(text)` / `loadFromNdjsonFile(file)` | same | Throws on the first line with no `resourceType` or no `id`, naming the line. |
+| `loadFromFHIRServer(base, patientId, opts?)` | same | Pages through `GET {base}/Patient/{id}/$everything?_count=200` and updates `resources` as each page arrives. `opts`: `{ signal, count=200, throttleMs=500, retries=3, retryDelayMs=1000 }`. Network errors, 5xx, 408 and 429 are retried with exponential backoff; other 4xx fail at once. Aborting also cuts short a throttle or backoff wait. Needs a standard FHIR server that implements `$everything`; for any other API, fetch the record yourself and call `loadFromResources`. |
+| `selectFile()` | `Promise<Patient \| null>` | Native picker for .json/.ndjson. Resolves `null` on cancel (or when a later `selectFile()` call takes over the picker); rejects (and sets `error`) if the file fails to load. |
 | `clear()` | `() => void` | Also drops in-flight `lazy`/`getPatient` bookkeeping. |
-| `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch. A fetch overtaken by a load or `clear()` doesn't write. |
+| `lazy(type, fetcher, {force?})` | `Promise<T[]>` | Fetches one resource type on demand and caches it in `resources[type]`. Concurrent calls share one fetch, `force` or not. A fetch overtaken by a load or `clear()` doesn't write. |
 | `getPatient(id, fetcher)` | `Promise<Patient>` | Sets `patient` from a fetcher unless it's already loaded. Calls for the same id share a fetch; when calls overlap, only the latest one sets `patient`. |
 
 Every function keeps its identity for the life of the provider, so they're safe in effect dependencies. `loadFromFHIRServer` empties `patient`/`resources` before its first page; an aborted load rejects with the abort error but leaves `error` alone. When loads overlap, only the newest one writes the context.
@@ -46,15 +46,17 @@ These take arrays as props, without ctx. Each renders a panel with status tabs, 
 - Unknown preset keys are skipped with a `console.warn`. If no row has data, it renders `null`.
 - Preset keys: CRP ESR Albumin Calprotectin Hemoglobin Platelets Weight Height BMI PreAlbumin PCT Ferritin VitaminD VitaminB12 WBC RBC Hematocrit MCV MCH MCHC RDW Neutrophils Lymphocytes Monocytes Eosinophils Basophils MPV ALT AST HeartRate OxygenSat Temperature RespRate BloodPressure. Add `{label, loincs}` objects for LOINC codes the presets lack.
 - Flags: `↑H`/`↓L`/`↑↑`/`↓↓` from interpretation codes; otherwise computed against the latest reading's range (or an older reading's): `↑`/`↓` slightly out, `↑↑`/`↓↓` far out, `!` abnormal with no direction, `—` nothing to grade by.
+- Readings in another unit of the same dimension are converted to the latest reading's unit (mg/dL into mg/L); ones that can't be (mass vs. molar) are dropped and noted under the row name.
+- The name, range, sparkline, value and flag cells carry `data-tooltip` explanations, shown only with `<Tooltip />` mounted.
 
 **`ObservationChart`** (no ctx)
 - Required: `observations: Observation[]`, `code: string | string[] | (obs) => boolean`. `code` is a memo dependency, so keep it stable.
 - Common: `label?`, `height?`, `series?: {code?, label?, color?}[]` (multi-line), `onSelectPoint?(obs)`, `selectedId?`, `crosshair?`, `minMaxLabels?`, `declaredUnit?`, `referenceRange?` (resolver), `rangeOverride?`, `carryRange?`, `abnormalColor?`, `warningColor?`, `className?`.
-- Set `mapX` only when embedding inside a TimelineChart.
+- Set `mapX` only when embedding inside a TimelineChart. The `series` item type is exported as `ObservationChartSeries`.
 
 **`ObservationCard`** (ctx): `observation: Observation`, `history?: Observation[]` (already filtered to the same analyte), `style?`. Handles up to 2 components (e.g. BP). With more than that, it shows a placeholder.
 
-**`ObservationsPanel`** (ctx): `title?`, `filters?: ('All'|'Vitals'|'Labs'|'Social'|'Activity'|'IBD')[]`. Filtering is by `category` (vital-signs, laboratory, …). 'IBD' keeps readings whose code is in the lab presets and whose name has one of their keywords.
+**`ObservationsPanel`** (ctx): `title?`, `filters?: ('All'|'Vitals'|'Labs'|'Social'|'Activity'|'IBD')[]`. Filtering is by `category` (vital-signs, laboratory, …). 'IBD' keeps readings whose code is in the lab presets and whose name has one of their keywords. The Date/Status order toggle shows only when ordering by status would change some tab (it never does for data with no `interpretation` or `referenceRange`, e.g. Synthea), and Status is disabled on a tab where it changes nothing.
 
 **`ObservationHistoryTable`**: `history: Observation[]`.
 
@@ -130,7 +132,7 @@ It reads Observation, MedicationRequest, MedicationAdministration, DocumentRefer
 | `condition_list` / `medication_list` / `immunization_list` | `title?` | yes |
 | `event_feed` | `EventFeed` props minus `resources` | yes |
 
-Each node except `text` renders inside an error boundary. Unknown types render "Unhandled type: …", and bad JSON renders "Invalid render instruction". Props that look like event handlers (`on*` strings), string `style` values and non-string `className` values are dropped.
+Each node except `text` renders inside an error boundary, and a failing node shows a danger `Alert` in place. Unknown types render "Unhandled type: …" in red, and bad JSON renders an "Invalid render instruction" `Alert`. Props that look like event handlers (`on*` strings), string `style` values and non-string `className` values are dropped.
 
 **System prompt for an LLM.** Paste this into the model's system prompt so it replies with a valid instruction tree, then pass the reply to `<StaticComponent instruction={reply} />` inside the provider.
 
@@ -185,7 +187,7 @@ The unexported `FhirDataGrid` ([`src/components/DataGrid/FhirDataGrid.tsx`](http
 
 ## Chart
 
-Wraps Recharts. Props: `type: 'line'|'area'|'bar'|'column'|'scatter'|'pie'|'radar'|'radialBar'|'funnel'|'treemap'|'composed'` (`bar` is horizontal, `column` is vertical), `data?`, `xKey?`, `yKey?`, `series?: {key, name?, color?, data?, chartType?}[]`, `stratifyBy?` (pivots rows into one series per value), `slices?: {name, value, color?}[]` (pie), `height?`, `colors?`, `showLegend?`, `showGrid?`, `xLabel?`, `yLabel?`, `className?`. Empty data shows a placeholder.
+Wraps Recharts. Props: `type: 'line'|'area'|'bar'|'column'|'scatter'|'pie'|'radar'|'radialBar'|'funnel'|'treemap'|'composed'` (`bar` is horizontal, `column` is vertical), `data?`, `xKey?`, `yKey?`, `series?: {key, name?, color?, data?, chartType?}[]`, `stratifyBy?` (pivots rows into one series per value), `slices?: {name, value, color?}[]` (pie), `height?`, `colors?`, `showLegend?`, `showGrid?`, `xLabel?`, `yLabel?`, `className?`. Empty data shows a placeholder. Exported types: `ChartProps`, `ChartType`, `SeriesDef`, `PieSlice`, `ChartDataRecord`.
 
 ## Generic primitives
 
@@ -198,35 +200,37 @@ Wraps Recharts. Props: `type: 'line'|'area'|'bar'|'column'|'scatter'|'pie'|'rada
 | `Row` / `Column` | flex wrappers. `Row` `cols?` switches it to a grid. In a container of definite height they shrink to their share, so lists inside scroll; set `style={{ minHeight }}` for a floor. |
 | `Dialog` | `open`, `onClose`, `title`, `children`, `style?`. Portal-rendered and unmounted when closed. |
 | `Collapse` | `label`, `children`, optional controlled `open`/`onToggle` |
-| `Tabs` | `<Tabs defaultIndex?><TabBar><Tab/>…</TabBar><TabsBody><TabContents/>…</TabsBody></Tabs>`. Tabs and contents are matched by position. |
+| `Tabs` | `<Tabs defaultIndex?><TabBar><Tab/>…</TabBar><TabsBody><TabContents/>…</TabsBody></Tabs>`. Tabs and contents are matched by position. Uncontrolled by default; pass `activeIndex` to control it, and `onActiveIndexChange(i)` hears clicks either way. |
 | `Loader` | `msg?`, `centered?` |
 | `CheckBox` | native checkbox props plus `indeterminate` |
 | `RadioButton` | `value`, `onChange`, `options: {value, label, title?, disabled?}[]` |
 | `Menu`, `MenuItem`, `MenuItemGroupHeader`, `MenuSeparator`, `MenuButton` | `MenuButton`: `menu`, `menuPositionX: left\|right\|center`, `menuPositionY: top\|bottom\|middle`. It opens through CSS `:focus-within`. `MenuItem` isn't clickable on its own, so wrap it in a button. |
 | `ItemList` | edits strings or key/value pairs and **mutates** `params` in place before `onChange` |
-| `Dot`, `DateDisplay`, `List`/`ListItem`, `JsonViewer`, `Sparkline` | small helpers |
+| `DateDisplay` | `date: string \| Date` plus `Intl.DateTimeFormatOptions` fields. Formats like `lib.formatDate`, with the raw value as a native tooltip. |
+| `Dot`, `List`/`ListItem`, `JsonViewer`, `Sparkline` | small helpers |
 
 ## Tooltip
 
 Mount `<Tooltip />` once (optional props: `delay`, `offset`, `viewportPadding`, `maxWidth`). Then put attributes on any element:
 
-`data-tooltip` (content in a Markdown subset: `**bold**`, `_italic_`, `\n`), `data-tooltip-trigger` (`mouseover`|`click`|`focus`), `data-tooltip-x` (`left|center|right|pointer`), `data-tooltip-y` (`top|middle|bottom|pointer`), `data-tooltip-position` (`inside|outside`), `data-tooltip-delay`, `data-tooltip-offset`, `data-tooltip-max-width`, `data-tooltip-anchor` (CSS selector), `data-tooltip-viewport`, `data-tooltip-class`.
+`data-tooltip` (content in a Markdown subset: `**bold**`, `_italic_`, `\n`), `data-tooltip-trigger` (`mouseover`|`click`|`focus`), `data-tooltip-x` (`left|center|right|pointer`), `data-tooltip-y` (`top|middle|bottom|pointer`), `data-tooltip-position` (`inside|outside`), `data-tooltip-delay`, `data-tooltip-offset`, `data-tooltip-max-width`, `data-tooltip-anchor` (CSS selector), `data-tooltip-viewport`, `data-tooltip-class`. Exported types: `TooltipProps`, `TooltipTrigger`, `TooltipPosition`, `TooltipX`, `TooltipY`, `TooltipAxisX`, `TooltipAxisY`.
 
 ## utils and lib
 
 ```ts
 import { lib, utils } from 'clinical-primitives';
 ```
-- `lib.formatDate(str, opts?)` returns `'—'` for empty input.
+- `lib.formatDate(value: string | Date | null | undefined, opts?)` returns `'—'` for empty input and an unparseable string as given. `opts` picks year/month/day (default `{year:'numeric', month:'short', day:'numeric'}`). Date-only values stay on their own calendar day in every time zone and at their own precision (`"2019"` → "2019", `"2024-03"` → "Mar 2024"); dateTimes show in local time.
 - `lib.Person`: `displayName(humanName)`, `displayPersonName(person, use?)`, `displayAddress`, `displayPersonAddress`, `displayPersonGender`.
-- `lib.Patient`: `calcAge(p) => {age, unit}` and `displayPatientAge(p, units?)`. Both return null without a `birthDate`.
+- `lib.Patient`: `calcAge(p) => {age, unit}` (both `null` without a `birthDate`, or when `deceasedBoolean` is true) and `displayPatientAge(p, units?)` (`null` in those cases; `units === false` gives the bare number).
 - `lib.Identifier`: `format`, `matches`, `findAll`, `find`.
 - `lib.Medication`: `getMedicationName`, `getShortMedicationName`, `normalizeMedName`, `getActiveMedications`, `getMedicationPeriod` (provisional), `getMedicationDosages`.
-- `utils`: `groupBy`, `ellipsis`, `roundToPrecision`, `classList`, `getPath`, `capitalize`, `highlightText`, plus `utils.Condition.*`, `utils.Immunization.*` and `utils.Observation.*` (`getObservationDisplayName`, `getObservationValue`, `getObservationDate`, `extractObservationNumericValue`, `computeDelta`, …).
+- `utils`: `groupBy`, `ellipsis`, `roundToPrecision`, `classList`, `getPath`, `capitalize`, `highlightText`, plus `utils.Condition.*`, `utils.Immunization.*` and `utils.Observation.*` (`getObservationDisplayName`, `getObservationValue`, `getObservationDate`, `extractObservationNumericValue`, `computeDelta`, `unitScale(from, to)`, `cleanUnit`, `inUnitOf(observations, reference)` (readings rescaled to `reference`'s unit, plus a `dropped` count of unconvertible ones), …). `getObservationDate` returns `new Date(str)`, so a date-only value is UTC midnight; format the original string with `lib.formatDate` instead.
 
 ## Styling
 
 - Dark mode: `data-theme="dark"|"light"` on `<html>`. Without it, the theme follows the OS. Only the surface (`win*`) and text (`txt*`) tones change.
 - Tokens: `--cp-color-{red,amber,yellow,green,teal,blue,gray,purple,white,black,win,win-1..7,txt,txt-1..7}`, `--cp-space-1..7`, `--cp-text-{xs..6xl}`. Use them in your own CSS (`background: var(--cp-color-win-1)`) so the app follows the theme.
-- Utility classes: `cp-fill-*`, `cp-border-*`, `cp-text-*`, `cp-p-*`/`cp-m-*`/`cp-gap-*`, `cp-rounded-*`.
-- The library's scoped reset zeroes margin/padding/border inside `cp-*` elements. It sits in the `cp-reset` layer: load the library CSS before yours (or start yours with `@layer cp-reset;`) and Tailwind v4 utilities win over it.
+- Utility classes: `cp-fill-*`, `cp-border-*`, `cp-text-*` (colors and sizes), `cp-fw-*` (`normal`/`medium`/`semibold`/`bold`/`100`…`900`), `cp-p-*`/`cp-m-*`/`cp-gap-*`, `cp-rounded-*`.
+- The library's scoped reset zeroes margin/padding/border inside `cp-*` elements. It sits in the `cp-reset` layer: load the library CSS before yours (or start yours with `@layer cp-reset;`) and Tailwind v4 utilities win over it. Under Tailwind, preflight also beats the reset's heading sizes, so headings you pass in render as body text unless you size them.
+- Font: the `cp-reset` layer sets a system sans-serif on `html`. Any `font-family` you set on `html`, `body` or a wrapper wins, and components inherit it.

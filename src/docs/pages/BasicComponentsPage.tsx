@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Collapse }      from '../../components/Collapse';
 import { JsonViewer }    from '../../components/JsonViewer';
 import { Sparkline }     from '../../components/Sparkline';
-import { Alert, Button, Badge, CheckBox, RadioButton, Loader } from '../../index';
+import { Alert, Button, Badge, CheckBox, DateDisplay, RadioButton, Loader } from '../../index';
 import { ButtonProps } from '../../components/Button/Button';
 import { Tab, TabBar, TabContents, Tabs, TabsBody } from '../../components/Tabs';
 
@@ -13,6 +13,34 @@ type RadioButtonExampleProps = Omit<ButtonProps, 'value' | 'onChange'> & {
 function RadioButtonExample({ options, ...btnProps }: RadioButtonExampleProps) {
   const [value, setValue] = useState(options[0]?.value ?? '');
   return <RadioButton value={value} onChange={(v) => setValue(v as string)} options={options} {...btnProps} />;
+}
+
+/** Tabs driven from outside: `activeIndex` sets the tab, `onActiveIndexChange` hears clicks. */
+function ControlledTabsExample() {
+  const [tab, setTab] = useState(0);
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2 text-sm cp-text-txt-5">
+        Controlled, on tab {tab + 1}:
+        <Button variant="info" virtual onClick={() => setTab((tab + 2) % 3)}>Prev</Button>
+        <Button variant="info" virtual onClick={() => setTab((tab + 1) % 3)}>Next</Button>
+      </div>
+      <div className="border border-solid cp-border-win-3 rounded-lg overflow-hidden">
+        <Tabs activeIndex={tab} onActiveIndexChange={setTab}>
+          <TabBar className="cp-fill-win-1">
+              <Tab>Tab 1</Tab>
+              <Tab>Tab 2</Tab>
+              <Tab>Tab 3</Tab>
+          </TabBar>
+          <TabsBody className="p-4">
+              <TabContents>Content for Tab 1</TabContents>
+              <TabContents>Content for Tab 2</TabContents>
+              <TabContents>Content for Tab 3</TabContents>
+          </TabsBody>
+        </Tabs>
+      </div>
+    </div>
+  );
 }
 
 export function BasicComponentsPage() {
@@ -453,7 +481,27 @@ export function BasicComponentsPage() {
                 </TabsBody>
               </Tabs>
             </div>
+            <ControlledTabsExample />
           </div>
+        </article>
+
+        <article>
+          <h3 className='mb-1'>Dates</h3>
+          <p className="cp-text-txt-5 text-sm mb-2" style={{ maxWidth: '28rem' }}>
+            <code>DateDisplay</code> and <code>lib.formatDate</code> show a FHIR <code>date</code> as
+            the calendar day it names in every time zone, and keep a partial date's precision.
+            A <code>dateTime</code> is shown in local time. Hover a value for the raw string.
+          </p>
+          <table style={{ borderSpacing: '0.5rem 0.25rem', borderCollapse: 'separate' }}>
+            <tbody>
+              {['2024-01-01', '2024-03', '2019', '2024-01-01T23:30:00Z'].map(value => (
+                <tr key={value}>
+                  <td><code>{`<DateDisplay date="${value}" />`}</code></td>
+                  <td><DateDisplay date={value} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </article>
       </div>
 
